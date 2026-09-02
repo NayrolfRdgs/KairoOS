@@ -561,7 +561,21 @@ export const App: React.FC = () => {
     ]
   );
 
-  const { isConnected: gamepadConnected, gamepadName } = useGamepad(gamepadActions);
+  const [primaryPlayerIndex, setPrimaryPlayerIndex] = useState<number>(0);
+
+  const isAnyModalOpen =
+    scannerOpen ||
+    settingsOpen ||
+    gamepadSettingsOpen ||
+    franchiseOrganizerGame !== null ||
+    selectedGameForDetails !== null ||
+    launchStatus.is_running;
+
+  const { isConnected: gamepadConnected, gamepadName } = useGamepad(
+    gamepadActions,
+    !isAnyModalOpen,
+    primaryPlayerIndex
+  );
 
   const handleSaveGamepadMappings = async (mappings: GamepadMapping[]) => {
     try {
@@ -670,6 +684,8 @@ export const App: React.FC = () => {
       {gamepadSettingsOpen && (
         <GamepadSettingsModal
           initialMappings={gamepadMappings}
+          primaryPlayerIndex={primaryPlayerIndex}
+          onSetPrimaryPlayer={setPrimaryPlayerIndex}
           onClose={() => setGamepadSettingsOpen(false)}
           onSaveMappings={handleSaveGamepadMappings}
         />

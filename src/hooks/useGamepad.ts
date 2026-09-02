@@ -11,10 +11,16 @@ export interface GamepadActions {
   onMenu?: () => void;
 }
 
-export function useGamepad(actions: GamepadActions) {
+export function useGamepad(actions: GamepadActions, enabled: boolean = true, primaryPadIndex: number = 0) {
   const [connectedGamepadName, setConnectedGamepadName] = useState<string | null>(null);
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
+
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  const primaryIndexRef = useRef(primaryPadIndex);
+  primaryIndexRef.current = primaryPadIndex;
 
   const prevButtonsRef = useRef<boolean[]>([]);
   const lastNavTimeRef = useRef<number>(0);
@@ -32,57 +38,59 @@ export function useGamepad(actions: GamepadActions) {
     window.addEventListener('gamepadconnected', handleGamepadConnected);
     window.addEventListener('gamepaddisconnected', handleGamepadDisconnected);
 
-    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    for (const gp of gamepads) {
-      if (gp) {
-        setConnectedGamepadName(gp.id);
-        break;
-      }
-    }
-
     let animationFrameId: number;
 
     const pollGamepad = () => {
-      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-      const gp = gamepads[0];
+      const gamepads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) as Gamepad[] : [];
+      
+      if (gamepads.length > 0) {
+        const primary = gamepads[primaryIndexRef.current] || gamepads[0];
+        setConnectedGamepadName(primary.id);
 
-      if (gp) {
-        const now = performance.now();
-        const prev = prevButtonsRef.current;
-        const currentButtons = gp.buttons.map(b => b.pressed);
+        // Si désactivé (ex: modale ouverte ou en arrière-plan), ne rien déclencher
+        if (enabledRef.current && primary) {
+          const now = performance.now();
+          const prev = prevButtonsRef.current;
+          const currentButtons = primary.buttons.map((b) => b.pressed || b.value > 0.4);
 
-        const isJustPressed = (index: number) => currentButtons[index] && !prev[index];
+          const isJustPressed = (index: number) => currentButtons[index] && !prev[index];
 
-        if (isJustPressed(0)) actionsRef.current.onConfirm?.();
-        if (isJustPressed(1)) actionsRef.current.onBack?.();
-        if (isJustPressed(2)) actionsRef.current.onToggleFavorite?.();
-        if (isJustPressed(3)) actionsRef.current.onDetails?.();
-        if (isJustPressed(4)) actionsRef.current.onPrevSystem?.();
-        if (isJustPressed(5)) actionsRef.current.onNextSystem?.();
-        if (isJustPressed(9)) actionsRef.current.onMenu?.();
+          if (isJustPressed(0)) actionsRef.current.onConfirm?.();
+          if (isJustPressed(1)) actionsRef.current.onBack?.();
+          if (isJustPressed(2)) actionsRef.current.onToggleFavorite?.();
+          if (isJustPressed(3)) actionsRef.current.onDetails?.();
+          if (isJustPressed(4)) actionsRef.current.onPrevSystem?.();
+          if (isJustPressed(5)) actionsRef.current.onNextSystem?.();
+          if (isJustPressed(9)) actionsRef.current.onMenu?.();
 
-        if (now - lastNavTimeRef.current > navRepeatDelay) {
-          const dpadUp = currentButtons[12] || gp.axes[1] < -0.5;
-          const dpadDown = currentButtons[13] || gp.axes[1] > 0.5;
-          const dpadLeft = currentButtons[14] || gp.axes[0] < -0.5;
-          const dpadRight = currentButtons[15] || gp.axes[0] > 0.5;
+          if (now - lastNavTimeRef.current > navRepeatDelay) {
+            const dpadUp = currentButtons[12] || primary.axes[1] < -0.5;
+            const dpadDown = currentButtons[13] || primary.axes[1] > 0.5;
+            const dpadLeft = currentButtons[14] || primary.axes[0] < -0.5;
+            const dpadRight = currentButtons[15] || primary.axes[0] > 0.5;
 
-          if (dpadUp) {
-            actionsRef.current.onNavigate?.('up');
-            lastNavTimeRef.current = now;
-          } else if (dpadDown) {
-            actionsRef.current.onNavigate?.('down');
-            lastNavTimeRef.current = now;
-          } else if (dpadLeft) {
-            actionsRef.current.onNavigate?.('left');
-            lastNavTimeRef.current = now;
-          } else if (dpadRight) {
-            actionsRef.current.onNavigate?.('right');
-            lastNavTimeRef.current = now;
+            if (dpadUp) {
+              actionsRef.current.onNavigate?.('up');
+              lastNavTimeRef.current = now;
+            } else if (dpadDown) {
+              actionsRef.current.onNavigate?.('down');
+              lastNavTimeRef.current = now;
+            } else if (dpadLeft) {
+              actionsRef.current.onNavigate?.('left');
+              lastNavTimeRef.current = now;
+            } else if (dpadRight) {
+              actionsRef.current.onNavigate?.('right');
+              lastNavTimeRef.current = now;
+            }
           }
-        }
 
-        prevButtonsRef.current = currentButtons;
+          prevButtonsRef.current = currentButtons;
+        } else {
+          prevButtonsRef.current = [];
+        }
+      } else {
+        setConnectedGamepadName(null);
+        prevButtonsRef.current = [];
       }
 
       animationFrameId = requestAnimationFrame(pollGamepad);
@@ -91,6 +99,8 @@ export function useGamepad(actions: GamepadActions) {
     animationFrameId = requestAnimationFrame(pollGamepad);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Si désactivé ou dans un input, bloquer les raccourcis globaux
+      if (!enabledRef.current) return;
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
         return;
       }
