@@ -122,74 +122,88 @@ fn verify_pin(headers: &HeaderMap, required_pin: &str) -> bool {
     false
 }
 
-/// Démarre le serveur Axum en tâche de fond Tokio
-pub fn start_remote_server(db: Database, launcher: Launcher) -> tokio::task::JoinHandle<()> {
-    tokio::spawn(async move {
-        let config = RemoteConfig::load();
-        if !config.enabled {
-            println!("ℹ️ Serveur distant KaïroOS désactivé dans config/remote.json");
-            return;
-        }
-
-        let port = config.port;
-        let addr = SocketAddr::from(([0, 0, 0, 0], port));
-
-        let state = RemoteServerState {
-            db,
-            launcher,
-            config_dir: PathBuf::from("config"),
-        };
-
-        // Recherche du dossier statique PWA (kairo-remote/dist ou ./remote_dist)
-        let mut pwa_dir = PathBuf::from("kairo-remote/dist");
-        if !pwa_dir.exists() {
-            if PathBuf::from("../kairo-remote/dist").exists() {
-                pwa_dir = PathBuf::from("../kairo-remote/dist");
-            } else if PathBuf::from("dist-portable/kairo-remote").exists() {
-                pwa_dir = PathBuf::from("dist-portable/kairo-remote");
+/// Démarre le serveur Axum en tâche de fond dans son propre runtime Tokio
+pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::JoinHandle<()> {
+    std::thread::spawn(move || {
+        let rt = match tokio::runtime::Builder::new_multi_thread()
+            .worker_threads(2)
+            .enable_all()
+            .build()
+        {
+            Ok(rt) => rt,
+            Err(e) => {
+                eprintln!("❌ Impossible d'initialiser le runtime Tokio pour le serveur distant: {}", e);
+                return;
             }
-        }
-
-        let cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any);
-
-        let api_routes = Router::new()
-            .route("/api/status", get(get_status))
-            .route("/api/games", get(get_games))
-            .route("/api/games/:id", get(get_game_by_id))
-            .route("/api/games/launch", post(launch_game))
-            .route("/api/games/stop", post(stop_game))
-            .route("/api/games/add", post(add_game))
-            .route("/api/systems", get(get_systems))
-            .route("/api/settings", get(get_settings).post(save_settings))
-            .route("/api/kiosk/lock", post(lock_kiosk))
-            .route("/api/kiosk/unlock", post(unlock_kiosk))
-            .with_state(state.clone());
-
-        let app = if pwa_dir.exists() {
-            let index_file = pwa_dir.join("index.html");
-            Router::new()
-                .merge(api_routes)
-                .fallback_service(ServeDir::new(&pwa_dir).fallback(ServeFile::new(index_file)))
-                .layer(cors)
-        } else {
-            Router::new().merge(api_routes).layer(cors)
         };
 
-        println!("🌐 Serveur distant KaïroOS démarré sur http://localhost:{} (Accès PWA Mobile)", port);
+        rt.block_on(async move {
+            let config = RemoteConfig::load();
+            if !config.enabled {
+                println!("ℹ️ Serveur distant KaïroOS désactivé dans config/remote.json");
+                return;
+            }
 
-        match tokio::net::TcpListener::bind(addr).await {
-            Ok(listener) => {
-                if let Err(err) = axum::serve(listener, app).await {
-                    eprintln!("❌ Erreur d'exécution du serveur distant: {}", err);
+            let port = config.port;
+            let addr = SocketAddr::from(([0, 0, 0, 0], port));
+
+            let state = RemoteServerState {
+                db,
+                launcher,
+                config_dir: PathBuf::from("config"),
+            };
+
+            // Recherche du dossier statique PWA (kairo-remote/dist ou ./remote_dist)
+            let mut pwa_dir = PathBuf::from("kairo-remote/dist");
+            if !pwa_dir.exists() {
+                if PathBuf::from("../kairo-remote/dist").exists() {
+                    pwa_dir = PathBuf::from("../kairo-remote/dist");
+                } else if PathBuf::from("dist-portable/kairo-remote").exists() {
+                    pwa_dir = PathBuf::from("dist-portable/kairo-remote");
                 }
             }
-            Err(err) => {
-                eprintln!("❌ Impossible de lier le port {} pour le serveur distant: {}", port, err);
+
+            let cors = CorsLayer::new()
+                .allow_origin(Any)
+                .allow_methods(Any)
+                .allow_headers(Any);
+
+            let api_routes = Router::new()
+                .route("/api/status", get(get_status))
+                .route("/api/games", get(get_games))
+                .route("/api/games/:id", get(get_game_by_id))
+                .route("/api/games/launch", post(launch_game))
+                .route("/api/games/stop", post(stop_game))
+                .route("/api/games/add", post(add_game))
+                .route("/api/systems", get(get_systems))
+                .route("/api/settings", get(get_settings).post(save_settings))
+                .route("/api/kiosk/lock", post(lock_kiosk))
+                .route("/api/kiosk/unlock", post(unlock_kiosk))
+                .with_state(state.clone());
+
+            let app = if pwa_dir.exists() {
+                let index_file = pwa_dir.join("index.html");
+                Router::new()
+                    .merge(api_routes)
+                    .fallback_service(ServeDir::new(&pwa_dir).fallback(ServeFile::new(index_file)))
+                    .layer(cors)
+            } else {
+                Router::new().merge(api_routes).layer(cors)
+            };
+
+            println!("🌐 Serveur distant KaïroOS démarré sur http://localhost:{} (Accès PWA Mobile)", port);
+
+            match tokio::net::TcpListener::bind(addr).await {
+                Ok(listener) => {
+                    if let Err(err) = axum::serve(listener, app).await {
+                        eprintln!("❌ Erreur d'exécution du serveur distant: {}", err);
+                    }
+                }
+                Err(err) => {
+                    eprintln!("❌ Impossible de lier le port {} pour le serveur distant: {}", port, err);
+                }
             }
-        }
+        });
     })
 }
 
