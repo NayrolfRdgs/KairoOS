@@ -12,9 +12,10 @@ import {
   Box,
   Sparkles,
   Trophy,
-  Tag
+  Tag,
+  Settings as SettingsIcon,
 } from 'lucide-react';
-import { System } from '../types';
+import { CustomFranchise, System } from '../types';
 
 export interface FranchiseCollection {
   id: string;
@@ -42,9 +43,12 @@ interface SidebarProps {
   totalAllGames: number;
   totalFavorites: number;
   totalRecent: number;
+  enabledFranchises: string[];
+  customFranchises: CustomFranchise[];
   gamepadConnected: boolean;
   gamepadName: string | null;
   onOpenScanner: () => void;
+  onOpenSettings: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -56,9 +60,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalAllGames,
   totalFavorites,
   totalRecent,
+  enabledFranchises,
+  customFranchises,
   gamepadConnected,
   gamepadName,
   onOpenScanner,
+  onOpenSettings,
 }) => {
   const getSystemIcon = (iconType: string) => {
     switch (iconType) {
@@ -76,6 +83,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         return <Gamepad2 className="w-4 h-4" />;
     }
   };
+
+  const visiblePopularFranchises = POPULAR_FRANCHISES.filter((f) =>
+    enabledFranchises.includes(f.id)
+  );
+
+  const visibleCustomFranchises = customFranchises.filter((f) =>
+    enabledFranchises.includes(f.id)
+  );
 
   return (
     <aside className="w-72 bg-retro-sidebar border-r border-retro-border flex flex-col h-full select-none shrink-0 shadow-sm z-20">
@@ -102,15 +117,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div
-          title={gamepadConnected ? (gamepadName || 'Manette connectée') : 'Clavier & Souris actifs'}
-          className={`p-2 rounded-xl border flex items-center justify-center transition-all ${
-            gamepadConnected
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-600 animate-pulse'
-              : 'bg-retro-bg border-retro-border text-retro-textMuted'
-          }`}
-        >
-          <Gamepad2 className="w-4 h-4" />
+        <div className="flex items-center gap-1.5">
+          <div
+            title={gamepadConnected ? (gamepadName || 'Manette connectée') : 'Clavier & Souris actifs'}
+            className={`p-2 rounded-xl border flex items-center justify-center transition-all ${
+              gamepadConnected
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 animate-pulse'
+                : 'bg-retro-bg border-retro-border text-retro-textMuted'
+            }`}
+          >
+            <Gamepad2 className="w-4 h-4" />
+          </div>
+
+          <button
+            onClick={onOpenSettings}
+            title="Paramètres & Mode Borne"
+            className="p-2 rounded-xl border border-retro-border bg-retro-bg hover:bg-white text-retro-textMuted hover:text-retro-primary transition-all shadow-sm"
+          >
+            <SettingsIcon className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -192,45 +217,78 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Section Franchises / Licences */}
-        <div>
-          <div className="text-[11px] font-black uppercase tracking-wider text-retro-textLight px-3 mb-2 flex items-center justify-between">
-            <span>Franchises Cultes</span>
-            <Trophy className="w-3 h-3 text-retro-primary" />
-          </div>
+        {(visiblePopularFranchises.length > 0 || visibleCustomFranchises.length > 0) && (
+          <div>
+            <div className="text-[11px] font-black uppercase tracking-wider text-retro-textLight px-3 mb-2 flex items-center justify-between">
+              <span>Franchises Cultes</span>
+              <Trophy className="w-3 h-3 text-retro-primary" />
+            </div>
 
-          <div className="space-y-1">
-            {POPULAR_FRANCHISES.map((franchise) => {
-              const count = gamesCountByFranchise[franchise.id] || 0;
-              const isSelected = selectedCategory === `franchise:${franchise.id}`;
+            <div className="space-y-1">
+              {visiblePopularFranchises.map((franchise) => {
+                const count = gamesCountByFranchise[franchise.id] || 0;
+                const isSelected = selectedCategory === `franchise:${franchise.id}`;
 
-              return (
-                <button
-                  key={franchise.id}
-                  onClick={() => onSelectCategory(`franchise:${franchise.id}`)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                    isSelected
-                      ? 'bg-retro-purple text-white shadow-retro-md font-bold scale-[1.02]'
-                      : 'text-retro-text hover:bg-retro-bg'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <Tag className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-retro-primary'}`} />
-                    <span className="truncate">{franchise.name}</span>
-                  </div>
-                  {count > 0 && (
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-retro-bg text-retro-textMuted'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={franchise.id}
+                    onClick={() => onSelectCategory(`franchise:${franchise.id}`)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isSelected
+                        ? 'bg-retro-purple text-white shadow-retro-md font-bold scale-[1.02]'
+                        : 'text-retro-text hover:bg-retro-bg'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Tag className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-retro-primary'}`} />
+                      <span className="truncate">{franchise.name}</span>
+                    </div>
+                    {count > 0 && (
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-retro-bg text-retro-textMuted'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {visibleCustomFranchises.map((custom) => {
+                const count = gamesCountByFranchise[custom.id] || 0;
+                const isSelected = selectedCategory === `franchise:${custom.id}`;
+
+                return (
+                  <button
+                    key={custom.id}
+                    onClick={() => onSelectCategory(`franchise:${custom.id}`)}
+                    className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      isSelected
+                        ? 'bg-retro-cyan text-white shadow-retro-cyan font-bold scale-[1.02]'
+                        : 'text-retro-text hover:bg-retro-bg'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 truncate">
+                      <Tag className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-retro-cyan'}`} />
+                      <span className="truncate">{custom.name}</span>
+                    </div>
+                    {count > 0 && (
+                      <span
+                        className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                          isSelected ? 'bg-white/20 text-white' : 'bg-retro-bg text-retro-textMuted'
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Section Consoles & Systèmes */}
         <div>

@@ -30,6 +30,7 @@ export interface Game {
   file_name: string;
   file_size: number;
   file_hash?: string;
+  franchise?: string;
   cover_url?: string;
   backdrop_url?: string;
   logo_url?: string;
@@ -47,6 +48,38 @@ export interface Game {
   last_played?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface LocalGameMetadata {
+  title: string;
+  franchise?: string;
+  system_id?: string;
+  release_date?: string;
+  developer?: string;
+  publisher?: string;
+  genre?: string;
+  players?: number;
+  rating?: number;
+  synopsis?: string;
+  cover_file?: string;
+}
+
+export interface CustomFranchise {
+  id: string;
+  name: string;
+  color: string;
+  keywords: string[];
+  is_enabled: boolean;
+}
+
+export interface AppSettings {
+  fullscreen: boolean;
+  always_on_top: boolean;
+  kiosk_mode: boolean;
+  enabled_franchises: string[];
+  custom_franchises: CustomFranchise[];
+  roms_path?: string;
+  theme: string;
 }
 
 export interface GameConfig {
@@ -74,6 +107,7 @@ export interface ScanStats {
   games_updated: number;
   games_skipped: number;
   systems_detected: string[];
+  franchises_detected: string[];
   errors: string[];
 }
 

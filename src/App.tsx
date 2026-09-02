@@ -5,15 +5,34 @@ import { FilterBar, SortOption } from './components/FilterBar';
 import { GameGrid } from './components/GameGrid';
 import { GameDetailsModal } from './components/GameDetailsModal';
 import { ScannerModal } from './components/ScannerModal';
+import { SettingsModal } from './components/SettingsModal';
+import { FranchiseOrganizerModal } from './components/FranchiseOrganizerModal';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { useGamepad } from './hooks/useGamepad';
-import { Emulator, Game, GameConfig, LaunchStatus, ScanStats, System } from './types';
+import {
+  AppSettings,
+  Emulator,
+  Game,
+  GameConfig,
+  LaunchStatus,
+  LocalGameMetadata,
+  ScanStats,
+  System,
+} from './types';
 
 export const App: React.FC = () => {
   const [systems, setSystems] = useState<System[]>([]);
   const [emulators, setEmulators] = useState<Emulator[]>([]);
   const [allGames, setAllGames] = useState<Game[]>([]);
-  
+  const [settings, setSettings] = useState<AppSettings>({
+    fullscreen: false,
+    always_on_top: false,
+    kiosk_mode: false,
+    enabled_franchises: ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg'],
+    custom_franchises: [],
+    theme: 'retro-80s-light',
+  });
+
   // Navigation & Filtering States
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' | 'favorites' | 'recent' | 'system:xxx' | 'franchise:xxx'
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -24,6 +43,8 @@ export const App: React.FC = () => {
   const [selectedGameForDetails, setSelectedGameForDetails] = useState<Game | null>(null);
   const [gameConfigForDetails, setGameConfigForDetails] = useState<GameConfig | null>(null);
   const [scannerOpen, setScannerOpen] = useState<boolean>(false);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [franchiseOrganizerGame, setFranchiseOrganizerGame] = useState<Game | null>(null);
   const [launchStatus, setLaunchStatus] = useState<LaunchStatus>({ is_running: false });
 
   const loadData = useCallback(async () => {
@@ -36,6 +57,9 @@ export const App: React.FC = () => {
 
       const fetchedGames = await invoke<Game[]>('get_all_games');
       setAllGames(fetchedGames);
+
+      const fetchedSettings = await invoke<AppSettings>('get_app_settings');
+      setSettings(fetchedSettings);
     } catch (err) {
       console.warn('Mode Web / Tauri non connecté, chargement des données de démonstration:', err);
       setSystems([
@@ -56,6 +80,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\snes\\Super Mario World.sfc',
           file_name: 'Super Mario World.sfc',
           file_size: 1048576,
+          franchise: 'Super Mario',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1x7d.png',
           genre: 'Plateforme',
           developer: 'Nintendo EAD',
@@ -76,6 +101,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\snes\\Super Mario Kart.sfc',
           file_name: 'Super Mario Kart.sfc',
           file_size: 1048576,
+          franchise: 'Super Mario',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r2h.png',
           genre: 'Course',
           developer: 'Nintendo EAD',
@@ -96,6 +122,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\snes\\Zelda - A Link to the Past.sfc',
           file_name: 'Zelda - A Link to the Past.sfc',
           file_size: 2097152,
+          franchise: 'The Legend of Zelda',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r8c.png',
           genre: 'Aventure / Action-RPG',
           developer: 'Nintendo',
@@ -107,7 +134,7 @@ export const App: React.FC = () => {
           play_time_seconds: 12000,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          synopsis: 'Link explore Hyrule et le Monde des Ténèbres pour sceller Ganon et sauver les sept jeunes filles.',
+          synopsis: 'Link explore Hyrule et le Monde des Ténèbres pour sceller Ganon.',
         },
         {
           id: 'demo-4',
@@ -116,6 +143,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\ps1\\Tekken 3.chd',
           file_name: 'Tekken 3.chd',
           file_size: 524288000,
+          franchise: 'Street Fighter & Tekken',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co20ex.png',
           genre: 'Combat / Versus',
           developer: 'Namco',
@@ -127,7 +155,7 @@ export const App: React.FC = () => {
           play_time_seconds: 9400,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          synopsis: 'Le roi des jeux de combat 3D PlayStation avec Jin, Hwoarang, Eddy et le tournoi Iron Fist.',
+          synopsis: 'Le roi des jeux de combat 3D PlayStation.',
         },
         {
           id: 'demo-5',
@@ -136,6 +164,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\arcade\\sf2ce.zip',
           file_name: 'sf2ce.zip',
           file_size: 8388608,
+          franchise: 'Street Fighter & Tekken',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r2s.png',
           genre: 'Combat / Arcade',
           developer: 'Capcom',
@@ -147,7 +176,7 @@ export const App: React.FC = () => {
           play_time_seconds: 5400,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          synopsis: 'L\'icône absolue des salles d\'arcade 80s/90s avec les 12 combattants et les boss jouables.',
+          synopsis: "L'icône absolue des salles d'arcade 80s/90s.",
         },
         {
           id: 'demo-6',
@@ -156,6 +185,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\n64\\Super Mario 64.z64',
           file_name: 'Super Mario 64.z64',
           file_size: 8388608,
+          franchise: 'Super Mario',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1w2y.png',
           genre: 'Plateforme 3D',
           developer: 'Nintendo',
@@ -167,7 +197,7 @@ export const App: React.FC = () => {
           play_time_seconds: 7000,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          synopsis: 'Le jeu qui a défini le jeu de plateforme 3D avec les 120 étoiles du château de Peach.',
+          synopsis: 'Le jeu qui a défini la 3D.',
         },
         {
           id: 'demo-7',
@@ -176,6 +206,7 @@ export const App: React.FC = () => {
           file_path: 'D:\\Roms\\switch\\Super Mario Odyssey.nsp',
           file_name: 'Super Mario Odyssey.nsp',
           file_size: 5700000000,
+          franchise: 'Super Mario',
           cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1m1o.png',
           genre: 'Plateforme 3D',
           developer: 'Nintendo EPD',
@@ -187,7 +218,7 @@ export const App: React.FC = () => {
           play_time_seconds: 18000,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          synopsis: 'Explorez d\'immenses royaumes 3D en compagnie de Cappy à bord de l\'Odyssée.',
+          synopsis: "Explorez d'immenses royaumes 3D avec Cappy.",
         }
       ]);
     }
@@ -196,6 +227,33 @@ export const App: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Global Keyboard listener for F11 (Fullscreen) & Escape
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        try {
+          const next = await invoke<boolean>('toggle_fullscreen');
+          setSettings((prev) => ({ ...prev, fullscreen: next }));
+        } catch (err) {
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        if (selectedGameForDetails) setSelectedGameForDetails(null);
+        else if (scannerOpen) setScannerOpen(false);
+        else if (settingsOpen) setSettingsOpen(false);
+        else if (franchiseOrganizerGame) setFranchiseOrganizerGame(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedGameForDetails, scannerOpen, settingsOpen, franchiseOrganizerGame]);
 
   // Polling de statut de lancement
   useEffect(() => {
@@ -217,6 +275,19 @@ export const App: React.FC = () => {
   }, [launchStatus.is_running, loadData]);
 
   // Statistiques et compteurs par console & franchise
+  const allFranchiseList = useMemo(() => {
+    const list = [...POPULAR_FRANCHISES];
+    for (const cf of settings.custom_franchises) {
+      list.push({
+        id: cf.id,
+        name: cf.name,
+        color: cf.color,
+        keywords: cf.keywords,
+      });
+    }
+    return list;
+  }, [settings.custom_franchises]);
+
   const gamesCountBySystem = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const g of allGames) {
@@ -227,14 +298,15 @@ export const App: React.FC = () => {
 
   const gamesCountByFranchise = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const f of POPULAR_FRANCHISES) {
+    for (const f of allFranchiseList) {
       counts[f.id] = allGames.filter((g) => {
+        if (g.franchise && g.franchise.toLowerCase() === f.name.toLowerCase()) return true;
         const titleLower = g.title.toLowerCase();
         return f.keywords.some((k) => titleLower.includes(k));
       }).length;
     }
     return counts;
-  }, [allGames]);
+  }, [allGames, allFranchiseList]);
 
   const totalFavorites = useMemo(() => allGames.filter((g) => g.favorite).length, [allGames]);
   const totalRecent = useMemo(() => allGames.filter((g) => g.play_count > 0).length, [allGames]);
@@ -262,9 +334,10 @@ export const App: React.FC = () => {
       list = list.filter((g) => g.system_id === sysId);
     } else if (selectedCategory.startsWith('franchise:')) {
       const fId = selectedCategory.replace('franchise:', '');
-      const franchise = POPULAR_FRANCHISES.find((f) => f.id === fId);
+      const franchise = allFranchiseList.find((f) => f.id === fId);
       if (franchise) {
         list = list.filter((g) => {
+          if (g.franchise && g.franchise.toLowerCase() === franchise.name.toLowerCase()) return true;
           const titleLower = g.title.toLowerCase();
           return franchise.keywords.some((k) => titleLower.includes(k));
         });
@@ -276,40 +349,43 @@ export const App: React.FC = () => {
       list = list.filter((g) => g.genre === selectedGenre);
     }
 
-    // 3. Filtrage par Recherche textuelle (Recherche instantanée)
+    // 3. Filtrage par Recherche textuelle
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter(
         (g) =>
           g.title.toLowerCase().includes(q) ||
           g.system_id.toLowerCase().includes(q) ||
+          (g.franchise && g.franchise.toLowerCase().includes(q)) ||
           (g.developer && g.developer.toLowerCase().includes(q)) ||
           (g.genre && g.genre.toLowerCase().includes(q))
       );
     }
 
-    // 4. Tri dynamique
+    // 4. Tri multi-critères
     list.sort((a, b) => {
       switch (sortBy) {
         case 'title-asc':
           return a.title.localeCompare(b.title);
         case 'title-desc':
           return b.title.localeCompare(a.title);
+        case 'release-desc':
+          return (b.release_date || '').localeCompare(a.release_date || '');
+        case 'release-asc':
+          return (a.release_date || '9999').localeCompare(b.release_date || '9999');
         case 'rating':
           return (b.rating || 0) - (a.rating || 0);
         case 'play-time':
           return b.play_time_seconds - a.play_time_seconds;
         case 'recent':
           return (b.play_count || 0) - (a.play_count || 0);
-        case 'release':
-          return (b.release_date || '').localeCompare(a.release_date || '');
         default:
           return 0;
       }
     });
 
     return list;
-  }, [allGames, selectedCategory, selectedGenre, searchQuery, sortBy]);
+  }, [allGames, selectedCategory, selectedGenre, searchQuery, sortBy, allFranchiseList]);
 
   // Actions Jeux
   const handleLaunchGame = async (game: Game) => {
@@ -348,14 +424,14 @@ export const App: React.FC = () => {
         prev.map((g) => (g.id === game.id ? { ...g, favorite: isFav } : g))
       );
       if (selectedGameForDetails?.id === game.id) {
-        setSelectedGameForDetails((prev) => prev ? { ...prev, favorite: isFav } : null);
+        setSelectedGameForDetails((prev) => (prev ? { ...prev, favorite: isFav } : null));
       }
     } catch (err) {
       setAllGames((prev) =>
         prev.map((g) => (g.id === game.id ? { ...g, favorite: !g.favorite } : g))
       );
       if (selectedGameForDetails?.id === game.id) {
-        setSelectedGameForDetails((prev) => prev ? { ...prev, favorite: !prev.favorite } : null);
+        setSelectedGameForDetails((prev) => (prev ? { ...prev, favorite: !prev.favorite } : null));
       }
     }
   };
@@ -382,6 +458,44 @@ export const App: React.FC = () => {
     }
   };
 
+  const handleSaveMetadata = async (gameId: string, metadata: LocalGameMetadata) => {
+    try {
+      await invoke('save_local_game_metadata', { gameId, metadata });
+      loadData();
+    } catch (err) {
+      console.warn('Save metadata fallback:', err);
+      setAllGames((prev) =>
+        prev.map((g) => (g.id === gameId ? { ...g, ...metadata } : g))
+      );
+    }
+  };
+
+  const handleOrganizeGame = async (gameId: string, franchiseName: string): Promise<string> => {
+    return await invoke<string>('organize_game_into_franchise', {
+      gameId,
+      franchiseName,
+      targetBaseDir: settings.roms_path,
+    });
+  };
+
+  const handleSaveSettings = async (newSettings: AppSettings) => {
+    try {
+      await invoke('save_app_settings', { settings: newSettings });
+    } catch (err) {
+      console.warn('Save settings fallback:', err);
+    }
+    setSettings(newSettings);
+  };
+
+  const handleToggleFullscreen = async () => {
+    try {
+      const next = await invoke<boolean>('toggle_fullscreen');
+      setSettings((prev) => ({ ...prev, fullscreen: next }));
+    } catch (err) {
+      setSettings((prev) => ({ ...prev, fullscreen: !prev.fullscreen }));
+    }
+  };
+
   const handleScanDirectory = async (path: string, calculateHashes: boolean): Promise<ScanStats> => {
     return await invoke<ScanStats>('scan_roms_directory', { path, calculateHashes });
   };
@@ -390,7 +504,7 @@ export const App: React.FC = () => {
   const gamepadActions = useMemo(
     () => ({
       onNavigate: (dir: 'up' | 'down' | 'left' | 'right') => {
-        if (selectedGameForDetails || scannerOpen || launchStatus.is_running) return;
+        if (selectedGameForDetails || scannerOpen || settingsOpen || franchiseOrganizerGame || launchStatus.is_running) return;
 
         setFocusedIndex((prev) => {
           if (filteredAndSortedGames.length === 0) return 0;
@@ -405,16 +519,15 @@ export const App: React.FC = () => {
       onConfirm: () => {
         if (selectedGameForDetails) {
           handleLaunchGame(selectedGameForDetails);
-        } else if (!scannerOpen && !launchStatus.is_running && filteredAndSortedGames[focusedIndex]) {
+        } else if (!scannerOpen && !settingsOpen && !franchiseOrganizerGame && !launchStatus.is_running && filteredAndSortedGames[focusedIndex]) {
           handleLaunchGame(filteredAndSortedGames[focusedIndex]);
         }
       },
       onBack: () => {
-        if (selectedGameForDetails) {
-          setSelectedGameForDetails(null);
-        } else if (scannerOpen) {
-          setScannerOpen(false);
-        }
+        if (selectedGameForDetails) setSelectedGameForDetails(null);
+        else if (scannerOpen) setScannerOpen(false);
+        else if (settingsOpen) setSettingsOpen(false);
+        else if (franchiseOrganizerGame) setFranchiseOrganizerGame(null);
       },
       onToggleFavorite: () => {
         if (selectedGameForDetails) {
@@ -424,17 +537,19 @@ export const App: React.FC = () => {
         }
       },
       onDetails: () => {
-        if (!selectedGameForDetails && !scannerOpen && filteredAndSortedGames[focusedIndex]) {
+        if (!selectedGameForDetails && !scannerOpen && !settingsOpen && filteredAndSortedGames[focusedIndex]) {
           handleOpenDetails(filteredAndSortedGames[focusedIndex]);
         }
       },
-      onMenu: () => setScannerOpen((prev) => !prev),
+      onMenu: () => setSettingsOpen((prev) => !prev),
     }),
     [
       filteredAndSortedGames,
       focusedIndex,
       selectedGameForDetails,
       scannerOpen,
+      settingsOpen,
+      franchiseOrganizerGame,
       launchStatus.is_running,
     ]
   );
@@ -456,14 +571,17 @@ export const App: React.FC = () => {
         totalAllGames={allGames.length}
         totalFavorites={totalFavorites}
         totalRecent={totalRecent}
+        enabledFranchises={settings.enabled_franchises}
+        customFranchises={settings.custom_franchises}
         gamepadConnected={gamepadConnected}
         gamepadName={gamepadName}
         onOpenScanner={() => setScannerOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       {/* 2. Panneau Principal (Filtres + Grille de Jeux) */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Barre de Recherche & Filtres de Tri (Au-dessus de la grille) */}
+        {/* Barre de Recherche & Filtres de Tri */}
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -476,7 +594,7 @@ export const App: React.FC = () => {
           filteredCount={filteredAndSortedGames.length}
         />
 
-        {/* Grille de Jeux (Support Clavier, Souris, Molette et Gamepad) */}
+        {/* Grille de Jeux */}
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <GameGrid
             games={filteredAndSortedGames}
@@ -490,7 +608,7 @@ export const App: React.FC = () => {
         </main>
       </div>
 
-      {/* Modals & Overlays */}
+      {/* Modales & Overlays */}
       {selectedGameForDetails && (
         <GameDetailsModal
           game={selectedGameForDetails}
@@ -501,6 +619,11 @@ export const App: React.FC = () => {
           onLaunch={handleLaunchGame}
           onToggleFavorite={handleToggleFavorite}
           onSaveConfig={handleSaveConfig}
+          onSaveMetadata={handleSaveMetadata}
+          onOpenFranchiseOrganizer={(g) => {
+            setSelectedGameForDetails(null);
+            setFranchiseOrganizerGame(g);
+          }}
         />
       )}
 
@@ -509,6 +632,24 @@ export const App: React.FC = () => {
           onClose={() => setScannerOpen(false)}
           onScan={handleScanDirectory}
           onScanComplete={loadData}
+        />
+      )}
+
+      {settingsOpen && (
+        <SettingsModal
+          settings={settings}
+          onClose={() => setSettingsOpen(false)}
+          onSave={handleSaveSettings}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+      )}
+
+      {franchiseOrganizerGame && (
+        <FranchiseOrganizerModal
+          game={franchiseOrganizerGame}
+          onClose={() => setFranchiseOrganizerGame(null)}
+          onOrganize={handleOrganizeGame}
+          onComplete={loadData}
         />
       )}
 

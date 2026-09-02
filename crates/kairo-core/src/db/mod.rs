@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use rusqlite::{params, Connection};
 use thiserror::Error;
 
-use crate::models::{Collection, Emulator, Game, GameConfig, System};
+use crate::models::{AppSettings, Collection, Emulator, Game, GameConfig, System};
 
 #[derive(Error, Debug)]
 pub enum DbError {
@@ -81,6 +81,7 @@ impl Database {
                 file_name TEXT NOT NULL,
                 file_size INTEGER NOT NULL,
                 file_hash TEXT,
+                franchise TEXT,
                 cover_url TEXT,
                 backdrop_url TEXT,
                 logo_url TEXT,
@@ -138,13 +139,22 @@ impl Database {
                 FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
             );
 
+            CREATE TABLE IF NOT EXISTS app_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
             CREATE INDEX IF NOT EXISTS idx_games_system ON games(system_id);
             CREATE INDEX IF NOT EXISTS idx_games_favorite ON games(favorite);
             CREATE INDEX IF NOT EXISTS idx_games_title ON games(title);
+            CREATE INDEX IF NOT EXISTS idx_games_franchise ON games(franchise);
             CREATE INDEX IF NOT EXISTS idx_games_play_time ON games(play_time_seconds DESC);
             CREATE INDEX IF NOT EXISTS idx_games_last_played ON games(last_played DESC);
             ",
         )?;
+
+        // Migration douce si colonne franchise manquante
+        let _ = conn.execute("ALTER TABLE games ADD COLUMN franchise TEXT;", []);
 
         drop(conn);
         self.seed_defaults()?;
@@ -431,6 +441,31 @@ impl Database {
         Ok(())
     }
 
+    pub fn get_app_settings(&self) -> std::result::Result<AppSettings, DbError> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT value FROM app_settings WHERE key = 'general'")?;
+        let mut rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+
+        if let Some(res) = rows.next() {
+            let json_str = res?;
+            let settings: AppSettings = serde_json::from_str(&json_str)?;
+            Ok(settings)
+        } else {
+            Ok(AppSettings::default())
+        }
+    }
+
+    pub fn save_app_settings(&self, settings: &AppSettings) -> std::result::Result<(), DbError> {
+        let conn = self.conn.lock().unwrap();
+        let json_str = serde_json::to_string(settings)?;
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES ('general', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+            params![json_str],
+        )?;
+        Ok(())
+    }
+
     pub fn upsert_system(&self, sys: &System) -> std::result::Result<(), DbError> {
         let conn = self.conn.lock().unwrap();
         let exts_json = serde_json::to_string(&sys.extensions)?;
@@ -631,12 +666,12 @@ impl Database {
         conn.execute(
             "INSERT INTO games (
                 id, system_id, title, original_title, file_path, file_name, file_size,
-                file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                 developer, genre, players, rating, synopsis, favorite, hidden,
                 play_count, play_time_seconds, last_played, created_at, updated_at
             ) VALUES (
                 ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
-                ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25
+                ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26
             )",
             params![
                 game.id,
@@ -647,6 +682,7 @@ impl Database {
                 game.file_name,
                 game.file_size as i64,
                 game.file_hash,
+                game.franchise,
                 game.cover_url,
                 game.backdrop_url,
                 game.logo_url,
@@ -683,23 +719,24 @@ impl Database {
                 file_name = ?5,
                 file_size = ?6,
                 file_hash = ?7,
-                cover_url = ?8,
-                backdrop_url = ?9,
-                logo_url = ?10,
-                release_date = ?11,
-                publisher = ?12,
-                developer = ?13,
-                genre = ?14,
-                players = ?15,
-                rating = ?16,
-                synopsis = ?17,
-                favorite = ?18,
-                hidden = ?19,
-                play_count = ?20,
-                play_time_seconds = ?21,
-                last_played = ?22,
-                updated_at = ?23
-            WHERE id = ?24",
+                franchise = ?8,
+                cover_url = ?9,
+                backdrop_url = ?10,
+                logo_url = ?11,
+                release_date = ?12,
+                publisher = ?13,
+                developer = ?14,
+                genre = ?15,
+                players = ?16,
+                rating = ?17,
+                synopsis = ?18,
+                favorite = ?19,
+                hidden = ?20,
+                play_count = ?21,
+                play_time_seconds = ?22,
+                last_played = ?23,
+                updated_at = ?24
+            WHERE id = ?25",
             params![
                 game.system_id,
                 game.title,
@@ -708,6 +745,7 @@ impl Database {
                 game.file_name,
                 game.file_size as i64,
                 game.file_hash,
+                game.franchise,
                 game.cover_url,
                 game.backdrop_url,
                 game.logo_url,
@@ -734,7 +772,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE id = ?1",
@@ -751,7 +789,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE file_path = ?1",
@@ -768,7 +806,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE system_id = ?1 AND hidden = 0 ORDER BY title ASC",
@@ -786,7 +824,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE hidden = 0 ORDER BY title ASC",
@@ -804,7 +842,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE favorite = 1 AND hidden = 0 ORDER BY title ASC",
@@ -822,7 +860,7 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
             "SELECT id, system_id, title, original_title, file_path, file_name, file_size,
-                    file_hash, cover_url, backdrop_url, logo_url, release_date, publisher,
+                    file_hash, franchise, cover_url, backdrop_url, logo_url, release_date, publisher,
                     developer, genre, players, rating, synopsis, favorite, hidden,
                     play_count, play_time_seconds, last_played, created_at, updated_at
              FROM games WHERE last_played IS NOT NULL AND hidden = 0
@@ -998,13 +1036,13 @@ impl Database {
     }
 
     fn map_game_row(row: &rusqlite::Row) -> rusqlite::Result<Game> {
-        let fav_int: i32 = row.get(18)?;
-        let hidden_int: i32 = row.get(19)?;
-        let play_count_int: i64 = row.get(20)?;
-        let play_time_int: i64 = row.get(21)?;
-        let last_played_str: Option<String> = row.get(22)?;
-        let created_at_str: String = row.get(23)?;
-        let updated_at_str: String = row.get(24)?;
+        let fav_int: i32 = row.get(19)?;
+        let hidden_int: i32 = row.get(20)?;
+        let play_count_int: i64 = row.get(21)?;
+        let play_time_int: i64 = row.get(22)?;
+        let last_played_str: Option<String> = row.get(23)?;
+        let created_at_str: String = row.get(24)?;
+        let updated_at_str: String = row.get(25)?;
 
         let last_played = last_played_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.with_timezone(&Utc)));
         let created_at = DateTime::parse_from_rfc3339(&created_at_str)
@@ -1023,16 +1061,17 @@ impl Database {
             file_name: row.get(5)?,
             file_size: row.get::<_, i64>(6)? as u64,
             file_hash: row.get(7)?,
-            cover_url: row.get(8)?,
-            backdrop_url: row.get(9)?,
-            logo_url: row.get(10)?,
-            release_date: row.get(11)?,
-            publisher: row.get(12)?,
-            developer: row.get(13)?,
-            genre: row.get(14)?,
-            players: row.get(15)?,
-            rating: row.get(16)?,
-            synopsis: row.get(17)?,
+            franchise: row.get(8)?,
+            cover_url: row.get(9)?,
+            backdrop_url: row.get(10)?,
+            logo_url: row.get(11)?,
+            release_date: row.get(12)?,
+            publisher: row.get(13)?,
+            developer: row.get(14)?,
+            genre: row.get(15)?,
+            players: row.get(16)?,
+            rating: row.get(17)?,
+            synopsis: row.get(18)?,
             favorite: fav_int != 0,
             hidden: hidden_int != 0,
             play_count: play_count_int as u32,

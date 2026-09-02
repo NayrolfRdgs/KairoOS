@@ -33,6 +33,25 @@ mod tests {
     }
 
     #[test]
+    fn test_app_settings_persistence() {
+        let db = Database::open_in_memory().expect("Échec DB");
+        let default_settings = db.get_app_settings().expect("Erreur get settings");
+        assert_eq!(default_settings.fullscreen, false);
+
+        let mut custom = default_settings;
+        custom.fullscreen = true;
+        custom.always_on_top = true;
+        custom.kiosk_mode = true;
+        custom.theme = "retro-80s-light".into();
+
+        db.save_app_settings(&custom).expect("Erreur save settings");
+        let loaded = db.get_app_settings().expect("Erreur reload settings");
+        assert_eq!(loaded.fullscreen, true);
+        assert_eq!(loaded.always_on_top, true);
+        assert_eq!(loaded.kiosk_mode, true);
+    }
+
+    #[test]
     fn test_game_crud_and_sessions() {
         let db = Database::open_in_memory().expect("Échec DB");
         let now = chrono::Utc::now();
@@ -45,6 +64,7 @@ mod tests {
             file_name: "Super Mario World.sfc".into(),
             file_size: 1048576,
             file_hash: Some("abcdef123456".into()),
+            franchise: Some("Super Mario".into()),
             cover_url: None,
             backdrop_url: None,
             logo_url: None,
@@ -68,6 +88,7 @@ mod tests {
 
         let fetched = db.get_game_by_id("game-1").expect("Erreur").expect("Jeu non trouvé");
         assert_eq!(fetched.title, "Super Mario World");
+        assert_eq!(fetched.franchise, Some("Super Mario".into()));
         assert_eq!(fetched.favorite, false);
 
         let is_fav = db.toggle_favorite("game-1").expect("Échec toggle");
@@ -108,25 +129,57 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_with_temp_folder() {
+    fn test_scanner_with_local_json_metadata_and_covers() {
         let db = Database::open_in_memory().expect("Échec DB");
         let scanner = RomScanner::new(db.clone());
 
         let temp = tempdir().expect("Échec création temp dir");
-        let snes_folder = temp.path().join("snes");
-        fs::create_dir_all(&snes_folder).expect("Échec mkdir");
+        let mario_franchise_dir = temp.path().join("Super Mario");
+        fs::create_dir_all(&mario_franchise_dir).expect("Échec mkdir");
 
-        let rom_file = snes_folder.join("Chrono Trigger (USA).sfc");
-        let mut f = File::create(&rom_file).expect("Échec create file");
-        f.write_all(b"ROM DUMMY DATA FOR TESTING").expect("Échec write");
+        // 1. Jeu SNES
+        let rom_snes = mario_franchise_dir.join("Super Mario World.sfc");
+        let mut f = File::create(&rom_snes).expect("Échec create file");
+        f.write_all(b"ROM SNES DUMMY DATA").expect("Échec write");
+
+        // 2. Fichier JSON adjacent
+        let meta_snes = mario_franchise_dir.join("Super Mario World.json");
+        let json_content = r#"{
+            "title": "Super Mario World (Édition Finale)",
+            "franchise": "Super Mario",
+            "release_date": "1990-11-21",
+            "developer": "Nintendo EAD",
+            "genre": "Plateforme 2D",
+            "rating": 5.0,
+            "synopsis": "Aventure mythique de Mario et Yoshi."
+        }"#;
+        fs::write(&meta_snes, json_content).expect("Échec write JSON");
+
+        // 3. Jaquette adjacente PNG
+        let cover_png = mario_franchise_dir.join("Super Mario World.png");
+        fs::write(&cover_png, b"FAKE PNG DATA").expect("Échec write PNG");
+
+        // 4. Jeu N64 dans le MÊME dossier de franchise (Multi-Consoles)
+        let rom_n64 = mario_franchise_dir.join("Super Mario 64.z64");
+        let mut f2 = File::create(&rom_n64).expect("Échec create file");
+        f2.write_all(b"ROM N64 DUMMY DATA").expect("Échec write");
 
         let stats = scanner.scan_directory(temp.path()).expect("Échec scan");
-        assert_eq!(stats.games_added, 1);
+        assert_eq!(stats.games_added, 2);
         assert!(stats.systems_detected.contains(&"snes".to_string()));
+        assert!(stats.systems_detected.contains(&"n64".to_string()));
+        assert!(stats.franchises_detected.contains(&"Super Mario".to_string()));
 
-        let games = db.get_games_by_system("snes").expect("Échec get games");
-        assert_eq!(games.len(), 1);
-        assert_eq!(games[0].title, "Chrono Trigger");
+        let snes_game = db.get_game_by_path(&rom_snes.to_string_lossy()).expect("Query").unwrap();
+        assert_eq!(snes_game.title, "Super Mario World (Édition Finale)");
+        assert_eq!(snes_game.franchise, Some("Super Mario".into()));
+        assert_eq!(snes_game.developer, Some("Nintendo EAD".into()));
+        assert_eq!(snes_game.genre, Some("Plateforme 2D".into()));
+        assert!(snes_game.cover_url.is_some());
+
+        let n64_game = db.get_game_by_path(&rom_n64.to_string_lossy()).expect("Query").unwrap();
+        assert_eq!(n64_game.system_id, "n64");
+        assert_eq!(n64_game.franchise, Some("Super Mario".into()));
     }
 
     #[test]

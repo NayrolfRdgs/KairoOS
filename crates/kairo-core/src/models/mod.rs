@@ -39,7 +39,8 @@ pub struct Game {
     pub file_name: String,
     pub file_size: u64,
     pub file_hash: Option<String>,     // Hash SHA1 / MD5 pour scraping ScreenScraper
-    pub cover_url: Option<String>,     // Jaquette frontale
+    pub franchise: Option<String>,     // ex: "Super Mario", "The Legend of Zelda", "Sonic", "Pokémon"
+    pub cover_url: Option<String>,     // Jaquette frontale (URL ou chemin absolu d'image locale)
     pub backdrop_url: Option<String>,  // Fond d'écran / fanart
     pub logo_url: Option<String>,      // Logo PNG transparent / Wheel
     pub release_date: Option<String>,  // Date YYYY-MM-DD
@@ -58,6 +59,22 @@ pub struct Game {
     pub updated_at: DateTime<Utc>,
 }
 
+/// Structure pour fichier JSON de métadonnées local stocké à côté d'une ROM
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+pub struct LocalGameMetadata {
+    pub title: String,
+    pub franchise: Option<String>,
+    pub system_id: Option<String>,
+    pub release_date: Option<String>,
+    pub developer: Option<String>,
+    pub publisher: Option<String>,
+    pub genre: Option<String>,
+    pub players: Option<u32>,
+    pub rating: Option<f32>,
+    pub synopsis: Option<String>,
+    pub cover_file: Option<String>,
+}
+
 /// Configuration spécifique ou personnalisation par jeu
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct GameConfig {
@@ -69,6 +86,49 @@ pub struct GameConfig {
     pub screen_ratio: Option<String>,  // ex: "4:3", "16:9", "pixel_perfect"
     pub shader: Option<String>,        // ex: "crt-easymode", "bilinear"
     pub auto_save_state: bool,
+}
+
+/// Franchise personnalisée ou configurable
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CustomFranchise {
+    pub id: String,
+    pub name: String,
+    pub color: String,
+    pub keywords: Vec<String>,
+    pub is_enabled: bool,
+}
+
+/// Paramètres de l'application & Mode Borne
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct AppSettings {
+    pub fullscreen: bool,
+    pub always_on_top: bool,
+    pub kiosk_mode: bool,
+    pub enabled_franchises: Vec<String>,
+    pub custom_franchises: Vec<CustomFranchise>,
+    pub roms_path: Option<String>,
+    pub theme: String,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            fullscreen: false,
+            always_on_top: false,
+            kiosk_mode: false,
+            enabled_franchises: vec![
+                "mario".into(),
+                "zelda".into(),
+                "pokemon".into(),
+                "sonic".into(),
+                "versus".into(),
+                "rpg".into(),
+            ],
+            custom_franchises: Vec::new(),
+            roms_path: None,
+            theme: "retro-80s-light".into(),
+        }
+    }
 }
 
 /// Collection thématique ou franchise
@@ -89,6 +149,7 @@ pub struct ScanStats {
     pub games_updated: usize,
     pub games_skipped: usize,
     pub systems_detected: Vec<String>,
+    pub franchises_detected: Vec<String>,
     pub errors: Vec<String>,
 }
 

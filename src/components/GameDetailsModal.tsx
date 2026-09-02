@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import { X, Play, Star, Clock, Users, HardDrive, Terminal, Sliders, Check, Folder } from 'lucide-react';
-import { Emulator, Game, GameConfig, System } from '../types';
+import {
+  X,
+  Play,
+  Star,
+  Clock,
+  Users,
+  HardDrive,
+  Terminal,
+  Sliders,
+  Check,
+  Folder,
+  FileJson,
+  FolderPlus,
+  Info,
+} from 'lucide-react';
+import { Emulator, Game, GameConfig, LocalGameMetadata, System } from '../types';
 
 interface GameDetailsModalProps {
   game: Game;
@@ -11,6 +25,8 @@ interface GameDetailsModalProps {
   onLaunch: (game: Game) => void;
   onToggleFavorite: (game: Game) => void;
   onSaveConfig: (config: GameConfig) => void;
+  onSaveMetadata: (gameId: string, metadata: LocalGameMetadata) => Promise<void>;
+  onOpenFranchiseOrganizer: (game: Game) => void;
 }
 
 export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
@@ -22,12 +38,28 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   onLaunch,
   onToggleFavorite,
   onSaveConfig,
+  onSaveMetadata,
+  onOpenFranchiseOrganizer,
 }) => {
-  const [activeTab, setActiveTab] = useState<'info' | 'config'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'metadata' | 'config'>('info');
+
+  // Config State
   const [customArgs, setCustomArgs] = useState<string>(config?.custom_cli_args || '');
   const [overrideEmulator, setOverrideEmulator] = useState<string>(config?.emulator_id_override || '');
   const [customCore, setCustomCore] = useState<string>(config?.custom_core || '');
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [savedConfigSuccess, setSavedConfigSuccess] = useState(false);
+
+  // Metadata State
+  const [metaTitle, setMetaTitle] = useState(game.title);
+  const [metaFranchise, setMetaFranchise] = useState(game.franchise || '');
+  const [metaReleaseDate, setMetaReleaseDate] = useState(game.release_date || '');
+  const [metaDeveloper, setMetaDeveloper] = useState(game.developer || '');
+  const [metaPublisher, setMetaPublisher] = useState(game.publisher || '');
+  const [metaGenre, setMetaGenre] = useState(game.genre || '');
+  const [metaRating, setMetaRating] = useState<string>(game.rating ? game.rating.toString() : '');
+  const [metaPlayers, setMetaPlayers] = useState<string>(game.players ? game.players.toString() : '');
+  const [metaSynopsis, setMetaSynopsis] = useState(game.synopsis || '');
+  const [savedMetaSuccess, setSavedMetaSuccess] = useState(false);
 
   const formatPlayTime = (seconds: number) => {
     if (seconds === 0) return '0 min';
@@ -58,8 +90,30 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
     };
 
     onSaveConfig(updated);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2000);
+    setSavedConfigSuccess(true);
+    setTimeout(() => setSavedConfigSuccess(false), 2000);
+  };
+
+  const handleSaveMetadata = async () => {
+    const parsedRating = parseFloat(metaRating);
+    const parsedPlayers = parseInt(metaPlayers, 10);
+
+    const metadata: LocalGameMetadata = {
+      title: metaTitle.trim() || game.title,
+      franchise: metaFranchise.trim() ? metaFranchise.trim() : undefined,
+      system_id: game.system_id,
+      release_date: metaReleaseDate.trim() ? metaReleaseDate.trim() : undefined,
+      developer: metaDeveloper.trim() ? metaDeveloper.trim() : undefined,
+      publisher: metaPublisher.trim() ? metaPublisher.trim() : undefined,
+      genre: metaGenre.trim() ? metaGenre.trim() : undefined,
+      rating: isNaN(parsedRating) ? undefined : parsedRating,
+      players: isNaN(parsedPlayers) ? undefined : parsedPlayers,
+      synopsis: metaSynopsis.trim() ? metaSynopsis.trim() : undefined,
+    };
+
+    await onSaveMetadata(game.id, metadata);
+    setSavedMetaSuccess(true);
+    setTimeout(() => setSavedMetaSuccess(false), 2000);
   };
 
   return (
@@ -68,9 +122,16 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
         {/* Banner Header */}
         <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-gradient-to-r from-retro-primary via-retro-purple to-retro-cyan p-6 flex flex-col justify-between">
           <div className="flex items-center justify-between z-10">
-            <span className="text-xs font-black uppercase tracking-widest text-white/90 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md">
-              {system?.name || game.system_id}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black uppercase tracking-widest text-white/90 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md">
+                {system?.name || game.system_id}
+              </span>
+              {game.franchise && (
+                <span className="text-xs font-black uppercase tracking-widest text-white px-3 py-1 rounded-full bg-purple-900/40 backdrop-blur-md border border-white/20">
+                  {game.franchise}
+                </span>
+              )}
+            </div>
 
             <button
               onClick={onClose}
@@ -87,7 +148,15 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
               </h1>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => onOpenFranchiseOrganizer(game)}
+                title="Déplacer dans un dossier de franchise"
+                className="p-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-all shadow-md"
+              >
+                <FolderPlus className="w-5 h-5" />
+              </button>
+
               <button
                 onClick={() => onToggleFavorite(game)}
                 className={`p-3 rounded-2xl border transition-all ${
@@ -114,30 +183,44 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
         <div className="flex items-center gap-6 px-8 border-b border-retro-border bg-retro-bg/50">
           <button
             onClick={() => setActiveTab('info')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
+            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
               activeTab === 'info'
                 ? 'border-retro-primary text-retro-primary'
                 : 'border-transparent text-retro-textMuted hover:text-retro-text'
             }`}
           >
-            Informations & Fiche Jeu
+            <Info className="w-3.5 h-3.5" />
+            <span>Fiche Jeu</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('metadata')}
+            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
+              activeTab === 'metadata'
+                ? 'border-retro-primary text-retro-primary'
+                : 'border-transparent text-retro-textMuted hover:text-retro-text'
+            }`}
+          >
+            <FileJson className="w-3.5 h-3.5" />
+            <span>Métadonnées Locales (.JSON)</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('config')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all flex items-center gap-2 ${
+            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
               activeTab === 'config'
                 ? 'border-retro-primary text-retro-primary'
                 : 'border-transparent text-retro-textMuted hover:text-retro-text'
             }`}
           >
             <Sliders className="w-3.5 h-3.5" />
-            <span>Options d'Émulation & CLI</span>
+            <span>Émulateur & CLI</span>
           </button>
         </div>
 
         {/* Modal Content Area */}
         <div className="p-6 md:p-8 overflow-y-auto flex-1 text-xs">
-          {activeTab === 'info' ? (
+          {activeTab === 'info' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="flex flex-col items-center">
                 <div className="w-44 aspect-[3/4] rounded-2xl overflow-hidden bg-retro-bg border border-retro-border shadow-retro-md flex items-center justify-center">
@@ -157,7 +240,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
                     Synopsis / Histoire
                   </h3>
                   <p className="text-retro-text leading-relaxed text-xs">
-                    {game.synopsis || "Aucun résumé disponible pour ce jeu. Vous pouvez scraper les métadonnées pour enrichir la fiche."}
+                    {game.synopsis || "Aucun résumé disponible pour ce jeu. Vous pouvez éditer les métadonnées pour enrichir la fiche."}
                   </p>
                 </div>
 
@@ -185,6 +268,13 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
                       <span>{formatFileSize(game.file_size)}</span>
                     </div>
                   </div>
+
+                  {game.release_date && (
+                    <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
+                      <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Sortie</span>
+                      <span className="font-bold text-retro-text truncate block">{game.release_date}</span>
+                    </div>
+                  )}
 
                   {game.developer && (
                     <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
@@ -217,7 +307,153 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
                 </div>
               </div>
             </div>
-          ) : (
+          )}
+
+          {activeTab === 'metadata' && (
+            <div className="space-y-4 max-w-2xl">
+              <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
+                💾 L'enregistrement créera ou mettra à jour directement le fichier <code className="font-mono font-bold">.json</code> adjacent à votre ROM pour une portabilité 100% autonome.
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Titre du Jeu
+                  </label>
+                  <input
+                    type="text"
+                    value={metaTitle}
+                    onChange={(e) => setMetaTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Franchise / Saga
+                  </label>
+                  <input
+                    type="text"
+                    value={metaFranchise}
+                    onChange={(e) => setMetaFranchise(e.target.value)}
+                    placeholder="ex: Super Mario, Zelda, Sonic..."
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Date de Sortie (YYYY-MM-DD)
+                  </label>
+                  <input
+                    type="text"
+                    value={metaReleaseDate}
+                    onChange={(e) => setMetaReleaseDate(e.target.value)}
+                    placeholder="ex: 1991-11-21"
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Genre / Type de Jeu
+                  </label>
+                  <input
+                    type="text"
+                    value={metaGenre}
+                    onChange={(e) => setMetaGenre(e.target.value)}
+                    placeholder="ex: Plateforme, Combat, RPG..."
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Développeur
+                  </label>
+                  <input
+                    type="text"
+                    value={metaDeveloper}
+                    onChange={(e) => setMetaDeveloper(e.target.value)}
+                    placeholder="ex: Nintendo EAD, Capcom..."
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Éditeur (Publisher)
+                  </label>
+                  <input
+                    type="text"
+                    value={metaPublisher}
+                    onChange={(e) => setMetaPublisher(e.target.value)}
+                    placeholder="ex: Nintendo, Sega, Sony..."
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Nombre de Joueurs
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="8"
+                    value={metaPlayers}
+                    onChange={(e) => setMetaPlayers(e.target.value)}
+                    placeholder="ex: 1, 2, 4..."
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                    Note (0.0 à 5.0)
+                  </label>
+                  <input
+                    type="text"
+                    value={metaRating}
+                    onChange={(e) => setMetaRating(e.target.value)}
+                    placeholder="ex: 4.8"
+                    className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-retro-text mb-1">
+                  Synopsis / Résumé
+                </label>
+                <textarea
+                  rows={3}
+                  value={metaSynopsis}
+                  onChange={(e) => setMetaSynopsis(e.target.value)}
+                  placeholder="Histoire du jeu..."
+                  className="w-full px-3 py-2 rounded-xl bg-retro-bg border border-retro-border text-xs text-retro-text focus:outline-none focus:border-retro-primary"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center gap-4">
+                <button
+                  onClick={handleSaveMetadata}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-retro-primary text-white font-bold text-xs uppercase tracking-wider shadow-retro-neon hover:scale-105 active:scale-95 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Enregistrer Métadonnées & Fichier JSON</span>
+                </button>
+
+                {savedMetaSuccess && (
+                  <span className="text-emerald-600 font-bold text-xs animate-fadeIn">
+                    ✓ Fichier JSON et métadonnées sauvegardés !
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'config' && (
             <div className="max-w-2xl space-y-5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-retro-text mb-2">
@@ -275,7 +511,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
                   <span>Enregistrer la Configuration</span>
                 </button>
 
-                {savedSuccess && (
+                {savedConfigSuccess && (
                   <span className="text-emerald-600 font-bold text-xs animate-fadeIn">
                     ✓ Configuration enregistrée !
                   </span>

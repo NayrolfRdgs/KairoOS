@@ -1,6 +1,13 @@
 import { Search, Filter, X } from 'lucide-react';
 
-export type SortOption = 'title-asc' | 'title-desc' | 'rating' | 'play-time' | 'recent' | 'release';
+export type SortOption =
+  | 'title-asc'
+  | 'title-desc'
+  | 'rating'
+  | 'play-time'
+  | 'recent'
+  | 'release-desc'
+  | 'release-asc';
 
 interface FilterBarProps {
   searchQuery: string;
@@ -82,10 +89,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           >
             <option value="title-asc">Nom (A → Z)</option>
             <option value="title-desc">Nom (Z → A)</option>
-            <option value="rating">Mieux Notés ⭐</option>
-            <option value="play-time">Plus Joués ⏱️</option>
-            <option value="recent">Dernièrement Joués 🎮</option>
-            <option value="release">Année de Sortie 📅</option>
+            <option value="release-desc">Date de Sortie (Plus récents 📅)</option>
+            <option value="release-asc">Date de Sortie (Plus anciens 📅)</option>
+            <option value="rating">Mieux Notés (⭐)</option>
+            <option value="play-time">Plus Joués (⏱️)</option>
+            <option value="recent">Plus Fréquents (🎮)</option>
           </select>
         </div>
 

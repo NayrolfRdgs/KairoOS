@@ -1,12 +1,12 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use chrono::Utc;
 use sha1::{Digest, Sha1};
 use walkdir::WalkDir;
 
 use crate::db::{Database, DbError};
-use crate::models::{Game, ScanStats, System};
+use crate::models::{Game, LocalGameMetadata, ScanStats, System};
 
 pub struct RomScanner {
     db: Database,
@@ -37,6 +37,7 @@ impl RomScanner {
 
         let systems = self.db.get_systems()?;
         let mut systems_detected = std::collections::HashSet::new();
+        let mut franchises_detected = std::collections::HashSet::new();
 
         for entry in WalkDir::new(root)
             .follow_links(true)
@@ -66,7 +67,7 @@ impl RomScanner {
                 .unwrap_or("")
                 .to_lowercase();
 
-            if ext.is_empty() {
+            if ext.is_empty() || ext == "json" || ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "webp" || ext == "txt" {
                 continue;
             }
 
@@ -80,12 +81,37 @@ impl RomScanner {
 
                 let file_path_str = path.to_string_lossy().to_string();
                 let file_size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-                let clean_title = Self::clean_game_title(file_name);
+                
+                // 1. Lire les métadonnées locales adjacentes (.json) si présentes
+                let local_meta = Self::read_adjacent_metadata(path);
+
+                // 2. Détecter l'image jaquette locale adjacente (.png/.jpg)
+                let local_cover = Self::find_adjacent_cover(path);
+
                 let raw_title = Path::new(file_name)
                     .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or(file_name)
                     .to_string();
+
+                let clean_title = local_meta
+                    .as_ref()
+                    .map(|m| m.title.clone())
+                    .unwrap_or_else(|| Self::clean_game_title(file_name));
+
+                let franchise = local_meta
+                    .as_ref()
+                    .and_then(|m| m.franchise.clone())
+                    .or_else(|| Self::detect_franchise_from_path_or_title(path, &clean_title));
+
+                if let Some(ref f) = franchise {
+                    franchises_detected.insert(f.clone());
+                }
+
+                let system_id = local_meta
+                    .as_ref()
+                    .and_then(|m| m.system_id.clone())
+                    .unwrap_or_else(|| system.id.clone());
 
                 let file_hash = if self.calculate_hashes {
                     Self::compute_file_sha1(path).ok()
@@ -106,6 +132,33 @@ impl RomScanner {
                             existing_game.file_hash = file_hash;
                             changed = true;
                         }
+                        if franchise.is_some() && existing_game.franchise != franchise {
+                            existing_game.franchise = franchise;
+                            changed = true;
+                        }
+                        if local_cover.is_some() && existing_game.cover_url.as_ref() != local_cover.as_ref() {
+                            existing_game.cover_url = local_cover;
+                            changed = true;
+                        }
+                        if let Some(ref meta) = local_meta {
+                            if meta.synopsis.is_some() && existing_game.synopsis != meta.synopsis {
+                                existing_game.synopsis = meta.synopsis.clone();
+                                changed = true;
+                            }
+                            if meta.genre.is_some() && existing_game.genre != meta.genre {
+                                existing_game.genre = meta.genre.clone();
+                                changed = true;
+                            }
+                            if meta.developer.is_some() && existing_game.developer != meta.developer {
+                                existing_game.developer = meta.developer.clone();
+                                changed = true;
+                            }
+                            if meta.release_date.is_some() && existing_game.release_date != meta.release_date {
+                                existing_game.release_date = meta.release_date.clone();
+                                changed = true;
+                            }
+                        }
+
                         if changed {
                             existing_game.updated_at = Utc::now();
                             self.db.update_game(&existing_game)?;
@@ -118,23 +171,24 @@ impl RomScanner {
                         let now = Utc::now();
                         let new_game = Game {
                             id: uuid::Uuid::new_v4().to_string(),
-                            system_id: system.id.clone(),
+                            system_id,
                             title: clean_title,
                             original_title: Some(raw_title),
                             file_path: file_path_str,
                             file_name: file_name.to_string(),
                             file_size,
                             file_hash,
-                            cover_url: None,
+                            franchise,
+                            cover_url: local_cover,
                             backdrop_url: None,
                             logo_url: None,
-                            release_date: None,
-                            publisher: None,
-                            developer: None,
-                            genre: None,
-                            players: None,
-                            rating: None,
-                            synopsis: None,
+                            release_date: local_meta.as_ref().and_then(|m| m.release_date.clone()),
+                            publisher: local_meta.as_ref().and_then(|m| m.publisher.clone()),
+                            developer: local_meta.as_ref().and_then(|m| m.developer.clone()),
+                            genre: local_meta.as_ref().and_then(|m| m.genre.clone()),
+                            players: local_meta.as_ref().and_then(|m| m.players),
+                            rating: local_meta.as_ref().and_then(|m| m.rating),
+                            synopsis: local_meta.as_ref().and_then(|m| m.synopsis.clone()),
                             favorite: false,
                             hidden: false,
                             play_count: 0,
@@ -156,9 +210,13 @@ impl RomScanner {
         stats.systems_detected = systems_detected.into_iter().collect();
         stats.systems_detected.sort();
 
+        stats.franchises_detected = franchises_detected.into_iter().collect();
+        stats.franchises_detected.sort();
+
         Ok(stats)
     }
 
+    /// Détecte la console par dossier OU par extension (support dossiers de franchise multi-consoles)
     pub fn detect_system<'a>(
         &self,
         file_path: &Path,
@@ -171,6 +229,7 @@ impl RomScanner {
             .map(|s| s.to_lowercase())
             .collect();
 
+        // 1. Recherche par nom de dossier de console
         for sys in systems {
             for folder in &sys.folder_names {
                 let folder_lower = folder.to_lowercase();
@@ -182,6 +241,7 @@ impl RomScanner {
             }
         }
 
+        // 2. Recherche par extension unique (idéal pour dossier de franchise multi-consoles ex: roms/Mario/mario.sfc)
         let matching_systems: Vec<&System> = systems
             .iter()
             .filter(|sys| sys.extensions.iter().any(|e| e.eq_ignore_ascii_case(ext)))
@@ -197,9 +257,145 @@ impl RomScanner {
                     return Some(sys);
                 }
             }
+            // Fallback sur le premier système compatible si ambiguïté (ex: zip/7z sur arcade)
+            return Some(matching_systems[0]);
         }
 
         None
+    }
+
+    /// Lit un fichier JSON de métadonnées local adjacent à la ROM
+    pub fn read_adjacent_metadata(rom_path: &Path) -> Option<LocalGameMetadata> {
+        // Test 1: <rom_name>.json
+        let json_path = rom_path.with_extension("json");
+        if json_path.exists() {
+            if let Ok(content) = fs::read_to_string(&json_path) {
+                if let Ok(meta) = serde_json::from_str::<LocalGameMetadata>(&content) {
+                    return Some(meta);
+                }
+            }
+        }
+
+        // Test 2: kairo.json dans le même sous-dossier
+        if let Some(parent) = rom_path.parent() {
+            let folder_kairo = parent.join("kairo.json");
+            if folder_kairo.exists() {
+                if let Ok(content) = fs::read_to_string(&folder_kairo) {
+                    if let Ok(meta) = serde_json::from_str::<LocalGameMetadata>(&content) {
+                        return Some(meta);
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Détecte une jaquette locale adjacente (.png, .jpg, .webp ou cover.png)
+    pub fn find_adjacent_cover(rom_path: &Path) -> Option<String> {
+        let extensions = ["png", "jpg", "jpeg", "webp"];
+
+        for ext in &extensions {
+            let cover_path = rom_path.with_extension(ext);
+            if cover_path.exists() {
+                return Some(cover_path.to_string_lossy().to_string());
+            }
+        }
+
+        if let Some(parent) = rom_path.parent() {
+            for ext in &extensions {
+                let cover_in_folder = parent.join(format!("cover.{}", ext));
+                if cover_in_folder.exists() {
+                    return Some(cover_in_folder.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        None
+    }
+
+    /// Détecte la franchise depuis le dossier parent ou le titre du jeu
+    pub fn detect_franchise_from_path_or_title(path: &Path, title: &str) -> Option<String> {
+        let parent_name = path
+            .parent()
+            .and_then(|p| p.file_name())
+            .and_then(|n| n.to_str())
+            .unwrap_or("")
+            .to_lowercase();
+
+        let title_lower = title.to_lowercase();
+
+        if parent_name.contains("mario") || title_lower.contains("mario") || title_lower.contains("luigi") || title_lower.contains("wario") || title_lower.contains("yoshi") {
+            return Some("Super Mario".into());
+        }
+        if parent_name.contains("zelda") || title_lower.contains("zelda") || title_lower.contains("link") {
+            return Some("The Legend of Zelda".into());
+        }
+        if parent_name.contains("pokemon") || parent_name.contains("pokémon") || title_lower.contains("pokemon") || title_lower.contains("pokémon") {
+            return Some("Pokémon".into());
+        }
+        if parent_name.contains("sonic") || title_lower.contains("sonic") {
+            return Some("Sonic The Hedgehog".into());
+        }
+        if title_lower.contains("street fighter") || title_lower.contains("tekken") || title_lower.contains("mortal kombat") {
+            return Some("Jeux de Combat / Versus".into());
+        }
+        if title_lower.contains("final fantasy") || title_lower.contains("dragon quest") || title_lower.contains("chrono") {
+            return Some("Grands RPGs".into());
+        }
+
+        None
+    }
+
+    /// Organise et déplace une ROM dans un dossier de franchise avec son JSON et sa jaquette
+    pub fn organize_game_into_franchise(
+        &self,
+        game_id: &str,
+        franchise_name: &str,
+        target_base_dir: &Path,
+    ) -> Result<PathBuf, DbError> {
+        let mut game = self
+            .db
+            .get_game_by_id(game_id)?
+            .ok_or_else(|| DbError::NotFound(format!("Jeu ID {}", game_id)))?;
+
+        let source_path = PathBuf::from(&game.file_path);
+        if !source_path.exists() {
+            return Err(DbError::NotFound(format!("Fichier ROM introuvable: {}", game.file_path)));
+        }
+
+        let franchise_safe_name = franchise_name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+        let franchise_dir = target_base_dir.join(&franchise_safe_name);
+        fs::create_dir_all(&franchise_dir).map_err(|e| DbError::Sqlite(rusqlite::Error::InvalidPath(e.to_string().into())))?;
+
+        let new_rom_path = franchise_dir.join(&game.file_name);
+        fs::copy(&source_path, &new_rom_path).map_err(|e| DbError::Sqlite(rusqlite::Error::InvalidPath(e.to_string().into())))?;
+
+        // Écrire le fichier metadata JSON
+        let json_meta = LocalGameMetadata {
+            title: game.title.clone(),
+            franchise: Some(franchise_name.to_string()),
+            system_id: Some(game.system_id.clone()),
+            release_date: game.release_date.clone(),
+            developer: game.developer.clone(),
+            publisher: game.publisher.clone(),
+            genre: game.genre.clone(),
+            players: game.players,
+            rating: game.rating,
+            synopsis: game.synopsis.clone(),
+            cover_file: None,
+        };
+
+        let json_path = new_rom_path.with_extension("json");
+        let meta_json_str = serde_json::to_string_pretty(&json_meta)?;
+        let _ = fs::write(&json_path, meta_json_str);
+
+        // Mettre à jour en base SQLite
+        game.file_path = new_rom_path.to_string_lossy().to_string();
+        game.franchise = Some(franchise_name.to_string());
+        self.db.update_game(&game)?;
+
+        Ok(new_rom_path)
     }
 
     pub fn clean_game_title(file_name: &str) -> String {
