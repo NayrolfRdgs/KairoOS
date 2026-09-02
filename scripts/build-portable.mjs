@@ -62,6 +62,14 @@ if (existsSync(releaseExe)) {
   process.exit(1);
 }
 
+// 4. Synchronisation automatique de tous les émulateurs pré-installés
+if (existsSync('emulators')) {
+  console.log('🎮 Synchronisation des émulateurs dans dist-portable/emulators/ ...');
+  try {
+    execSync('powershell -Command "Copy-Item -Path \'emulators/*\' -Destination \'dist-portable/emulators\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+  } catch (_) {}
+}
+
 // 4. Génération des fichiers de configuration JSON ouverts et modifiables
 
 // A. config/settings.json
