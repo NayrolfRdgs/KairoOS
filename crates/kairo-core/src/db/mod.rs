@@ -147,14 +147,14 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_games_system ON games(system_id);
             CREATE INDEX IF NOT EXISTS idx_games_favorite ON games(favorite);
             CREATE INDEX IF NOT EXISTS idx_games_title ON games(title);
-            CREATE INDEX IF NOT EXISTS idx_games_franchise ON games(franchise);
             CREATE INDEX IF NOT EXISTS idx_games_play_time ON games(play_time_seconds DESC);
             CREATE INDEX IF NOT EXISTS idx_games_last_played ON games(last_played DESC);
             ",
         )?;
 
-        // Migration douce si colonne franchise manquante
+        // Migration douce si colonne franchise manquante dans une base existante
         let _ = conn.execute("ALTER TABLE games ADD COLUMN franchise TEXT;", []);
+        let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_games_franchise ON games(franchise);", []);
 
         drop(conn);
         self.seed_defaults()?;
