@@ -221,3 +221,17 @@ pub fn get_launcher_status(state: State<'_, AppState>) -> LaunchStatus {
 pub fn kill_running_game(state: State<'_, AppState>) -> Result<(), String> {
     state.launcher.kill_current_game().map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn get_gamepad_mappings(state: State<'_, AppState>) -> Result<Vec<kairo_core::GamepadMapping>, String> {
+    state.db.get_gamepad_mappings().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_gamepad_mappings(
+    mappings: Vec<kairo_core::GamepadMapping>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.db.save_gamepad_mappings(&mappings).map_err(|e| e.to_string())
+}
+

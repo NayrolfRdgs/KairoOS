@@ -49,6 +49,7 @@ interface SidebarProps {
   gamepadName: string | null;
   onOpenScanner: () => void;
   onOpenSettings: () => void;
+  onOpenGamepadSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -66,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   gamepadName,
   onOpenScanner,
   onOpenSettings,
+  onOpenGamepadSettings,
 }) => {
   const getSystemIcon = (iconType: string) => {
     switch (iconType) {
@@ -118,16 +120,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div
-            title={gamepadConnected ? (gamepadName || 'Manette connectée') : 'Clavier & Souris actifs'}
-            className={`p-2 rounded-xl border flex items-center justify-center transition-all ${
+          <button
+            onClick={onOpenGamepadSettings}
+            title={gamepadConnected ? `${gamepadName || 'Manette connectée'} (Cliquez pour configurer)` : 'Configurer les Manettes & Arcade Sticks'}
+            className={`p-2 rounded-xl border flex items-center justify-center transition-all shadow-sm ${
               gamepadConnected
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 animate-pulse'
-                : 'bg-retro-bg border-retro-border text-retro-textMuted'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100 animate-pulse'
+                : 'bg-retro-bg border-retro-border text-retro-textMuted hover:text-retro-primary hover:bg-white'
             }`}
           >
             <Gamepad2 className="w-4 h-4" />
-          </div>
+          </button>
 
           <button
             onClick={onOpenSettings}

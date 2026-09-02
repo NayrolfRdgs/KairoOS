@@ -120,3 +120,27 @@ export interface LaunchStatus {
   start_time?: string;
   elapsed_seconds?: number;
 }
+
+export interface GamepadMapping {
+  player_index: number; // 0 to 9
+  device_name: string;
+  device_id: string;
+  controller_type: 'arcade_stick' | 'standard' | 'retro_snes' | 'retro_sega' | 'wheel';
+  btn_up?: string;
+  btn_down?: string;
+  btn_left?: string;
+  btn_right?: string;
+  btn_a?: string; // Button 1
+  btn_b?: string; // Button 2
+  btn_x?: string; // Button 3
+  btn_y?: string; // Button 4
+  btn_l1?: string; // Button 5
+  btn_r1?: string; // Button 6
+  btn_l2?: string; // Button 7
+  btn_r2?: string; // Button 8
+  btn_select?: string; // Coin / Crédit 🪙
+  btn_start?: string; // 1P / 2P Start 🕹️
+  btn_hotkey?: string; // Quitter / Hotkey
+  deadzone: number;
+}
+

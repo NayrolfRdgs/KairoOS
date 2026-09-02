@@ -490,6 +490,104 @@ impl Database {
         Ok(())
     }
 
+    pub fn get_gamepad_mappings(&self) -> std::result::Result<Vec<crate::models::GamepadMapping>, DbError> {
+        // 1. Lire depuis config/gamepads.json
+        for path in &[Path::new("config/gamepads.json"), Path::new("../config/gamepads.json")] {
+            if path.exists() {
+                if let Ok(content) = std::fs::read_to_string(path) {
+                    if let Ok(mappings) = serde_json::from_str::<Vec<crate::models::GamepadMapping>>(&content) {
+                        return Ok(mappings);
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback SQLite
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT value FROM app_settings WHERE key = 'gamepads'")?;
+        let mut rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+
+        if let Some(res) = rows.next() {
+            let json_str = res?;
+            let mappings: Vec<crate::models::GamepadMapping> = serde_json::from_str(&json_str)?;
+            Ok(mappings)
+        } else {
+            // Par défaut: Joueur 1 configuré
+            Ok(vec![crate::models::GamepadMapping::default()])
+        }
+    }
+
+    pub fn save_gamepad_mappings(&self, mappings: &[crate::models::GamepadMapping]) -> std::result::Result<(), DbError> {
+        // 1. Sauvegarder en SQLite
+        let conn = self.conn.lock().unwrap();
+        let json_str = serde_json::to_string(mappings)?;
+        conn.execute(
+            "INSERT INTO app_settings (key, value) VALUES ('gamepads', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
+            params![json_str],
+        )?;
+        drop(conn);
+
+        // 2. Écrire le fichier config/gamepads.json formaté
+        let config_dir = Path::new("config");
+        if !config_dir.exists() {
+            let _ = std::fs::create_dir_all(config_dir);
+        }
+        if let Ok(pretty_json) = serde_json::to_string_pretty(mappings) {
+            let _ = std::fs::write(config_dir.join("gamepads.json"), pretty_json);
+        }
+
+        // 3. Injecter la configuration directement dans les fichiers retroarch.cfg
+        self.sync_gamepads_to_retroarch(mappings);
+
+        Ok(())
+    }
+
+    fn sync_gamepads_to_retroarch(&self, mappings: &[crate::models::GamepadMapping]) {
+        let mut retro_lines = vec![
+            "# KaïroOS Arcade Station — RetroArch Config & Gamepad Auto-Mapping".to_string(),
+            "video_fullscreen = \"true\"".into(),
+            "video_windowed_fullscreen = \"true\"".into(),
+            "pause_nonactive = \"false\"".into(),
+            "video_vsync = \"true\"".into(),
+            "notification_show_when_menu_is_alive = \"false\"".into(),
+            "video_font_enable = \"false\"".into(),
+            "input_autodetect_enable = \"true\"".into(),
+            "input_enable_hotkey_btn = \"8\"".into(),
+            "input_exit_emulator_btn = \"9\"".into(),
+            "input_exit_emulator = \"escape\"".into(),
+        ];
+
+        for m in mappings {
+            let p = m.player_index + 1; // 1 à 10
+            if let Some(ref v) = m.btn_b { retro_lines.push(format!("input_player{}_b_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_a { retro_lines.push(format!("input_player{}_a_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_y { retro_lines.push(format!("input_player{}_y_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_x { retro_lines.push(format!("input_player{}_x_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_start { retro_lines.push(format!("input_player{}_start_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_select { retro_lines.push(format!("input_player{}_select_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_up { retro_lines.push(format!("input_player{}_up_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_down { retro_lines.push(format!("input_player{}_down_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_left { retro_lines.push(format!("input_player{}_left_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_right { retro_lines.push(format!("input_player{}_right_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_l1 { retro_lines.push(format!("input_player{}_l_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_r1 { retro_lines.push(format!("input_player{}_r_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_l2 { retro_lines.push(format!("input_player{}_l2_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_r2 { retro_lines.push(format!("input_player{}_r2_btn = \"{}\"", p, v)); }
+        }
+
+        let full_cfg = retro_lines.join("\n");
+        for cfg_path in &[
+            Path::new("emulators/RetroArch/retroarch.cfg"),
+            Path::new("dist-portable/emulators/RetroArch/retroarch.cfg"),
+        ] {
+            if let Some(parent) = cfg_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(cfg_path, &full_cfg);
+        }
+    }
+
     pub fn upsert_system(&self, sys: &System) -> std::result::Result<(), DbError> {
         let conn = self.conn.lock().unwrap();
         let exts_json = serde_json::to_string(&sys.extensions)?;

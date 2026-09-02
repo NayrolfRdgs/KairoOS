@@ -88,6 +88,58 @@ pub struct GameConfig {
     pub auto_save_state: bool,
 }
 
+/// Configuration & Remapping d'une manette / joystick d'arcade pour un joueur
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct GamepadMapping {
+    pub player_index: usize,          // 0 à 9 (Joueur 1 à Joueur 10)
+    pub device_name: String,          // ex: "DragonRise Inc. Generic USB Joystick", "Xbox Controller"
+    pub device_id: String,
+    pub controller_type: String,      // "arcade_stick", "standard", "retro_snes", "retro_sega", "wheel"
+    pub btn_up: Option<String>,       // ex: "h0up" ou "btn_12"
+    pub btn_down: Option<String>,
+    pub btn_left: Option<String>,
+    pub btn_right: Option<String>,
+    pub btn_a: Option<String>,        // Bouton A / 1
+    pub btn_b: Option<String>,        // Bouton B / 2
+    pub btn_x: Option<String>,        // Bouton X / 3
+    pub btn_y: Option<String>,        // Bouton Y / 4
+    pub btn_l1: Option<String>,       // Bouton L1 / 5
+    pub btn_r1: Option<String>,       // Bouton R1 / 6
+    pub btn_l2: Option<String>,       // Bouton L2 / 7
+    pub btn_r2: Option<String>,       // Bouton R2 / 8
+    pub btn_select: Option<String>,   // Select / Coin / Crédit 🪙
+    pub btn_start: Option<String>,    // Start / 1P Start 🕹️
+    pub btn_hotkey: Option<String>,   // Quitter / Menu Hotkey
+    pub deadzone: f32,
+}
+
+impl Default for GamepadMapping {
+    fn default() -> Self {
+        Self {
+            player_index: 0,
+            device_name: "Arcade Stick / Gamepad 1".into(),
+            device_id: "default_pad_0".into(),
+            controller_type: "arcade_stick".into(),
+            btn_up: Some("up".into()),
+            btn_down: Some("down".into()),
+            btn_left: Some("left".into()),
+            btn_right: Some("right".into()),
+            btn_a: Some("0".into()),
+            btn_b: Some("1".into()),
+            btn_x: Some("2".into()),
+            btn_y: Some("3".into()),
+            btn_l1: Some("4".into()),
+            btn_r1: Some("5".into()),
+            btn_l2: Some("6".into()),
+            btn_r2: Some("7".into()),
+            btn_select: Some("8".into()),
+            btn_start: Some("9".into()),
+            btn_hotkey: Some("8".into()),
+            deadzone: 0.15,
+        }
+    }
+}
+
 /// Franchise personnalisée ou configurable
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CustomFranchise {

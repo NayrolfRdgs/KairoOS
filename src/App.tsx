@@ -6,6 +6,7 @@ import { GameGrid } from './components/GameGrid';
 import { GameDetailsModal } from './components/GameDetailsModal';
 import { ScannerModal } from './components/ScannerModal';
 import { SettingsModal } from './components/SettingsModal';
+import { GamepadSettingsModal } from './components/GamepadSettingsModal';
 import { FranchiseOrganizerModal } from './components/FranchiseOrganizerModal';
 import { LaunchOverlay } from './components/LaunchOverlay';
 import { useGamepad } from './hooks/useGamepad';
@@ -14,6 +15,7 @@ import {
   Emulator,
   Game,
   GameConfig,
+  GamepadMapping,
   LaunchStatus,
   LocalGameMetadata,
   ScanStats,
@@ -44,6 +46,8 @@ export const App: React.FC = () => {
   const [gameConfigForDetails, setGameConfigForDetails] = useState<GameConfig | null>(null);
   const [scannerOpen, setScannerOpen] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [gamepadSettingsOpen, setGamepadSettingsOpen] = useState<boolean>(false);
+  const [gamepadMappings, setGamepadMappings] = useState<GamepadMapping[]>([]);
   const [franchiseOrganizerGame, setFranchiseOrganizerGame] = useState<Game | null>(null);
   const [launchStatus, setLaunchStatus] = useState<LaunchStatus>({ is_running: false });
 
@@ -60,6 +64,9 @@ export const App: React.FC = () => {
 
       const fetchedSettings = await invoke<AppSettings>('get_app_settings');
       setSettings(fetchedSettings);
+
+      const fetchedPads = await invoke<GamepadMapping[]>('get_gamepad_mappings');
+      setGamepadMappings(fetchedPads);
     } catch (err) {
       console.warn('Mode Web / Tauri non connecté, chargement des données de démonstration:', err);
       setSystems([
@@ -556,6 +563,16 @@ export const App: React.FC = () => {
 
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(gamepadActions);
 
+  const handleSaveGamepadMappings = async (mappings: GamepadMapping[]) => {
+    try {
+      await invoke('save_gamepad_mappings', { mappings });
+      setGamepadMappings(mappings);
+    } catch (err) {
+      console.warn('Erreur sauvegarde manettes (Mode Web):', err);
+      setGamepadMappings(mappings);
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen bg-retro-bg text-retro-text overflow-hidden font-sans retro-grid-bg antialiased select-none">
       {/* 1. Navigation Latérale Gauche (Sidebar) */}
@@ -577,6 +594,7 @@ export const App: React.FC = () => {
         gamepadName={gamepadName}
         onOpenScanner={() => setScannerOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenGamepadSettings={() => setGamepadSettingsOpen(true)}
       />
 
       {/* 2. Panneau Principal (Filtres + Grille de Jeux) */}
@@ -642,6 +660,18 @@ export const App: React.FC = () => {
           onClose={() => setSettingsOpen(false)}
           onSave={handleSaveSettings}
           onToggleFullscreen={handleToggleFullscreen}
+          onOpenGamepadSettings={() => {
+            setSettingsOpen(false);
+            setGamepadSettingsOpen(true);
+          }}
+        />
+      )}
+
+      {gamepadSettingsOpen && (
+        <GamepadSettingsModal
+          initialMappings={gamepadMappings}
+          onClose={() => setGamepadSettingsOpen(false)}
+          onSaveMappings={handleSaveGamepadMappings}
         />
       )}
 

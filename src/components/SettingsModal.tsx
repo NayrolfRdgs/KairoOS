@@ -19,6 +19,7 @@ interface SettingsModalProps {
   onClose: () => void;
   onSave: (settings: AppSettings) => Promise<void>;
   onToggleFullscreen: () => Promise<void>;
+  onOpenGamepadSettings?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -26,6 +27,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onSave,
   onToggleFullscreen,
+  onOpenGamepadSettings,
 }) => {
   const [activeTab, setActiveTab] = useState<'kiosk' | 'franchises' | 'folders'>('kiosk');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
@@ -151,12 +153,52 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <Folder className="w-3.5 h-3.5" />
             <span>Dossiers & Emplacement</span>
           </button>
+
+          {onOpenGamepadSettings && (
+            <button
+              onClick={() => {
+                onClose();
+                onOpenGamepadSettings();
+              }}
+              className="py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-retro-primary hover:text-retro-purple flex items-center gap-2 transition-all ml-auto"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              <span>🎮 Manettes (1-10)</span>
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
         <div className="p-6 md:p-8 overflow-y-auto flex-1 space-y-6">
           {activeTab === 'kiosk' && (
             <div className="space-y-5">
+              {/* Carte Manettes & Arcade Stick */}
+              {onOpenGamepadSettings && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-arcade-orange/15 to-retro-warm/50 border-2 border-arcade-orange/30 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-arcade-orange text-white shadow-md">
+                      <Gamepad2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wide text-retro-text font-arcade">
+                        GESTIONNAIRE MULTI-MANETTES & ARCADE STICKS
+                      </h4>
+                      <p className="text-[11px] text-retro-textMuted">
+                        Configuration de 1 à 10 joueurs, boutons arcade 6/8 boutons, Coin/Crédit et synchronisation émulateurs.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onOpenGamepadSettings();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-arcade-orange hover:bg-arcade-orange/90 text-white font-bold text-xs shadow-md transition-all font-arcade whitespace-nowrap"
+                  >
+                    CONFIGURER (1-10) 🎮
+                  </button>
+                </div>
+              )}
               {/* Option 1: Plein Écran Exclusif */}
               <div className="p-4 rounded-2xl bg-retro-bg border border-retro-border flex items-center justify-between">
                 <div className="flex items-center gap-3">

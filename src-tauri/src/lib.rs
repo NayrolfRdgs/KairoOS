@@ -80,6 +80,8 @@ pub fn run() {
             commands::launch_game,
             commands::get_launcher_status,
             commands::kill_running_game,
+            commands::get_gamepad_mappings,
+            commands::save_gamepad_mappings,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de KaïroOS");
