@@ -1,17 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import { GamepadActions } from '../types';
 
-export interface GamepadActions {
-  onNavigate?: (dir: 'up' | 'down' | 'left' | 'right') => void;
-  onConfirm?: () => void;
-  onBack?: () => void;
-  onToggleFavorite?: () => void;
-  onDetails?: () => void;
-  onPrevSystem?: () => void;
-  onNextSystem?: () => void;
-  onMenu?: () => void;
-}
-
-export function useGamepad(actions: GamepadActions, enabled: boolean = true, primaryPadIndex: number = 0) {
+export function useGamepad(
+  actions: GamepadActions,
+  enabled: boolean = true,
+  primaryPadIndex: number = 0
+) {
   const [connectedGamepadName, setConnectedGamepadName] = useState<string | null>(null);
   const actionsRef = useRef(actions);
   actionsRef.current = actions;
@@ -25,6 +19,10 @@ export function useGamepad(actions: GamepadActions, enabled: boolean = true, pri
   const prevButtonsRef = useRef<boolean[]>([]);
   const lastNavTimeRef = useRef<number>(0);
   const navRepeatDelay = 180;
+
+  // Détection du combo Kiosk Unlock (LB + RB + Start maintenu 3s)
+  const comboStartTimeRef = useRef<number | null>(null);
+  const comboTriggeredRef = useRef<boolean>(false);
 
   useEffect(() => {
     const handleGamepadConnected = (e: GamepadEvent) => {
@@ -41,52 +39,74 @@ export function useGamepad(actions: GamepadActions, enabled: boolean = true, pri
     let animationFrameId: number;
 
     const pollGamepad = () => {
-      const gamepads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) as Gamepad[] : [];
-      
+      const gamepads = navigator.getGamepads
+        ? (Array.from(navigator.getGamepads()).filter(Boolean) as Gamepad[])
+        : [];
+
       if (gamepads.length > 0) {
         const primary = gamepads[primaryIndexRef.current] || gamepads[0];
         setConnectedGamepadName(primary.id);
 
-        // Si désactivé (ex: modale ouverte ou en arrière-plan), ne rien déclencher
-        if (enabledRef.current && primary) {
+        if (primary) {
           const now = performance.now();
           const prev = prevButtonsRef.current;
           const currentButtons = primary.buttons.map((b) => b.pressed || b.value > 0.4);
 
-          const isJustPressed = (index: number) => currentButtons[index] && !prev[index];
+          // 1. Détection universelle du combo LB + RB + Start (Boutons 4, 5, 9)
+          const lbPressed = currentButtons[4] || false;
+          const rbPressed = currentButtons[5] || false;
+          const startPressed = currentButtons[9] || false;
 
-          if (isJustPressed(0)) actionsRef.current.onConfirm?.();
-          if (isJustPressed(1)) actionsRef.current.onBack?.();
-          if (isJustPressed(2)) actionsRef.current.onToggleFavorite?.();
-          if (isJustPressed(3)) actionsRef.current.onDetails?.();
-          if (isJustPressed(4)) actionsRef.current.onPrevSystem?.();
-          if (isJustPressed(5)) actionsRef.current.onNextSystem?.();
-          if (isJustPressed(9)) actionsRef.current.onMenu?.();
-
-          if (now - lastNavTimeRef.current > navRepeatDelay) {
-            const dpadUp = currentButtons[12] || primary.axes[1] < -0.5;
-            const dpadDown = currentButtons[13] || primary.axes[1] > 0.5;
-            const dpadLeft = currentButtons[14] || primary.axes[0] < -0.5;
-            const dpadRight = currentButtons[15] || primary.axes[0] > 0.5;
-
-            if (dpadUp) {
-              actionsRef.current.onNavigate?.('up');
-              lastNavTimeRef.current = now;
-            } else if (dpadDown) {
-              actionsRef.current.onNavigate?.('down');
-              lastNavTimeRef.current = now;
-            } else if (dpadLeft) {
-              actionsRef.current.onNavigate?.('left');
-              lastNavTimeRef.current = now;
-            } else if (dpadRight) {
-              actionsRef.current.onNavigate?.('right');
-              lastNavTimeRef.current = now;
+          if (lbPressed && rbPressed && startPressed) {
+            if (comboStartTimeRef.current === null) {
+              comboStartTimeRef.current = now;
+              comboTriggeredRef.current = false;
+            } else if (now - comboStartTimeRef.current >= 3000 && !comboTriggeredRef.current) {
+              comboTriggeredRef.current = true;
+              actionsRef.current.onKioskUnlockCombo?.();
             }
+          } else {
+            comboStartTimeRef.current = null;
+            comboTriggeredRef.current = false;
           }
 
-          prevButtonsRef.current = currentButtons;
-        } else {
-          prevButtonsRef.current = [];
+          // 2. Actions normales si activé
+          if (enabledRef.current) {
+            const isJustPressed = (index: number) => currentButtons[index] && !prev[index];
+
+            if (isJustPressed(0)) actionsRef.current.onConfirm?.();
+            if (isJustPressed(1)) actionsRef.current.onBack?.();
+            if (isJustPressed(2)) actionsRef.current.onToggleFavorite?.();
+            if (isJustPressed(3)) actionsRef.current.onDetails?.();
+            if (isJustPressed(4) && !rbPressed && !startPressed) actionsRef.current.onPrevSystem?.();
+            if (isJustPressed(5) && !lbPressed && !startPressed) actionsRef.current.onNextSystem?.();
+            if (isJustPressed(9) && !lbPressed && !rbPressed) actionsRef.current.onMenu?.();
+
+            if (now - lastNavTimeRef.current > navRepeatDelay) {
+              const dpadUp = currentButtons[12] || primary.axes[1] < -0.5;
+              const dpadDown = currentButtons[13] || primary.axes[1] > 0.5;
+              const dpadLeft = currentButtons[14] || primary.axes[0] < -0.5;
+              const dpadRight = currentButtons[15] || primary.axes[0] > 0.5;
+
+              if (dpadUp) {
+                actionsRef.current.onNavigate?.('up');
+                lastNavTimeRef.current = now;
+              } else if (dpadDown) {
+                actionsRef.current.onNavigate?.('down');
+                lastNavTimeRef.current = now;
+              } else if (dpadLeft) {
+                actionsRef.current.onNavigate?.('left');
+                lastNavTimeRef.current = now;
+              } else if (dpadRight) {
+                actionsRef.current.onNavigate?.('right');
+                lastNavTimeRef.current = now;
+              }
+            }
+
+            prevButtonsRef.current = currentButtons;
+          } else {
+            prevButtonsRef.current = [];
+          }
         }
       } else {
         setConnectedGamepadName(null);
@@ -99,9 +119,18 @@ export function useGamepad(actions: GamepadActions, enabled: boolean = true, pri
     animationFrameId = requestAnimationFrame(pollGamepad);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Si désactivé ou dans un input, bloquer les raccourcis globaux
+      // Raccourci clavier de déverrouillage Kiosk universel : Ctrl+Shift+K
+      if (e.ctrlKey && e.shiftKey && (e.key === 'K' || e.key === 'k')) {
+        e.preventDefault();
+        actionsRef.current.onKioskUnlockCombo?.();
+        return;
+      }
+
       if (!enabledRef.current) return;
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) {
         return;
       }
 

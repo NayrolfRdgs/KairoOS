@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, createWriteStream, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, createWriteStream, writeFileSync, unlinkSync, rmSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import https from 'https';
@@ -12,6 +12,9 @@ const emulatorsBaseDirs = [
   path.resolve('emulators'),
   path.resolve('dist-portable', 'emulators'),
 ];
+
+const tmpDir = path.resolve('.tmp');
+mkdirSync(tmpDir, { recursive: true });
 
 for (const base of emulatorsBaseDirs) {
   mkdirSync(path.join(base, 'RetroArch'), { recursive: true });
@@ -56,7 +59,7 @@ async function main() {
   // 1. Télécharger RetroArch Portable x64 (7z)
   console.log('📦 1/4 Téléchargement de RetroArch x64...');
   const retroArchUrl = 'https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z';
-  const tempArchive = path.resolve('RetroArch_temp.7z');
+  const tempArchive = path.join(tmpDir, 'RetroArch_temp.7z');
 
   try {
     await downloadFile(retroArchUrl, tempArchive);
@@ -72,7 +75,11 @@ async function main() {
     try {
       execSync(`powershell -Command "Invoke-WebRequest -Uri 'https://buildbot.libretro.com/stable/1.19.1/windows/x86_64/RetroArch.7z' -OutFile '${tempArchive}'; tar -xf '${tempArchive}' -C 'emulators/RetroArch' --strip-components=1"`, { stdio: 'inherit' });
     } catch (e) {
-      console.warn('⚠️ Échec extraction directe 7z, création du squelette RetroArch.');
+      console.warn('⚠️ Échec extraction directe 7z, squelette RetroArch conservé.');
+    }
+  } finally {
+    if (existsSync(tempArchive)) {
+      try { unlinkSync(tempArchive); } catch (_) {}
     }
   }
 
@@ -95,7 +102,7 @@ async function main() {
 
   for (const core of cores) {
     const coreZipUrl = `https://buildbot.libretro.com/nightly/windows/x86_64/latest/${core.name}.zip`;
-    const tempZip = path.resolve(`${core.name}.zip`);
+    const tempZip = path.join(tmpDir, `${core.name}.zip`);
 
     try {
       console.log(`  ⬇️ [${core.desc}] ${core.name}...`);
@@ -104,6 +111,10 @@ async function main() {
       console.log(`  ✅ ${core.name} installé !`);
     } catch (err) {
       console.warn(`  ⚠️ Impossible de télécharger ${core.name}: ${err.message}`);
+    } finally {
+      if (existsSync(tempZip)) {
+        try { unlinkSync(tempZip); } catch (_) {}
+      }
     }
   }
 
@@ -131,9 +142,15 @@ input_autodetect_enable = "true"
   writeFileSync(path.join('emulators', 'RetroArch', 'retroarch.cfg'), retroarchCfg, 'utf-8');
   writeFileSync(path.join('dist-portable', 'emulators', 'RetroArch', 'retroarch.cfg'), retroarchCfg, 'utf-8');
 
+  // Nettoyage final du dossier temporaire
+  try {
+    rmSync(tmpDir, { recursive: true, force: true });
+  } catch (_) {}
+
   console.log('\n====================================================');
   console.log('🎉 TOUS LES ÉMULATEURS ET CŒURS SONT PRÊTS & CONFIGURÉS !');
   console.log('====================================================\n');
 }
 
 main().catch(console.error);
+

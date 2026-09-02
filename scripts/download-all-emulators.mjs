@@ -75,6 +75,9 @@ function downloadFile(url, destPath) {
 }
 
 async function main() {
+  const tmpDir = path.resolve('.tmp');
+  mkdirSync(tmpDir, { recursive: true });
+
   // 1. RetroArch (Déjà fait ou màj)
   console.log('📦 1/4 Vérification / Installation de RetroArch x64 & 9 cœurs...');
   try {
@@ -94,7 +97,7 @@ async function main() {
     );
     if (asset) {
       console.log(`  ⬇️ Téléchargement ${asset.name} (${(asset.size / (1024 * 1024)).toFixed(1)} Mo)...`);
-      const tempArchive = path.resolve(`pcsx2_temp${path.extname(asset.name)}`);
+      const tempArchive = path.join(tmpDir, `pcsx2_temp${path.extname(asset.name)}`);
       await downloadFile(asset.browser_download_url, tempArchive);
       console.log('  📂 Extraction de PCSX2...');
       execSync(`powershell -Command "tar -xf '${tempArchive}' -C '${pcsx2TargetDir}'"`, { stdio: 'ignore' });
@@ -111,7 +114,7 @@ async function main() {
 
   try {
     const dolphinUrl = 'https://dl.dolphin-emu.org/releases/2407/dolphin-2407-x64.7z';
-    const tempArchive = path.resolve('dolphin_temp.7z');
+    const tempArchive = path.join(tmpDir, 'dolphin_temp.7z');
     console.log('  ⬇️ Téléchargement Dolphin 2407...');
     await downloadFile(dolphinUrl, tempArchive);
     console.log('  📂 Extraction de Dolphin...');
@@ -125,6 +128,7 @@ async function main() {
   // 4. Nettoyage des archives temporaires
   try {
     execSync('powershell -Command "Remove-Item -Path *temp* -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+    execSync(`powershell -Command "Remove-Item -Path '${tmpDir}' -Recurse -Force -ErrorAction SilentlyContinue"`, { stdio: 'ignore' });
   } catch (_) {}
 
   // 5. Mise à jour de config/emulators.json

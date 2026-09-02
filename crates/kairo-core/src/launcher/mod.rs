@@ -26,6 +26,7 @@ pub enum LauncherError {
     ArgFormat(String),
 }
 
+#[derive(Clone)]
 pub struct Launcher {
     db: Database,
     status: Arc<RwLock<LaunchStatus>>,

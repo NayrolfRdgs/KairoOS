@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:remote": "npm --prefix kairo-remote run build",
     "build:portable": "node scripts/build-portable.mjs",
     "build:installer": "tauri build",
     "preview": "vite preview",

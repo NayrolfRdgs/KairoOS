@@ -1,14 +1,16 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, RwLock};
 use kairo_core::{
     AppSettings, Database, Emulator, Game, GameConfig, Launcher, LaunchStatus,
-    LocalGameMetadata, RomScanner, ScanStats, System,
+    LocalGameMetadata, RemoteConfig, RomScanner, ScanStats, System,
 };
 use tauri::{State, Window};
 
 pub struct AppState {
     pub db: Database,
     pub launcher: Launcher,
+    pub app_mode: Arc<RwLock<String>>,
 }
 
 #[tauri::command]
@@ -234,4 +236,50 @@ pub fn save_gamepad_mappings(
 ) -> Result<(), String> {
     state.db.save_gamepad_mappings(&mappings).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub fn get_app_mode(state: State<'_, AppState>) -> String {
+    state.app_mode.read().map(|m| m.clone()).unwrap_or_else(|_| "admin".to_string())
+}
+
+#[tauri::command]
+pub fn set_app_mode(
+    mode: String,
+    pin: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<String, String> {
+    let remote_cfg = RemoteConfig::load();
+    let current_mode = state.app_mode.read().map(|m| m.clone()).unwrap_or_else(|_| "admin".to_string());
+
+    if current_mode == "kiosk" && mode == "admin" {
+        // Validation du PIN pour passer de Kiosk à Admin
+        let provided = pin.unwrap_or_default();
+        if provided.trim() != remote_cfg.pin.trim() {
+            return Err("Code PIN incorrect".into());
+        }
+    }
+
+    if let Ok(mut mode_guard) = state.app_mode.write() {
+        *mode_guard = mode.clone();
+    }
+
+    // Persister dans les paramètres
+    if let Ok(mut settings) = state.db.get_app_settings() {
+        settings.kiosk_mode = mode == "kiosk";
+        let _ = state.db.save_app_settings(&settings);
+    }
+
+    Ok(mode)
+}
+
+#[tauri::command]
+pub fn get_remote_config() -> RemoteConfig {
+    RemoteConfig::load()
+}
+
+#[tauri::command]
+pub fn save_remote_config(config: RemoteConfig) -> Result<(), String> {
+    RemoteConfig::save(&config).map_err(|e| e.to_string())
+}
+
 

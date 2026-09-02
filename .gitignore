@@ -7,6 +7,7 @@ Cargo.lock
 node_modules/
 dist/
 dist-ssr/
+dist-portable/
 *.local
 
 # Tauri
@@ -21,6 +22,16 @@ src-tauri/target/
 roms/
 media/
 bios/
+kairo_data/
+
+# Temporary Archives & Downloads
+*.zip
+*.7z
+*.tar.gz
+*.rar
+*.tmp
+*_temp*
+.tmp/
 
 # IDE & OS
 .vscode/
@@ -37,3 +48,4 @@ logs/
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
+

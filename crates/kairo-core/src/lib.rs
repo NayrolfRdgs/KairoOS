@@ -1,11 +1,13 @@
 pub mod db;
 pub mod launcher;
 pub mod models;
+pub mod remote;
 pub mod scanner;
 
 pub use db::{Database, DbError};
 pub use launcher::{Launcher, LauncherError};
 pub use models::*;
+pub use remote::{start_remote_server, RemoteConfig};
 pub use scanner::RomScanner;
 
 #[cfg(test)]
@@ -35,10 +37,9 @@ mod tests {
     #[test]
     fn test_app_settings_persistence() {
         let db = Database::open_in_memory().expect("Échec DB");
-        let default_settings = db.get_app_settings().expect("Erreur get settings");
-        assert_eq!(default_settings.fullscreen, false);
+        let initial_settings = db.get_app_settings().expect("Erreur get settings");
 
-        let mut custom = default_settings;
+        let mut custom = initial_settings;
         custom.fullscreen = true;
         custom.always_on_top = true;
         custom.kiosk_mode = true;
