@@ -1,0 +1,35 @@
+================================================================================
+                    GUIDE DU DOSSIER EMULATEURS
+================================================================================
+
+Ce dossier est prévu pour accueillir vos émulateurs en version portable.
+
+--------------------------------------------------------------------------------
+ÉMULATEURS RECOMMANDÉS & STRUCTURE PORTABLE :
+--------------------------------------------------------------------------------
+1. RetroArch (Multi-Systèmes : SNES, PS1, N64, GBA, Mega Drive, Arcade) :
+   - Placez le dossier RetroArch dans : emulators/RetroArch/
+   - Exécutable : emulators/RetroArch/retroarch.exe
+
+2. PCSX2 (PlayStation 2) :
+   - Placez l'émulateur dans : emulators/PCSX2/
+   - Exécutable : emulators/PCSX2/pcsx2-qt.exe
+
+3. Ryujinx / Ryubing (Nintendo Switch) :
+   - Placez l'émulateur dans : emulators/Ryujinx/
+   - Exécutable : emulators/Ryujinx/Ryujinx.exe
+
+4. Dolphin (GameCube & Wii) :
+   - Placez l'émulateur dans : emulators/Dolphin/
+   - Exécutable : emulators/Dolphin/Dolphin.exe
+
+5. RPCS3 (PlayStation 3) :
+   - Placez l'émulateur dans : emulators/RPCS3/
+   - Exécutable : emulators/RPCS3/rpcs3.exe
+
+--------------------------------------------------------------------------------
+CONFIGURATION PERSONNALISÉE :
+--------------------------------------------------------------------------------
+Dans l'interface KaïroOS, vous pouvez à tout moment modifier le chemin de
+n'importe quel émulateur ou définir des arguments CLI personnalisés directement
+depuis la fiche de chaque jeu.

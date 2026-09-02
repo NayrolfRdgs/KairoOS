@@ -1,0 +1,55 @@
+================================================================================
+                    KAÏROOS — STATION D'ARCADE PORTABLE SOUS WINDOWS
+================================================================================
+
+Bienvenue dans votre version portable autonome de KaïroOS !
+Cette version est 100% autonome et ne nécessite aucune installation.
+Vous pouvez copier l'intégralité de ce dossier sur une CLÉ USB, un DISQUE DUR
+EXTERNE ou n'importe quel dossier de votre PC et y jouer directement.
+
+--------------------------------------------------------------------------------
+1. COMMENT LANCER LE LOGICIEL ?
+--------------------------------------------------------------------------------
+Double-cliquez simplement sur :
+👉  KaïroOS.exe
+
+L'interface se lancera instantanément en mode plein écran ou fenêtré.
+
+--------------------------------------------------------------------------------
+2. CONTRÔLES & NAVIGATION (MANETTE / CLAVIER / SOURIS)
+--------------------------------------------------------------------------------
+KaïroOS est pensé pour être navigable aussi bien au Joystick / Manette qu'au
+Clavier et à la Souris :
+
+🎮 MANETTE (XBOX / PLAYSTATION / JOYSTICK ARCADE) :
+  - Croix / Stick : Déplacer la sélection
+  - Bouton A / Croix : Lancer le jeu sélectionné / Confirmer
+  - Bouton B / Rond : Retour / Fermer la fenêtre
+  - Bouton Y / Triangle : Ajouter ou retirer des Favoris (⭐)
+  - Bouton X / Carré : Ouvrir la fiche détaillée du jeu
+  - Bouton Menu (Start) : Ouvrir les Paramètres & Options de la borne
+
+⌨️ CLAVIER :
+  - Flèches ou Z / Q / S / D : Naviguer
+  - Entrée : Lancer le jeu
+  - Échap : Fermer les fenêtres / modales
+  - F11 : Basculer entre Plein Écran et Mode Fenêtré
+  - Ctrl+F : Rechercher un jeu par mot-clé
+
+🖱️ SOURIS :
+  - Clic simple : Sélectionner un jeu et voir sa fiche
+  - Double-clic : Lancer le jeu immédiatement
+  - Clic sur l'étoile : Basculer en Favori
+
+--------------------------------------------------------------------------------
+3. ORGANISATION DES DOSSIERS (CE QUE VOUS POUVEZ MODIFIER)
+--------------------------------------------------------------------------------
+📁 roms/        -> Déposez ici tous vos jeux (par console ou par franchise).
+📁 emulators/   -> Déposez ici vos émulateurs (RetroArch, PCSX2, Ryujinx...).
+📁 media/       -> Jaquettes, captures et logos personnalisés.
+📁 kairo_data/  -> Base de données interne, favoris, temps de jeux et réglages.
+
+Chaque sous-dossier contient un fichier "LISEZ-MOI.txt" avec des instructions
+détaillées.
+
+Bon jeu sur KaïroOS !
