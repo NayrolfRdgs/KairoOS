@@ -13,14 +13,33 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            let app_data_dir = app
-                .path()
-                .app_data_dir()
-                .unwrap_or_else(|_| PathBuf::from("./kairo_data"));
+            // Détection du mode Portable : si ./kairo_data ou ./roms existe à côté de l'exécutable
+            let exe_dir = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("."));
 
-            if !app_data_dir.exists() {
-                let _ = fs::create_dir_all(&app_data_dir);
-            }
+            let is_portable = exe_dir.join("roms").exists()
+                || exe_dir.join("kairo_data").exists()
+                || PathBuf::from("./roms").exists()
+                || PathBuf::from("./kairo_data").exists();
+
+            let app_data_dir = if is_portable {
+                let p_dir = if exe_dir.join("kairo_data").exists() || exe_dir.join("roms").exists() {
+                    exe_dir.join("kairo_data")
+                } else {
+                    PathBuf::from("./kairo_data")
+                };
+                let _ = fs::create_dir_all(&p_dir);
+                p_dir
+            } else {
+                let default_dir = app
+                    .path()
+                    .app_data_dir()
+                    .unwrap_or_else(|_| PathBuf::from("./kairo_data"));
+                let _ = fs::create_dir_all(&default_dir);
+                default_dir
+            };
 
             let db_path = app_data_dir.join("kairo.db");
             let db = Database::open(&db_path).expect("Impossible d'initialiser la base SQLite KaïroOS");
