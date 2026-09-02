@@ -1,0 +1,39 @@
+# Rust & Cargo
+/target
+**/target
+Cargo.lock
+
+# Node & Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Tauri
+src-tauri/target/
+
+# SQLite & Data
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+roms/
+media/
+bios/
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*

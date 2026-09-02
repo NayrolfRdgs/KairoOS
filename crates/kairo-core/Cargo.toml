@@ -1,0 +1,22 @@
+[package]
+name = "kairo-core"
+version = "0.1.0"
+authors = ["Flow (Florian) — FlowCreativeStudio <https://github.com/NayrolfRdgs>"]
+edition = "2021"
+description = "Core engine for KaïroOS arcade frontend: ROM scanner, SQLite database, CLI emulator launcher"
+license = "MIT"
+
+[dependencies]
+rusqlite = { version = "0.31", features = ["bundled", "chrono", "uuid"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.10", features = ["v4", "serde"] }
+walkdir = "2.5"
+sha1 = "0.10"
+md-5 = "0.10"
+thiserror = "1.0"
+tracing = "0.1"
+
+[dev-dependencies]
+tempfile = "3.10"
