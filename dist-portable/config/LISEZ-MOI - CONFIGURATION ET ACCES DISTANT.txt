@@ -1,0 +1,25 @@
+================================================================================
+                    GUIDE DES FICHIERS DE CONFIGURATION (CONFIG/)
+================================================================================
+
+Ce dossier contient tous les réglages de KaïroOS au format JSON standard.
+Vous pouvez les modifier directement au bloc-notes ou via vos propres scripts !
+
+--------------------------------------------------------------------------------
+FICHIERS DISPONIBLES :
+--------------------------------------------------------------------------------
+1. settings.json :
+   - "fullscreen" : true/false (démarrage en plein écran)
+   - "always_on_top" : true/false (mode borne toujours au premier plan)
+   - "kiosk_mode" : true/false (verrouillage interface)
+   - "roms_path" : "./roms" (chemin relatif de vos jeux)
+   - "enabled_franchises" : liste des sagas activées dans la barre latérale
+
+2. emulators.json :
+   - Liste de vos émulateurs, chemins des .exe et modèles de lignes de commande CLI.
+
+3. remote.json :
+   - Réglages du serveur d'accès distant (PWA mobile, port 8080, code PIN).
+
+Toutes les modifications faites dans l'interface de KaïroOS sont automatiquement
+synchronisées dans ces fichiers, et inversement !

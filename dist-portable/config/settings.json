@@ -1,0 +1,16 @@
+{
+  "fullscreen": false,
+  "always_on_top": false,
+  "kiosk_mode": false,
+  "roms_path": "./roms",
+  "theme": "retro-80s-light",
+  "enabled_franchises": [
+    "mario",
+    "zelda",
+    "pokemon",
+    "sonic",
+    "versus",
+    "rpg"
+  ],
+  "custom_franchises": []
+}

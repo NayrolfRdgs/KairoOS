@@ -6,14 +6,16 @@ interface ScannerModalProps {
   onClose: () => void;
   onScan: (path: string, calculateHashes: boolean) => Promise<ScanStats>;
   onScanComplete: () => void;
+  defaultPath?: string;
 }
 
 export const ScannerModal: React.FC<ScannerModalProps> = ({
   onClose,
   onScan,
   onScanComplete,
+  defaultPath = './roms',
 }) => {
-  const [folderPath, setFolderPath] = useState<string>('D:\\Roms');
+  const [folderPath, setFolderPath] = useState<string>(defaultPath);
   const [calculateHashes, setCalculateHashes] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [stats, setStats] = useState<ScanStats | null>(null);

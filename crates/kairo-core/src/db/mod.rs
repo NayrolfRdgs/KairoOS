@@ -442,6 +442,18 @@ impl Database {
     }
 
     pub fn get_app_settings(&self) -> std::result::Result<AppSettings, DbError> {
+        // 1. Essayer de lire depuis config/settings.json
+        for path in &[Path::new("config/settings.json"), Path::new("../config/settings.json")] {
+            if path.exists() {
+                if let Ok(content) = std::fs::read_to_string(path) {
+                    if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
+                        return Ok(settings);
+                    }
+                }
+            }
+        }
+
+        // 2. Fallback SQLite
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare("SELECT value FROM app_settings WHERE key = 'general'")?;
         let mut rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
@@ -456,6 +468,7 @@ impl Database {
     }
 
     pub fn save_app_settings(&self, settings: &AppSettings) -> std::result::Result<(), DbError> {
+        // 1. Sauvegarder en SQLite
         let conn = self.conn.lock().unwrap();
         let json_str = serde_json::to_string(settings)?;
         conn.execute(
@@ -463,6 +476,17 @@ impl Database {
              ON CONFLICT(key) DO UPDATE SET value = excluded.value;",
             params![json_str],
         )?;
+        drop(conn);
+
+        // 2. Écrire le fichier config/settings.json formaté en clair
+        let config_dir = Path::new("config");
+        if !config_dir.exists() {
+            let _ = std::fs::create_dir_all(config_dir);
+        }
+        if let Ok(pretty_json) = serde_json::to_string_pretty(settings) {
+            let _ = std::fs::write(config_dir.join("settings.json"), pretty_json);
+        }
+
         Ok(())
     }
 

@@ -632,6 +632,7 @@ export const App: React.FC = () => {
           onClose={() => setScannerOpen(false)}
           onScan={handleScanDirectory}
           onScanComplete={loadData}
+          defaultPath={settings.roms_path || './roms'}
         />
       )}
 

@@ -125,8 +125,34 @@ impl Default for AppSettings {
                 "rpg".into(),
             ],
             custom_franchises: Vec::new(),
-            roms_path: None,
+            roms_path: Some("./roms".into()),
             theme: "retro-80s-light".into(),
+        }
+    }
+}
+
+/// Configuration pour le serveur d'accès distant (PWA / Mobile / WebSocket)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct RemoteSettings {
+    pub enabled: bool,
+    pub port: u16,
+    pub bind_address: String,
+    pub require_pin: bool,
+    pub pin_code: String,
+    pub allow_game_install: bool,
+    pub allow_remote_control: bool,
+}
+
+impl Default for RemoteSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            port: 8080,
+            bind_address: "0.0.0.0".into(),
+            require_pin: true,
+            pin_code: "1980".into(),
+            allow_game_install: true,
+            allow_remote_control: true,
         }
     }
 }

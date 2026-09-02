@@ -30,6 +30,5 @@ Ce dossier est prévu pour accueillir vos émulateurs en version portable.
 --------------------------------------------------------------------------------
 CONFIGURATION PERSONNALISÉE :
 --------------------------------------------------------------------------------
-Dans l'interface KaïroOS, vous pouvez à tout moment modifier le chemin de
-n'importe quel émulateur ou définir des arguments CLI personnalisés directement
-depuis la fiche de chaque jeu.
+Tous les chemins et options de lignes de commande sont personnalisables dans le
+fichier : config/emulators.json

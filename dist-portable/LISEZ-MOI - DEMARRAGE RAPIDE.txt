@@ -44,10 +44,11 @@ Clavier et à la Souris :
 --------------------------------------------------------------------------------
 3. ORGANISATION DES DOSSIERS (CE QUE VOUS POUVEZ MODIFIER)
 --------------------------------------------------------------------------------
+📁 config/      -> Fichiers JSON de réglages (settings.json, emulators.json, remote.json).
 📁 roms/        -> Déposez ici tous vos jeux (par console ou par franchise).
 📁 emulators/   -> Déposez ici vos émulateurs (RetroArch, PCSX2, Ryujinx...).
 📁 media/       -> Jaquettes, captures et logos personnalisés.
-📁 kairo_data/  -> Base de données interne, favoris, temps de jeux et réglages.
+📁 kairo_data/  -> Base de données SQLite locale et sauvegardes de session.
 
 Chaque sous-dossier contient un fichier "LISEZ-MOI.txt" avec des instructions
 détaillées.

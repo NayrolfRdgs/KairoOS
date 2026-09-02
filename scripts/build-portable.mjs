@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, copyFileSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, copyFileSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 
@@ -8,19 +8,10 @@ console.log('====================================================\n');
 
 const portableDir = path.resolve('dist-portable');
 
-// 1. Nettoyage sécurisé sans crash EBUSY
-if (existsSync(portableDir)) {
-  try {
-    // Si Windows Explorer est ouvert, on ne supprime pas le dossier racine mais son contenu
-    console.log('🧹 Préparation du dossier dist-portable/ ...');
-  } catch (err) {
-    console.warn('⚠️ Nettoyage partiel:', err.message);
-  }
-}
-
-// 2. Création de l'arborescence des dossiers
+// 1. Création de l'arborescence complète des dossiers
 const dirsToCreate = [
   portableDir,
+  path.join(portableDir, 'config'),
   path.join(portableDir, 'roms'),
   path.join(portableDir, 'roms', 'snes'),
   path.join(portableDir, 'roms', 'ps1'),
@@ -47,11 +38,15 @@ for (const dir of dirsToCreate) {
   }
 }
 
-// 3. Build & Packaging Tauri Standalone (Frontend React intégré dans le binaire)
+// 2. Build & Packaging Tauri Standalone (Frontend React intégré dans le binaire)
 console.log('🦀 Build du binaire autonome complet avec assets intégrés (Tauri)...');
 execSync('npx tauri build --no-bundle', { stdio: 'inherit' });
 
-// 4. Copie de l'exécutable autonome
+// 3. Fermeture des processus résiduels et copie de l'exécutable autonome
+try {
+  execSync('powershell -Command "Stop-Process -Name kairo-app, KaïroOS, Ka*roOS -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+} catch (_) {}
+
 const releaseExe = path.resolve(
   process.env.CARGO_TARGET_DIR || 'C:/Users/propo/.kairo_target',
   'release',
@@ -67,7 +62,122 @@ if (existsSync(releaseExe)) {
   process.exit(1);
 }
 
-// 6. Génération des fichiers explicatifs complets
+// 4. Génération des fichiers de configuration JSON ouverts et modifiables
+
+// A. config/settings.json
+const defaultSettings = {
+  fullscreen: false,
+  always_on_top: false,
+  kiosk_mode: false,
+  roms_path: "./roms",
+  theme: "retro-80s-light",
+  enabled_franchises: [
+    "mario",
+    "zelda",
+    "pokemon",
+    "sonic",
+    "versus",
+    "rpg"
+  ],
+  custom_franchises: []
+};
+writeFileSync(path.join(portableDir, 'config', 'settings.json'), JSON.stringify(defaultSettings, null, 2), 'utf-8');
+
+// B. config/emulators.json
+const defaultEmulators = [
+  {
+    id: "retroarch",
+    name: "RetroArch",
+    exe_path: "./emulators/RetroArch/retroarch.exe",
+    default_args: "-L \"{core_path}\" \"{rom_path}\"",
+    is_builtin: true,
+    website_url: "https://www.retroarch.com/"
+  },
+  {
+    id: "ryujinx",
+    name: "Ryujinx (Nintendo Switch)",
+    exe_path: "./emulators/Ryujinx/Ryujinx.exe",
+    default_args: "-f -g \"{rom_path}\"",
+    is_builtin: true,
+    website_url: "https://ryujinx.org/"
+  },
+  {
+    id: "pcsx2",
+    name: "PCSX2 (PlayStation 2)",
+    exe_path: "./emulators/PCSX2/pcsx2-qt.exe",
+    default_args: "--nogui -batch \"{rom_path}\"",
+    is_builtin: true,
+    website_url: "https://pcsx2.net/"
+  },
+  {
+    id: "dolphin",
+    name: "Dolphin (GameCube / Wii)",
+    exe_path: "./emulators/Dolphin/Dolphin.exe",
+    default_args: "-b -e \"{rom_path}\"",
+    is_builtin: true,
+    website_url: "https://dolphin-emu.org/"
+  },
+  {
+    id: "rpcs3",
+    name: "RPCS3 (PlayStation 3)",
+    exe_path: "./emulators/RPCS3/rpcs3.exe",
+    default_args: "--no-gui \"{rom_path}\"",
+    is_builtin: true,
+    website_url: "https://rpcs3.net/"
+  },
+  {
+    id: "native",
+    name: "Windows Native Process",
+    exe_path: null,
+    default_args: "\"{rom_path}\"",
+    is_builtin: true
+  }
+];
+writeFileSync(path.join(portableDir, 'config', 'emulators.json'), JSON.stringify(defaultEmulators, null, 2), 'utf-8');
+
+// C. config/remote.json (Accès Distant / Mobile PWA)
+const defaultRemote = {
+  enabled: false,
+  port: 8080,
+  bind_address: "0.0.0.0",
+  require_pin: true,
+  pin_code: "1980",
+  allow_game_install: true,
+  allow_remote_control: true,
+  websocket_sync: true
+};
+writeFileSync(path.join(portableDir, 'config', 'remote.json'), JSON.stringify(defaultRemote, null, 2), 'utf-8');
+
+// D. config/LISEZ-MOI - CONFIGURATION.txt
+const configReadme = `================================================================================
+                    GUIDE DES FICHIERS DE CONFIGURATION (CONFIG/)
+================================================================================
+
+Ce dossier contient tous les réglages de KaïroOS au format JSON standard.
+Vous pouvez les modifier directement au bloc-notes ou via vos propres scripts !
+
+--------------------------------------------------------------------------------
+FICHIERS DISPONIBLES :
+--------------------------------------------------------------------------------
+1. settings.json :
+   - "fullscreen" : true/false (démarrage en plein écran)
+   - "always_on_top" : true/false (mode borne toujours au premier plan)
+   - "kiosk_mode" : true/false (verrouillage interface)
+   - "roms_path" : "./roms" (chemin relatif de vos jeux)
+   - "enabled_franchises" : liste des sagas activées dans la barre latérale
+
+2. emulators.json :
+   - Liste de vos émulateurs, chemins des .exe et modèles de lignes de commande CLI.
+
+3. remote.json :
+   - Réglages du serveur d'accès distant (PWA mobile, port 8080, code PIN).
+
+Toutes les modifications faites dans l'interface de KaïroOS sont automatiquement
+synchronisées dans ces fichiers, et inversement !
+`;
+writeFileSync(path.join(portableDir, 'config', 'LISEZ-MOI - CONFIGURATION ET ACCES DISTANT.txt'), configReadme, 'utf-8');
+
+// 5. Génération des fichiers explicatifs complets
 
 // A. Guide Principal (Racine)
 const rootReadme = `================================================================================
@@ -116,10 +226,11 @@ Clavier et à la Souris :
 --------------------------------------------------------------------------------
 3. ORGANISATION DES DOSSIERS (CE QUE VOUS POUVEZ MODIFIER)
 --------------------------------------------------------------------------------
+📁 config/      -> Fichiers JSON de réglages (settings.json, emulators.json, remote.json).
 📁 roms/        -> Déposez ici tous vos jeux (par console ou par franchise).
 📁 emulators/   -> Déposez ici vos émulateurs (RetroArch, PCSX2, Ryujinx...).
 📁 media/       -> Jaquettes, captures et logos personnalisés.
-📁 kairo_data/  -> Base de données interne, favoris, temps de jeux et réglages.
+📁 kairo_data/  -> Base de données SQLite locale et sauvegardes de session.
 
 Chaque sous-dossier contient un fichier "LISEZ-MOI.txt" avec des instructions
 détaillées.
@@ -134,6 +245,7 @@ const romsReadme = `============================================================
 ================================================================================
 
 Ce dossier est l'endroit où vous devez déposer vos fichiers de jeux (ROMs).
+Le chemin par défaut utilisé par KaïroOS est : ./roms
 
 --------------------------------------------------------------------------------
 1. ORGANISATION PAR CONSOLE (MÉTHODE CLASSIQUE)
@@ -152,10 +264,22 @@ Vous pouvez classer vos jeux dans les sous-dossiers correspondant à chaque syst
   • roms/windows/     -> Jeux PC natifs (.exe, .lnk, .url)
 
 --------------------------------------------------------------------------------
-2. ORGANISATION PAR DOSSIER DE FRANCHISE (MULTI-CONSOLES)
+2. ORGANISATION PAR SOUS-DOSSIER DÉDIÉ PAR JEU
+--------------------------------------------------------------------------------
+Pour une organisation professionnelle complète, vous pouvez créer un sous-dossier
+dédié par jeu contenant tous ses éléments :
+
+📁 roms/snes/Super Mario World/
+   ├── Super Mario World.sfc    (Fichier ROM)
+   ├── metadata.json            (Fiche détaillée : titre, date, note, synopsis)
+   ├── config.json              (Réglages spécifiques d'émulation et shader)
+   └── cover.png                (Jaquette frontale du jeu)
+
+--------------------------------------------------------------------------------
+3. ORGANISATION PAR DOSSIER DE FRANCHISE (MULTI-CONSOLES)
 --------------------------------------------------------------------------------
 KaïroOS vous permet de regrouper des jeux de consoles DIFFÉRENTES dans un même
-dossier portant le nom d'une saga ! Par exemple :
+dossier portant le nom d'une saga :
 
 📁 roms/Super Mario/
    ├── Super Mario World.sfc          (Jeu Super Nintendo)
@@ -164,18 +288,7 @@ dossier portant le nom d'une saga ! Par exemple :
    └── Super Mario Odyssey.nsp        (Jeu Nintendo Switch)
 
 Le scanner de KaïroOS détecte automatiquement la console associée à chaque jeu
-grâce à son extension (.sfc -> SNES, .z64 -> N64, .nsp -> Switch).
-
---------------------------------------------------------------------------------
-3. MÉTADONNÉES LOCALES & JAQUETTES ADJACENTES
---------------------------------------------------------------------------------
-Pour que votre bibliothèque soit 100% portable et ne dépende d'aucune connexion,
-vous pouvez placer à côté de votre ROM :
-  1. Un fichier image : "NomDuJeu.png" ou "NomDuJeu.jpg" (sera affiché comme jaquette).
-  2. Un fichier JSON : "NomDuJeu.json" contenant les informations du jeu.
-
-Consultez le fichier "exemple_metadata_jeu.json" situé dans ce dossier pour voir
-tous les champs personnalisables (titre, date, développeur, note, histoire...).
+grâce à son extension.
 `;
 writeFileSync(path.join(portableDir, 'roms', 'LISEZ-MOI - ROMS ET FRANCHISES.txt'), romsReadme, 'utf-8');
 
@@ -191,7 +304,7 @@ const exampleJson = {
   players: 2,
   rating: 4.9,
   synopsis: "Mario, Luigi et Yoshi explorent Dinosaur Land pour délivrer la princesse Peach des griffes de Bowser et de ses Koopalings.",
-  cover_file: "Super Mario World.png"
+  cover_file: "cover.png"
 };
 writeFileSync(path.join(portableDir, 'roms', 'exemple_metadata_jeu.json'), JSON.stringify(exampleJson, null, 2), 'utf-8');
 
@@ -228,9 +341,8 @@ Ce dossier est prévu pour accueillir vos émulateurs en version portable.
 --------------------------------------------------------------------------------
 CONFIGURATION PERSONNALISÉE :
 --------------------------------------------------------------------------------
-Dans l'interface KaïroOS, vous pouvez à tout moment modifier le chemin de
-n'importe quel émulateur ou définir des arguments CLI personnalisés directement
-depuis la fiche de chaque jeu.
+Tous les chemins et options de lignes de commande sont personnalisables dans le
+fichier : config/emulators.json
 `;
 writeFileSync(path.join(portableDir, 'emulators', 'LISEZ-MOI - EMULATEURS.txt'), emuReadme, 'utf-8');
 
@@ -246,12 +358,8 @@ RÈGLES DE NOMMAGE & FORMATS SUPPORTÉS :
 --------------------------------------------------------------------------------
 • Formats acceptés : .PNG, .JPG, .JPEG, .WEBP
 • Ratio recommandé pour les jaquettes : 3:4 (ex: 600 x 800 px ou 900 x 1200 px)
-• Nommage : Donnez exactement le même nom à l'image qu'à votre fichier de ROM.
-
-Exemple :
-  - ROM : roms/snes/Super Mario World.sfc
-  - Jaquette : roms/snes/Super Mario World.png
-    (ou placée dans media/covers/Super Mario World.png)
+• Nommage : Donnez exactement le même nom à l'image qu'à votre fichier de ROM
+  (ou nommez-la "cover.png" dans le sous-dossier dédié du jeu).
 `;
 writeFileSync(path.join(portableDir, 'media', 'LISEZ-MOI - JAQUETTES ET MEDIAS.txt'), mediaReadme, 'utf-8');
 
@@ -278,5 +386,6 @@ console.log('\n====================================================');
 console.log('🎉 PACKAGE KAÏROOS PORTABLE GÉNÉRÉ AVEC SUCCÈS !');
 console.log('📁 Emplacement : dist-portable/');
 console.log('🎮 Exécutable  : dist-portable/KaïroOS.exe');
+console.log('⚙️ Fichiers JSON configurables : dist-portable/config/');
 console.log('📝 Guides inclus dans chaque sous-dossier.');
 console.log('====================================================\n');

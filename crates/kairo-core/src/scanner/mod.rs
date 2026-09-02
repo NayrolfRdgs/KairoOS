@@ -6,7 +6,7 @@ use sha1::{Digest, Sha1};
 use walkdir::WalkDir;
 
 use crate::db::{Database, DbError};
-use crate::models::{Game, LocalGameMetadata, ScanStats, System};
+use crate::models::{Game, GameConfig, LocalGameMetadata, ScanStats, System};
 
 pub struct RomScanner {
     db: Database,
@@ -82,10 +82,10 @@ impl RomScanner {
                 let file_path_str = path.to_string_lossy().to_string();
                 let file_size = entry.metadata().map(|m| m.len()).unwrap_or(0);
                 
-                // 1. Lire les métadonnées locales adjacentes (.json) si présentes
+                // 1. Lire les métadonnées locales adjacentes (.json / metadata.json / kairo.json)
                 let local_meta = Self::read_adjacent_metadata(path);
 
-                // 2. Détecter l'image jaquette locale adjacente (.png/.jpg)
+                // 2. Détecter l'image jaquette locale adjacente (.png/.jpg / cover.png)
                 let local_cover = Self::find_adjacent_cover(path);
 
                 let raw_title = Path::new(file_name)
@@ -276,13 +276,15 @@ impl RomScanner {
             }
         }
 
-        // Test 2: kairo.json dans le même sous-dossier
+        // Test 2: metadata.json ou kairo.json dans le même sous-dossier
         if let Some(parent) = rom_path.parent() {
-            let folder_kairo = parent.join("kairo.json");
-            if folder_kairo.exists() {
-                if let Ok(content) = fs::read_to_string(&folder_kairo) {
-                    if let Ok(meta) = serde_json::from_str::<LocalGameMetadata>(&content) {
-                        return Some(meta);
+            for filename in &["metadata.json", "kairo.json", "info.json"] {
+                let folder_meta = parent.join(filename);
+                if folder_meta.exists() {
+                    if let Ok(content) = fs::read_to_string(&folder_meta) {
+                        if let Ok(meta) = serde_json::from_str::<LocalGameMetadata>(&content) {
+                            return Some(meta);
+                        }
                     }
                 }
             }
@@ -304,9 +306,11 @@ impl RomScanner {
 
         if let Some(parent) = rom_path.parent() {
             for ext in &extensions {
-                let cover_in_folder = parent.join(format!("cover.{}", ext));
-                if cover_in_folder.exists() {
-                    return Some(cover_in_folder.to_string_lossy().to_string());
+                for base in &["cover", "folder", "front", "boxart"] {
+                    let cover_in_folder = parent.join(format!("{}.{}", base, ext));
+                    if cover_in_folder.exists() {
+                        return Some(cover_in_folder.to_string_lossy().to_string());
+                    }
                 }
             }
         }
@@ -347,7 +351,7 @@ impl RomScanner {
         None
     }
 
-    /// Organise et déplace une ROM dans un dossier de franchise avec son JSON et sa jaquette
+    /// Organise et déplace une ROM dans un sous-dossier structuré avec son JSON de métadonnées et sa config
     pub fn organize_game_into_franchise(
         &self,
         game_id: &str,
@@ -365,13 +369,16 @@ impl RomScanner {
         }
 
         let franchise_safe_name = franchise_name.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
-        let franchise_dir = target_base_dir.join(&franchise_safe_name);
-        fs::create_dir_all(&franchise_dir).map_err(|e| DbError::Sqlite(rusqlite::Error::InvalidPath(e.to_string().into())))?;
+        let game_folder_name = Self::clean_game_title(&game.file_name).replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+        
+        // Structure : roms/<Franchise>/<NomDuJeu>/
+        let target_game_dir = target_base_dir.join(&franchise_safe_name).join(&game_folder_name);
+        fs::create_dir_all(&target_game_dir).map_err(|e| DbError::Sqlite(rusqlite::Error::InvalidPath(e.to_string().into())))?;
 
-        let new_rom_path = franchise_dir.join(&game.file_name);
+        let new_rom_path = target_game_dir.join(&game.file_name);
         fs::copy(&source_path, &new_rom_path).map_err(|e| DbError::Sqlite(rusqlite::Error::InvalidPath(e.to_string().into())))?;
 
-        // Écrire le fichier metadata JSON
+        // 1. Écrire le fichier metadata.json dans le sous-dossier
         let json_meta = LocalGameMetadata {
             title: game.title.clone(),
             franchise: Some(franchise_name.to_string()),
@@ -383,12 +390,28 @@ impl RomScanner {
             players: game.players,
             rating: game.rating,
             synopsis: game.synopsis.clone(),
-            cover_file: None,
+            cover_file: Some("cover.png".into()),
         };
 
-        let json_path = new_rom_path.with_extension("json");
+        let meta_path = target_game_dir.join("metadata.json");
         let meta_json_str = serde_json::to_string_pretty(&json_meta)?;
-        let _ = fs::write(&json_path, meta_json_str);
+        let _ = fs::write(&meta_path, meta_json_str);
+
+        // 2. Écrire le fichier config.json dans le sous-dossier
+        let cfg = self.db.get_game_config(game_id)?.unwrap_or_else(|| GameConfig {
+            id: format!("cfg-{}", game.id),
+            game_id: game.id.clone(),
+            emulator_id_override: None,
+            custom_cli_args: None,
+            custom_core: None,
+            screen_ratio: None,
+            shader: None,
+            auto_save_state: true,
+        });
+        let config_path = target_game_dir.join("config.json");
+        if let Ok(cfg_json_str) = serde_json::to_string_pretty(&cfg) {
+            let _ = fs::write(&config_path, cfg_json_str);
+        }
 
         // Mettre à jour en base SQLite
         game.file_path = new_rom_path.to_string_lossy().to_string();
