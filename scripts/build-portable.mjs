@@ -47,15 +47,11 @@ for (const dir of dirsToCreate) {
   }
 }
 
-// 3. Build du Frontend React
-console.log('📦 1/3 Build du frontend React (Vite)...');
-execSync('npx vite build', { stdio: 'inherit' });
+// 3. Build & Packaging Tauri Standalone (Frontend React intégré dans le binaire)
+console.log('🦀 Build du binaire autonome complet avec assets intégrés (Tauri)...');
+execSync('npx tauri build --no-bundle', { stdio: 'inherit' });
 
-// 4. Build du backend Rust Release
-console.log('\n🦀 2/3 Compilation du binaire optimisé Rust (Tauri)...');
-execSync('cargo build --manifest-path src-tauri/Cargo.toml --release', { stdio: 'inherit' });
-
-// 5. Copie de l'exécutable autonome
+// 4. Copie de l'exécutable autonome
 const releaseExe = path.resolve(
   process.env.CARGO_TARGET_DIR || 'C:/Users/propo/.kairo_target',
   'release',
