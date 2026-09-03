@@ -83,6 +83,7 @@ export const App: React.FC = () => {
   // 2. États des Modales
   const [selectedGameForDetails, setSelectedGameForDetails] = useState<Game | null>(null);
   const [gameConfigForDetails, setGameConfigForDetails] = useState<GameConfig | null>(null);
+  const [gameDetailsTab, setGameDetailsTab] = useState<'overview' | 'screenshots' | 'media' | 'history' | 'emulator'>('overview');
   const [scannerOpen, setScannerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addGameOpen, setAddGameOpen] = useState(false);
@@ -150,9 +151,11 @@ export const App: React.FC = () => {
       const [g, cfg] = await getGameDetails(game.id);
       setSelectedGameForDetails(g || game);
       setGameConfigForDetails(cfg);
+      setGameDetailsTab('overview');
     } catch {
       setSelectedGameForDetails(game);
       setGameConfigForDetails(null);
+      setGameDetailsTab('overview');
     }
   };
 
@@ -233,8 +236,23 @@ export const App: React.FC = () => {
   const gamepadActions = useMemo(
     () => ({
       onNavigate: (dir: 'up' | 'down' | 'left' | 'right') => {
+        if (selectedGameForDetails) {
+          const TABS = ['overview', 'screenshots', 'media', 'history', 'emulator'] as const;
+          if (dir === 'right') {
+            setGameDetailsTab((curr) => {
+              const idx = TABS.indexOf(curr);
+              return TABS[(idx + 1) % TABS.length];
+            });
+          } else if (dir === 'left') {
+            setGameDetailsTab((curr) => {
+              const idx = TABS.indexOf(curr);
+              return TABS[(idx - 1 + TABS.length) % TABS.length];
+            });
+          }
+          return;
+        }
+
         if (
-          selectedGameForDetails ||
           scannerOpen ||
           settingsOpen ||
           addGameOpen ||
@@ -292,8 +310,11 @@ export const App: React.FC = () => {
         if (target) toggleFavorite(target);
       },
       onDetails: () => {
+        if (selectedGameForDetails) {
+          setGameDetailsTab((curr) => (curr === 'emulator' ? 'overview' : 'emulator'));
+          return;
+        }
         if (
-          !selectedGameForDetails &&
           !scannerOpen &&
           !settingsOpen &&
           !addGameOpen &&
@@ -305,7 +326,15 @@ export const App: React.FC = () => {
         }
       },
       onPrevSystem: () => {
-        if (selectedGameForDetails || settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
+        if (selectedGameForDetails) {
+          const TABS = ['overview', 'screenshots', 'media', 'history', 'emulator'] as const;
+          setGameDetailsTab((curr) => {
+            const idx = TABS.indexOf(curr);
+            return TABS[(idx - 1 + TABS.length) % TABS.length];
+          });
+          return;
+        }
+        if (settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
         setSelectedCategory((curr) => {
           const idx = categoryList.indexOf(curr);
           const prevIdx = idx <= 0 ? categoryList.length - 1 : idx - 1;
@@ -314,7 +343,15 @@ export const App: React.FC = () => {
         });
       },
       onNextSystem: () => {
-        if (selectedGameForDetails || settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
+        if (selectedGameForDetails) {
+          const TABS = ['overview', 'screenshots', 'media', 'history', 'emulator'] as const;
+          setGameDetailsTab((curr) => {
+            const idx = TABS.indexOf(curr);
+            return TABS[(idx + 1) % TABS.length];
+          });
+          return;
+        }
+        if (settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
         setSelectedCategory((curr) => {
           const idx = categoryList.indexOf(curr);
           const nextIdx = idx === -1 || idx >= categoryList.length - 1 ? 0 : idx + 1;
@@ -427,6 +464,8 @@ export const App: React.FC = () => {
           system={systems.find((s) => s.id === selectedGameForDetails.system_id) || null}
           config={gameConfigForDetails}
           emulators={emulators}
+          activeTab={gameDetailsTab}
+          onTabChange={setGameDetailsTab}
           onClose={() => setSelectedGameForDetails(null)}
           onLaunch={(g: Game) => {
             launch(g);

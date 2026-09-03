@@ -120,8 +120,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
         </>
       )}
 
-      {/* Content Container */}
-      <div className="relative z-20 p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 min-h-[340px] md:min-h-[380px]">
+      {/* Content Container with smooth transition on slide */}
+      <div key={game.id} className="relative z-20 p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 min-h-[340px] md:min-h-[380px] animate-fadeIn">
         {/* Left Side: Game Info, Badges, Meta, CTAs */}
         <div className="flex-1 max-w-xl space-y-3.5 pl-6 sm:pl-4">
           {/* System Badge */}

@@ -25,6 +25,8 @@ interface GameDetailsModalProps {
   system: System | null;
   config: GameConfig | null;
   emulators: Emulator[];
+  activeTab?: 'overview' | 'screenshots' | 'media' | 'history' | 'emulator';
+  onTabChange?: (tab: 'overview' | 'screenshots' | 'media' | 'history' | 'emulator') => void;
   onClose: () => void;
   onLaunch: (game: Game) => void;
   onToggleFavorite: (game: Game) => void;
@@ -33,11 +35,21 @@ interface GameDetailsModalProps {
   onOpenFranchiseOrganizer: (game: Game) => void;
 }
 
+const TABS = [
+  { id: 'overview', label: 'Aperçu' },
+  { id: 'screenshots', label: 'Captures d\'écran' },
+  { id: 'media', label: 'Médias' },
+  { id: 'history', label: 'Données & Histoire' },
+  { id: 'emulator', label: 'Émulateur & Shader' },
+] as const;
+
 export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   game,
   system,
   config,
   emulators,
+  activeTab: controlledActiveTab,
+  onTabChange,
   onClose,
   onLaunch,
   onToggleFavorite,
@@ -45,7 +57,37 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   onSaveMetadata,
   onOpenFranchiseOrganizer,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'screenshots' | 'media' | 'history' | 'emulator'>('overview');
+  const [internalActiveTab, setInternalActiveTab] = useState<'overview' | 'screenshots' | 'media' | 'history' | 'emulator'>('overview');
+  const activeTab = controlledActiveTab || internalActiveTab;
+  const setActiveTab = (tab: 'overview' | 'screenshots' | 'media' | 'history' | 'emulator') => {
+    if (onTabChange) onTabChange(tab);
+    else setInternalActiveTab(tab);
+  };
+
+  // Clavier & Raccourcis Manette pour la navigation dans la fiche de jeu
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        const idx = TABS.findIndex((t) => t.id === activeTab);
+        const prevIdx = (idx - 1 + TABS.length) % TABS.length;
+        setActiveTab(TABS[prevIdx].id as any);
+      } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+        e.preventDefault();
+        const idx = TABS.findIndex((t) => t.id === activeTab);
+        const nextIdx = (idx + 1) % TABS.length;
+        setActiveTab(TABS[nextIdx].id as any);
+      } else if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === 'Enter') {
+        onLaunch(game);
+      } else if (e.key === 'f' || e.key === 'F') {
+        onToggleFavorite(game);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, game, onClose, onLaunch, onToggleFavorite]);
 
   const getImageUrl = (url?: string) => {
     if (!url) return undefined;
@@ -63,12 +105,12 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   const rating = game.rating ? (game.rating > 5 ? game.rating : game.rating * 2) : 8.7;
 
   return (
-    <div className="fixed inset-y-0 right-0 left-72 z-30 flex flex-col bg-[#f8f7ff] border-l border-purple-100/80 select-none animate-fadeIn overflow-hidden shadow-2xl">
+    <div className="fixed inset-y-0 right-0 left-72 z-30 flex flex-col bg-[#f8f7ff] border-l border-purple-100/80 select-none animate-fadeInScale overflow-hidden shadow-2xl">
       {/* 1. TOP ACTION ROW : Retour + Favori + Lancer la partie */}
-      <div className="px-8 py-3.5 flex items-center justify-between z-20 shrink-0 bg-[#f8f7ff]/90 backdrop-blur-md border-b border-purple-100/50">
+      <div className="px-6 py-2.5 flex items-center justify-between z-20 shrink-0 bg-[#f8f7ff]/90 backdrop-blur-md border-b border-purple-100/50">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-purple-100/90 text-slate-700 hover:text-slate-900 text-xs font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-purple-100/90 text-slate-700 hover:text-slate-900 text-xs font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95 hover:scale-105"
           title="Retour au catalogue (Touche B / Échap)"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -79,20 +121,20 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
           {/* Bouton Ajouter aux favoris */}
           <button
             onClick={() => onToggleFavorite(game)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold transition-all shadow-2xs active:scale-95 ${
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-bold transition-all shadow-2xs active:scale-95 hover:scale-105 ${
               game.favorite
                 ? 'bg-rose-50 border-rose-200 text-rose-600'
                 : 'bg-white border-purple-100/90 text-slate-700 hover:text-rose-600 hover:border-pink-200'
             }`}
           >
-            <Heart className={`w-4 h-4 ${game.favorite ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+            <Heart className={`w-3.5 h-3.5 ${game.favorite ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
             <span>{game.favorite ? 'Favori' : 'Ajouter aux favoris'}</span>
           </button>
 
           {/* Bouton Principal : Lancer la partie */}
           <button
             onClick={() => onLaunch(game)}
-            className="flex items-center gap-2.5 px-6 py-2 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-rose-500/25 transition-all hover:scale-105 active:scale-95"
+            className="flex items-center gap-2 px-5 py-1.5 rounded-full bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-rose-500/25 transition-all hover:scale-105 active:scale-95"
           >
             <span className="w-4 h-4 rounded-full bg-white text-rose-600 flex items-center justify-center text-[10px] font-mono font-black">
               A
@@ -103,29 +145,29 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
         </div>
       </div>
 
-      {/* ZONE DÉROULANTE : HERO + ONGLETS + CONTENU */}
-      <div className="flex-1 overflow-y-auto px-8 py-5 space-y-6 scrollbar-thin pb-24">
-        {/* 2. GRAND HERO SECTION DU JEU */}
-        <div className="relative rounded-3xl border border-purple-100/90 bg-white/95 shadow-sm overflow-hidden p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-6 min-h-[220px]">
+      {/* ZONE CENTRALE : HERO + ONGLETS + CONTENU (Formaté pour écran 16:9 sans défilement forcé) */}
+      <div className="flex-1 overflow-y-auto px-6 py-3.5 space-y-3.5 scrollbar-thin pb-20">
+        {/* 2. GRAND HERO SECTION DU JEU (Compact & logique pour 16:9) */}
+        <div className="relative rounded-3xl border border-purple-100/90 bg-white/95 shadow-xs overflow-hidden p-4 sm:p-5 flex items-center justify-between gap-5 transition-all duration-300">
           {/* Background Artwork Layer avec dégradé doux vers la gauche */}
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             {backdrop ? (
               <img
                 src={backdrop}
                 alt={game.title}
-                className="w-full h-full object-cover object-right filter brightness-105"
+                className="w-full h-full object-cover object-right filter brightness-105 transition-transform duration-700 hover:scale-105"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-white via-purple-50/40 to-pink-50/20" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent w-full lg:w-3/4 z-10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent w-full lg:w-2/3 z-10" />
             <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent z-10" />
           </div>
 
           {/* Contenu du Hero (Z-10) */}
-          <div className="relative z-10 flex flex-col sm:flex-row items-center sm:items-start gap-6 flex-1">
+          <div className="relative z-10 flex flex-row items-center gap-5 flex-1">
             {/* Jaquette du jeu à gauche */}
-            <div className="w-40 sm:w-44 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl border border-white/60 bg-white shrink-0">
+            <div className="w-24 sm:w-28 aspect-[3/4] rounded-2xl overflow-hidden shadow-lg border border-white/60 bg-white shrink-0 hover:scale-105 transition-transform duration-300">
               {game.cover_url ? (
                 <img
                   src={getImageUrl(game.cover_url)}
@@ -133,22 +175,22 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 text-slate-400 text-center">
-                  <Gamepad2 className="w-10 h-10 text-rose-400 mb-2" />
-                  <span className="text-[10px] font-bold text-slate-600 line-clamp-2">{game.title}</span>
+                <div className="w-full h-full flex flex-col items-center justify-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 text-slate-400 text-center">
+                  <Gamepad2 className="w-8 h-8 text-rose-400 mb-1" />
+                  <span className="text-[9px] font-bold text-slate-600 line-clamp-2">{game.title}</span>
                 </div>
               )}
             </div>
 
-            {/* Titre & Métadonnées au centre */}
-            <div className="space-y-3 flex-1 text-center sm:text-left">
-              <h1 className="text-3xl sm:text-4xl font-black font-sans tracking-tight text-slate-900 leading-none">
+            {/* Titre, Métadonnées, Synopsis & NOTE DÉPLACÉE SOUS LA DESCRIPTION */}
+            <div className="space-y-2 flex-1 text-left">
+              <h1 className="text-2xl sm:text-3xl font-black font-sans tracking-tight text-slate-900 leading-tight">
                 {game.title}
               </h1>
 
-              {/* Ligne Métadonnées avec icônes */}
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-4 text-[11px] font-bold text-slate-500">
-                <div className="flex items-center gap-1.5">
+              {/* Ligne Métadonnées avec icônes violettes */}
+              <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-bold text-slate-500">
+                <div className="flex items-center gap-1">
                   <Tv className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{system?.name || game.system_id.toUpperCase()}</span>
                   <span className="text-slate-400 font-normal">Plateforme</span>
@@ -156,7 +198,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 
                 <span>·</span>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{year}</span>
                   <span className="text-slate-400 font-normal">Sortie</span>
@@ -164,7 +206,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 
                 <span>·</span>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <Building className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{developer}</span>
                   <span className="text-slate-400 font-normal">Développeur</span>
@@ -172,7 +214,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 
                 <span>·</span>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{players === 1 ? '1 joueur' : `1 à ${players} joueurs`}</span>
                   <span className="text-slate-400 font-normal">Joueurs</span>
@@ -180,7 +222,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 
                 <span>·</span>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1">
                   <Gamepad2 className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{genre}</span>
                   <span className="text-slate-400 font-normal">Genre</span>
@@ -188,117 +230,72 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
               </div>
 
               {/* Synopsis */}
-              <p className="text-xs text-slate-600 leading-relaxed max-w-2xl line-clamp-3">
+              <p className="text-xs text-slate-600 leading-relaxed max-w-2xl line-clamp-2">
                 {game.synopsis ||
                   "Un titre légendaire de l'histoire du jeu vidéo arcade. Plongez dans des combats intenses et relevez tous les défis dans les meilleures conditions d'émulation."}
               </p>
-            </div>
-          </div>
 
-          {/* Carte de Notation à droite du Hero */}
-          <div className="relative z-10 shrink-0 p-3.5 rounded-2xl bg-white/95 backdrop-blur-md border border-purple-100 shadow-sm flex items-center gap-3">
-            <div className="px-2.5 py-1 rounded-xl bg-emerald-500 text-white font-mono font-black text-sm shadow-xs">
-              {rating.toFixed(1)}
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-black text-slate-900">Excellent</span>
-              </div>
-              <div className="text-[10px] text-slate-400">Basé sur 124 avis</div>
-              <div className="flex items-center text-rose-500 mt-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-3 h-3 fill-current text-rose-500" />
-                ))}
+              {/* NOTE DÉPLACÉE À GAUCHE SOUS LA DESCRIPTION (Conforme à la demande) */}
+              <div className="flex items-center gap-3 pt-0.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-emerald-50 border border-emerald-200/80 shadow-2xs">
+                  <span className="px-1.5 py-0.5 rounded-lg bg-emerald-500 text-white font-mono font-black text-xs shadow-2xs">
+                    {rating.toFixed(1)}
+                  </span>
+                  <span className="text-xs font-black text-emerald-800">Excellent</span>
+                </div>
+
+                <div className="flex items-center text-rose-500">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-current text-rose-500" />
+                  ))}
+                </div>
+
+                <span className="text-[11px] text-slate-400 font-bold">Basé sur 124 avis</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 3. NAVIGATION PAR ONGLETS MODERNE */}
+        {/* 3. NAVIGATION PAR ONGLETS AVEC INDICATEURS MANETTE LB / RB */}
         <div className="flex items-center justify-between border-b border-purple-100 pb-px">
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`pb-3 text-xs font-extrabold transition-all relative ${
-                activeTab === 'overview'
-                  ? 'text-rose-600'
-                  : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span>Aperçu</span>
-              {activeTab === 'overview' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full" />
-              )}
-            </button>
+          <div className="flex items-center gap-2 sm:gap-6">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-mono font-black shadow-2xs">
+              LB ◄
+            </span>
 
-            <button
-              onClick={() => setActiveTab('screenshots')}
-              className={`pb-3 text-xs font-extrabold transition-all relative ${
-                activeTab === 'screenshots'
-                  ? 'text-rose-600'
-                  : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span>Captures d'écran</span>
-              {activeTab === 'screenshots' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full" />
-              )}
-            </button>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`pb-2.5 text-xs font-extrabold transition-all relative duration-200 ${
+                  activeTab === tab.id
+                    ? 'text-rose-600 scale-105'
+                    : 'text-slate-400 hover:text-slate-700 hover:scale-102'
+                }`}
+              >
+                <span>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full animate-fadeIn" />
+                )}
+              </button>
+            ))}
 
-            <button
-              onClick={() => setActiveTab('media')}
-              className={`pb-3 text-xs font-extrabold transition-all relative ${
-                activeTab === 'media'
-                  ? 'text-rose-600'
-                  : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span>Médias</span>
-              {activeTab === 'media' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`pb-3 text-xs font-extrabold transition-all relative ${
-                activeTab === 'history'
-                  ? 'text-rose-600'
-                  : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span>Données & Histoire</span>
-              {activeTab === 'history' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('emulator')}
-              className={`pb-3 text-xs font-extrabold transition-all relative ${
-                activeTab === 'emulator'
-                  ? 'text-rose-600'
-                  : 'text-slate-400 hover:text-slate-700'
-              }`}
-            >
-              <span>Émulateur & Shader</span>
-              {activeTab === 'emulator' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-rose-500 rounded-full" />
-              )}
-            </button>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-mono font-black shadow-2xs">
+              ► RB
+            </span>
           </div>
 
           <button
             onClick={() => onOpenFranchiseOrganizer(game)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-100 hover:border-purple-200 text-slate-500 hover:text-purple-700 text-xs font-bold transition-all mb-2"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl border border-purple-100 hover:border-purple-200 text-slate-500 hover:text-purple-700 text-xs font-bold transition-all mb-1 hover:scale-105 active:scale-95"
           >
             <FolderPlus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Organiser Franchise</span>
           </button>
         </div>
 
-        {/* 4. CONTENU DES ONGLETS */}
-        <div>
+        {/* 4. CONTENU DES ONGLETS AVEC ANIMATIONS */}
+        <div className="animate-fadeIn">
           {activeTab === 'overview' && (
             <GameInfoTab
               game={game}
