@@ -1,14 +1,14 @@
 # 🕹️ KaïroOS — Architecture, État du Projet & Guide Technique (Pour Développeurs & Assistants IA)
 
 > **Document de référence pour le développeur, Claude et les futurs contributeurs.**
-> *Dernière mise à jour : Jalon 3 — Pilotage à distance & Mode Kiosk*
+> *Dernière mise à jour : Refonte PWA Mobile/Desktop & API Distante Avancée*
 > *Dépôt officiel : [NayrolfRdgs/KairoOS](https://github.com/NayrolfRdgs/KairoOS)*
 
 ---
 
 ## 🧭 1. Vue d'Ensemble du Projet
 
-**KaïroOS** est un frontend d'émulation et une station d'arcade rétro moderne pour Windows, optimisée pour le jeu au joystick arcade, à la manette, au clavier, à la souris et désormais **pilotable à distance depuis un smartphone**.
+**KaïroOS** est un frontend d'émulation et une station d'arcade rétro moderne pour Windows, optimisée pour le jeu au joystick arcade, à la manette, au clavier, à la souris et désormais **pilotable à distance depuis un smartphone ou un PC via sa PWA enrichie**.
 
 ### 🌟 Points Clés & Philosophie de Design :
 1. **Zéro configuration requise pour l'utilisateur final** : Les émulateurs officiels (RetroArch, PCSX2, Dolphin, Ryujinx) sont directement embarqués et pré-configurés.
@@ -17,7 +17,7 @@
    - **Mode Portable Autonome (`dist-portable/`)** : Déplaçable sur clé USB ou disque dur externe sans installation.
 3. **Architecture Ouverte & Modifiable** : Réglages stockés à la fois dans SQLite (`kairo.db`) et dans des fichiers JSON ouverts dans `config/` (`settings.json`, `emulators.json`, `gamepads.json`, `remote.json`).
 4. **Mode Borne Arcade & Kiosk Sécurisé** : Plein écran exclusif, Always-on-Top pour masquer Windows, verrouillage des réglages en mode salle, déverrouillage par PIN et combo joystick.
-5. **Télécommande Mobile Intégrée (PWA)** : Serveur Axum HTTP embarqué diffusant une interface mobile tactile légère pour piloter la borne depuis un smartphone.
+5. **Télécommande Mobile & Desktop Tactile (PWA)** : Serveur Axum HTTP embarqué diffusant une interface PWA réactive (Dark / Light 80s Arcade, multi-colonnes desktop, jaquettes de jeux, chronomètre de session, pavé numérique arcade).
 
 ---
 
@@ -25,114 +25,95 @@
 
 ```mermaid
 graph TD
-    UI[Frontend React 19 + Tailwind CSS + Lucide Icons] <-->|IPC Tauri v2| Host[Hôte Tauri 2 - src-tauri]
+    UI[Frontend Borne: React 19 + Tailwind + Lucide] <-->|IPC Tauri v2| Host[Hôte Tauri 2 - src-tauri]
     Host <-->|Crate Rust| Core[kairo-core - Moteur Rust]
     Core <-->|Lectures / Écritures| DB[(SQLite: kairo.db)]
     Core <-->|Synchronisation| JSON[Fichiers config/*.json]
     Core <-->|Gestion Processus CLI| EMU[Émulateurs: RetroArch / PCSX2 / Dolphin / Ryujinx]
-    Core <-->|Serveur HTTP Axum :8080| PWA[PWA Mobile: kairo-remote]
-```
-
-### 📁 Arborescence des Dossiers Principaux :
-```text
-Kairo/
-├── crates/
-│   └── kairo-core/                 # Moteur métier Rust autonome
-│       └── src/
-│           ├── db/                 # Gestion SQLite, tables, migrations et synchro JSON
-│           ├── launcher/           # Lancement des processus émulateurs et capture PID
-│           ├── models/             # Modèles Rust (Game, System, Emulator, GamepadMapping...)
-│           ├── remote/             # Serveur HTTP Axum embarqué + API REST + service statique PWA
-│           ├── scanner/            # Scanner de ROMs, détection franchises, métadonnées locales
-│           └── lib.rs              # 6/6 tests unitaires validés
-├── src-tauri/                       # Hôte d'application Tauri 2
-│   ├── src/
-│   │   ├── commands.rs             # Handlers IPC (get_app_mode, set_app_mode, get_remote_config...)
-│   │   └── lib.rs                  # Point d'entrée, parseur CLI --mode kiosk/admin, démarrage serveur Axum
-│   └── tauri.conf.json             # Configuration Tauri
-├── src/                            # Frontend Borne React 19
-│   ├── components/
-│   │   ├── games/                  # Grille de jeux, cartes, jaquettes et overlays
-│   │   ├── layout/                 # Barre latérale (Sidebar) et barre de filtre/recherche
-│   │   ├── modals/                 # Modales (GameDetails, Gamepad, Settings, Scanner, Franchise, KioskUnlock)
-│   │   └── overlay/                # Overlay de lancement et capture
-│   ├── hooks/                      # useLibrary, useLauncher, useAppSettings, useGamepad (avec combo Kiosk)
-│   ├── types/                      # Types TypeScript (AppMode, RemoteConfig, GamepadMapping...)
-│   ├── api/                        # Client IPC Tauri modulaire
-│   └── App.tsx                     # Composant racine
-├── kairo-remote/                   # Mini PWA Mobile autonome (React + Vite + TailwindCSS)
-│   ├── src/                        # Dashboard en direct, liste des jeux, ajout de ROM, déverrouillage PIN
-│   └── dist/                       # Fichiers compilés servis statiquement par Axum sur http://IP:8080
-├── emulators/                      # Émulateurs pré-installés (RetroArch, PCSX2, Dolphin, Ryujinx)
-├── config/                         # Fichiers de configuration JSON
-│   ├── settings.json               # Réglages généraux
-│   ├── emulators.json              # Définition des chemins émulateurs
-│   ├── gamepads.json               # Configurations des manettes J1 à J10
-│   └── remote.json                 # Configuration du serveur distant (Port 8080, PIN 1234)
-├── roms/                           # Dossier local de ROMs
-└── scripts/                        # Scripts utilitaires
-    ├── build-portable.mjs          # Packaging autonome complet
-    ├── download-all-emulators.mjs  # Téléchargement de la suite d'émulation
-    └── install-ryujinx.mjs         # Installateur Ryujinx
+    Core <-->|Serveur HTTP Axum :8080| PWA[PWA Mobile & Desktop: kairo-remote]
 ```
 
 ---
 
-## ⚙️ 3. Fonctionnalités Implémentées (Jalons 1, 2 et 3)
+## 📱 3. PWA KaïroOS Remote (`kairo-remote/`)
 
-### A. Serveur HTTP Embarqué & API REST (`kairo-core/src/remote/`)
-- Démarrage automatique en tâche de fond Tokio sur le port configuré dans `config/remote.json` (défaut : `8080`).
-- **Routes REST** :
-  - `GET /api/status` : État de la borne (jeu en cours, mode kiosk, port, version).
-  - `GET /api/games` & `GET /api/games/:id` : Consultation de la bibliothèque de jeux.
-  - `POST /api/games/launch` : Lancement d'un jeu à distance (`X-Kairo-Pin` requis).
-  - `POST /api/games/stop` : Arrêt d'urgence du jeu en cours (`X-Kairo-Pin` requis).
-  - `POST /api/games/add` : Ajout d'une ROM à distance (`X-Kairo-Pin` requis).
-  - `GET /api/systems` : Liste des consoles supportées.
-  - `GET /api/settings` & `POST /api/settings` : Consultation / modification des paramètres.
-  - `POST /api/kiosk/lock` : Activation du mode Kiosk (`X-Kairo-Pin` requis).
-  - `POST /api/kiosk/unlock` : Déverrouillage vers mode Admin avec `{ "pin": "..." }`.
+### A. Thèmes Clair & Sombre
+- **Thème Sombre** : Palette arcade moderne (`#121019`, `#1e1a29`, bordures `#3c3452`, accents néon cyan, cherry, violet).
+- **Thème Clair (80s Arcade Light)** : Teintes crèmes douces (`#fbf8f2`, `#f4efe6`), cartes blanches et accents néon vifs (cherry `#ff3366`, orange arcade `#ff5500`, vert émeraude `#10b981`).
+- **Persistance en mémoire** : Bascule instantanée via le bouton ☀️/🌙 dans le header sans rechargement.
 
-### B. Mode Kiosk (Mode Salle d'Arcade)
-- **Déclenchement au lancement** : Flag CLI `--mode kiosk` ou `--mode admin` (ou valeur dans `config/settings.json`).
-- **En mode Kiosk** :
-  - Zéro accès aux réglages et configuration.
-  - Zéro accès au scanner de ROMs.
-  - Zéro modification possible des métadonnées.
-  - Affichage d'un badge Kiosk 🔒 dans la barre latérale.
-- **Déverrouillage sur la borne** :
-  - **Combo Joystick** : `LB + RB + Start` maintenu pendant **3 secondes**.
-  - **Raccourci Clavier** : `Ctrl + Shift + K` ou clic sur le cadenas Kiosk.
-  - Ouvre la modale arcade `KioskUnlockModal` demandant le code PIN (défaut : `1234`).
+### B. Layout Responsive (Desktop & Mobile)
+- **Sur Mobile (< 768px)** : En-tête compact, navigation par barre inférieure fixe avec pastilles d'activité (Borne, Jeux, Ajouter, Réglages, Kiosk).
+- **Sur PC / Tablette (>= 768px)** : Barre latérale gauche dédiée (260px) avec compteurs de jeux en temps réel, adresse IP locale, et vue en grille multi-colonnes.
 
-### C. PWA Mobile `kairo-remote/`
-- Servie directement par Axum à l'adresse `http://<IP_BORNE>:8080/`.
-- Accessible depuis n'importe quel smartphone ou tablette sur le même réseau Wi-Fi sans installation.
-- Design dark arcade rétro avec touches néon et boutons tactiles larges.
-- PIN stocké en mémoire pour la session.
-- 5 écrans : **Dashboard**, **Jeux**, **Ajouter**, **Réglages**, **Déverrouillage Kiosk**.
+### C. Tableau de Bord (Dashboard)
+- **Session en Direct** :
+  - Nom du jeu en cours et console associée.
+  - **Jaquette grand format**.
+  - **Chronomètre de session en temps réel** (décompte dynamique heure/minute/seconde).
+  - **Bouton STOP D'URGENCE** rouge néon pour quitter l'émulateur immédiatement.
+- **Historique des 5 derniers jeux lancés** : Liste des dernières parties jouées avec bouton "Relancer 🚀".
+- **Contrôle Kiosk Immédiat** : Statut de verrouillage et bouton de déverrouillage PIN direct.
+- **Accès Réseau** : Affichage de l'URL directe (ex: `http://192.168.1.30:8080`) avec bouton de copie rapide.
 
-### D. Contrôleurs & Suite d'Émulation Complète
-- **4 Émulateurs configurés** : RetroArch x64 (+ 9 cœurs), PCSX2 Qt x64, Dolphin 2407 x64, Ryujinx 1.3.3 x64.
-- **Gestionnaire Multi-Manettes (1 à 10 Joueurs)** : Assignation physique par joueur, priorité J1, interface adaptative et verrouillage de fond.
+### D. Bibliothèque de Jeux Enrichie
+- Affichage des jaquettes de jeux (`cover_url`).
+- Badges console colorés distincts (SNES, PS1, PS2, N64, GameCube, Switch, Arcade, Mega Drive).
+- **Indicateur visuel dynamique** sur le jeu actuellement en cours (halo vert animé + badge "🎮 EN JEU").
+- **Bouton Favoris (⭐)** interactif directement synchronisé avec SQLite.
+- Filtre par console et barre de recherche instantanée.
+
+### E. Pavé Numérique Arcade (`ArcadeKeypad`)
+- Pavé 3x4 ergonomique avec touches 0-9, touche Effacer ⌫, touche Clear C et validation.
+- Support du tactile, de la souris et du clavier physique.
+- Utilisé pour la saisie du PIN de session et le déverrouillage Kiosk à distance.
+
+### F. Page Réglages Enrichie (4 Sous-sections)
+1. **Serveur Remote (`config/remote.json`)** : Port, PIN de sécurité (avec confirmation), Allowed Origins CORS.
+2. **Émulateurs (`config/emulators.json`)** : Visualisation et édition des chemins d'exécutables (`exe_path`) et arguments CLI (`default_args`).
+3. **Paramètres Borne (`config/settings.json`)** : Dossier ROMs par défaut, mode Kiosk au démarrage, Always-on-top.
+4. **Infos Système** : Version logicielle (`v0.1.0`), chemin d'installation, IP Locale de la machine.
 
 ---
 
-## 🛠️ 4. Commandes Utiles de Développement
+## 🌐 4. Routes REST de l'API Axum (`kairo-core/src/remote/`)
+
+| Méthode | Route | Description | Authentification |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/status` | État complet (jeu en cours, jaquette, chronomètre, kiosk, IP locale) | ❌ Libre |
+| `GET` | `/api/system/info` | Infos système (IP, port, version, dossier install, total jeux) | ❌ Libre |
+| `GET` | `/api/games` | Liste complète des jeux | ❌ Libre |
+| `GET` | `/api/games/recent` | Top 5 des jeux récemment joués | ❌ Libre |
+| `GET` | `/api/games/:id` | Détail d'un jeu | ❌ Libre |
+| `POST` | `/api/games/:id/favorite` | Basculer le statut favori d'un jeu | 🔑 `X-Kairo-Pin` |
+| `POST` | `/api/games/launch` | Lancer un jeu sur la borne | 🔑 `X-Kairo-Pin` |
+| `POST` | `/api/games/stop` | Arrêter d'urgence le jeu en cours | 🔑 `X-Kairo-Pin` |
+| `POST` | `/api/games/add` | Ajouter une ROM à la bibliothèque | 🔑 `X-Kairo-Pin` |
+| `GET` | `/api/systems` | Liste des consoles | ❌ Libre |
+| `GET` | `/api/emulators` | Liste des émulateurs et configurations CLI | ❌ Libre |
+| `POST` | `/api/emulators` | Sauvegarder `config/emulators.json` | 🔑 `X-Kairo-Pin` |
+| `GET` | `/api/settings` | Lire `config/settings.json` | ❌ Libre |
+| `POST` | `/api/settings` | Sauvegarder `config/settings.json` | 🔑 `X-Kairo-Pin` |
+| `GET` | `/api/remote/config` | Lire `config/remote.json` | ❌ Libre |
+| `POST` | `/api/remote/config` | Sauvegarder `config/remote.json` | 🔑 `X-Kairo-Pin` |
+| `POST` | `/api/kiosk/lock` | Activer le mode Kiosk | 🔑 `X-Kairo-Pin` |
+| `POST` | `/api/kiosk/unlock` | Déverrouiller le mode Admin avec `{ "pin": "..." }` | 🔑 Validation PIN |
+| `GET` | `/*` | Service statique de la PWA `kairo-remote/dist` | ❌ Libre |
+
+---
+
+## 🛠️ 5. Commandes de Développement & Build
 
 ```powershell
-# 1. Lancer l'application KaïroOS (avec serveur distant axum sur :8080)
+# 1. Démarrer KaïroOS en mode Dev (Borne + Serveur Remote sur :8080)
 npm run tauri dev
 
-# 2. Lancer KaïroOS en forçant le mode Kiosk
-cargo run --manifest-path src-tauri/Cargo.toml -- --mode kiosk
-
-# 3. Compiler la PWA mobile kairo-remote
+# 2. Rebuilder uniquement la PWA kairo-remote
 npm run build:remote
 
-# 4. Valider tous les tests unitaires Rust
+# 3. Lancer les tests unitaires du moteur Rust
 cargo test --package kairo-core
 
-# 5. Vérifier les types TypeScript du frontend
+# 4. Vérifier les types TypeScript du frontend principal
 npx tsc --noEmit
 ```
