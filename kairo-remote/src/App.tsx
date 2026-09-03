@@ -23,15 +23,34 @@ import {
   Emulator,
 } from './types';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { useGamepad } from './hooks/useGamepad';
 
 export default function App() {
-  // 1. États d'Authentification & Mode (Thème par défaut : Clair / Sobra)
-  const [theme, setTheme] = useState<ThemeMode>('light');
+  // 1. États d'Authentification & Mode (Interface claire et sobre d'administration)
+  const [theme] = useState<ThemeMode>('light');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [activeMode, setActiveMode] = useState<'hub' | 'admin' | 'gamepad'>('hub');
   const [pin, setPin] = useState<string>('1234');
   const [pinModalOpen, setPinModalOpen] = useState<boolean>(false);
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'games' | 'add' | 'settings' | 'unlock'>('dashboard');
+
+  // Navigation manette physique PWA avec contournement automatique du PIN si manette connectée
+  useGamepad({
+    enabled: true,
+    onGamepadDetected: () => {
+      // Manette physique locale détectée = accès de confiance, pas de PIN requis
+      setIsAuthenticated(true);
+    },
+    onBack: () => {
+      if (pinModalOpen) {
+        setPinModalOpen(false);
+      } else if (activeMode === 'gamepad') {
+        setActiveMode('admin');
+      } else if (currentTab !== 'dashboard') {
+        setCurrentTab('dashboard');
+      }
+    },
+  });
 
   // 2. États Réseau & Données
   const [connected, setConnected] = useState<boolean>(false);
@@ -404,8 +423,6 @@ export default function App() {
       {/* Header Propre */}
       <Header
         connected={connected}
-        theme={theme}
-        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         pin={pin}
         onOpenPinModal={() => setPinModalOpen(true)}
         appMode="admin"
@@ -475,7 +492,6 @@ export default function App() {
                 showToast('Données rafraîchies !');
               }}
               loading={loading}
-              theme={theme}
             />
           )}
 

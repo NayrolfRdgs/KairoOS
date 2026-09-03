@@ -326,6 +326,8 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
                 .route("/api/games/add", post(add_game))
                 .route("/api/systems", get(get_systems))
                 .route("/api/emulators", get(get_emulators).post(save_emulators))
+                .route("/api/emulators/test-path", post(test_emulator_path))
+                .route("/api/gamepads", get(get_gamepad_mappings))
                 .route("/api/settings", get(get_settings).post(save_settings))
                 .route("/api/remote/config", get(get_remote_cfg).post(save_remote_cfg))
                 .route("/api/kiosk/lock", post(lock_kiosk))
@@ -802,6 +804,58 @@ async fn gamepad_input(
                 error: Some(format!("Bouton inconnu: {}", req.button)),
             }),
         )
+    }
+}
+
+#[derive(Deserialize)]
+struct TestPathRequest {
+    path: String,
+}
+
+#[derive(Serialize)]
+struct TestPathResponse {
+    exists: bool,
+    path: String,
+    is_absolute: bool,
+}
+
+async fn test_emulator_path(
+    Json(req): Json<TestPathRequest>,
+) -> impl IntoResponse {
+    let p = std::path::Path::new(&req.path);
+    let exists = p.exists();
+    let is_absolute = p.is_absolute();
+    Json(ApiResponse {
+        success: true,
+        data: Some(TestPathResponse {
+            exists,
+            path: req.path,
+            is_absolute,
+        }),
+        error: None,
+    })
+}
+
+async fn get_gamepad_mappings(
+    State(state): State<RemoteServerState>,
+) -> impl IntoResponse {
+    match state.db.get_gamepad_mappings() {
+        Ok(mappings) => (
+            StatusCode::OK,
+            Json(ApiResponse {
+                success: true,
+                data: Some(mappings),
+                error: None,
+            }),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some(e.to_string()),
+            }),
+        ),
     }
 }
 

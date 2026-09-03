@@ -1,11 +1,11 @@
 import React from 'react';
-import { Gamepad2, Sliders, Sun, Moon, KeyRound, LogOut, Smartphone } from 'lucide-react';
+import { Gamepad2, KeyRound, LogOut } from 'lucide-react';
 import { ThemeMode } from '../types';
 
 interface HeaderProps {
   connected: boolean;
-  theme: ThemeMode;
-  onToggleTheme: () => void;
+  theme?: ThemeMode;
+  onToggleTheme?: () => void;
   pin: string;
   onOpenPinModal: () => void;
   appMode: 'admin' | 'gamepad';
@@ -15,41 +15,24 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   connected,
-  theme,
-  onToggleTheme,
-  pin,
   onOpenPinModal,
   appMode,
   onToggleAppMode,
   onLogout,
 }) => {
-  const isDark = theme === 'dark';
-
   return (
-    <header
-      className={`sticky top-0 z-40 backdrop-blur-md border-b px-4 sm:px-6 py-3 flex items-center justify-between transition-colors ${
-        isDark
-          ? 'bg-slate-900/95 border-slate-800 text-slate-100'
-          : 'bg-white/95 border-slate-200 text-slate-800 shadow-xs'
-      }`}
-    >
+    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
       {/* Marque & Statut de Connexion */}
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm font-bold text-xs">
+        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-xs">
           K
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="font-bold text-sm tracking-tight font-sans">
-              KaïroOS <span className="text-indigo-600 dark:text-indigo-400">Admin</span>
+            <span className="font-bold text-sm tracking-tight text-slate-900">
+              KaïroOS <span className="text-blue-600 font-semibold">Console d'Admin</span>
             </span>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
-                isDark
-                  ? 'bg-slate-800 text-slate-300'
-                  : 'bg-slate-100 text-slate-600 border border-slate-200'
-              }`}
-            >
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-mono font-medium bg-slate-100 text-slate-600 border border-slate-200">
               REMOTE
             </span>
           </div>
@@ -57,63 +40,43 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex items-center gap-1.5 text-[11px]">
             {connected ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Borne Connectée</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-emerald-700 font-medium">Borne Connectée</span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                <span className="text-red-500 font-medium">Hors-ligne</span>
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="text-red-600 font-medium">Borne Hors-ligne</span>
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Contrôles Header : Bascule Manette / Thème / PIN / Logout */}
+      {/* Contrôles Header : Manette Virtuelle / PIN / Logout */}
       <div className="flex items-center gap-2">
-        {/* Bascule vers Mode Manette Virtuelle */}
         <button
           onClick={onToggleAppMode}
           title={appMode === 'admin' ? 'Ouvrir la Manette Virtuelle' : 'Ouvrir le Panneau Admin'}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold shadow-xs transition-all"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-semibold shadow-xs transition-colors"
         >
           <Gamepad2 className="w-4 h-4" />
           <span className="hidden sm:inline">Manette Virtuelle</span>
         </button>
 
-        {/* PIN Button */}
         <button
           onClick={onOpenPinModal}
-          title="Modifier le Code PIN"
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-mono font-semibold transition-all ${
-            isDark
-              ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
-              : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900'
-          }`}
+          title="Modifier le Code PIN de session"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-mono font-semibold text-slate-700 transition-colors"
         >
-          <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+          <KeyRound className="w-3.5 h-3.5 text-amber-600" />
           <span>••••</span>
         </button>
 
-        {/* Thème clair / sombre */}
-        <button
-          onClick={onToggleTheme}
-          title={isDark ? 'Passer au thème clair' : 'Passer au thème sombre'}
-          className={`p-1.5 rounded-xl border transition-all ${
-            isDark
-              ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
-              : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
-          }`}
-        >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
-        {/* Déconnexion */}
         <button
           onClick={onLogout}
           title="Se déconnecter"
-          className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:border-red-200 transition-all"
+          className="p-1.5 rounded-lg border border-slate-200 text-slate-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200 transition-colors"
         >
           <LogOut className="w-4 h-4" />
         </button>

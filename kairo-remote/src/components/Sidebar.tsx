@@ -58,21 +58,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside
-      className={`hidden md:flex flex-col w-64 border-r shrink-0 select-none p-4 justify-between transition-colors ${
-        isDark ? 'bg-slate-900 border-slate-800 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
-      }`}
-    >
+    <aside className="hidden md:flex flex-col w-64 border-r border-slate-200 bg-white shrink-0 select-none p-4 justify-between">
       <div className="space-y-6">
         {/* Infos IP Borne */}
-        <div
-          className={`p-3.5 rounded-2xl border text-xs space-y-1 ${
-            isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-slate-50 border-slate-200'
-          }`}
-        >
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs space-y-1">
           <div className="flex items-center justify-between font-semibold">
-            <span className="text-slate-400">IP BORNE :</span>
-            <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+            <span className="text-slate-500">IP BORNE :</span>
+            <span className="font-mono text-blue-600 font-bold">
               {status?.local_ip || '127.0.0.1'}
             </span>
           </div>
@@ -92,11 +84,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : isDark
-                    ? 'text-slate-400 hover:text-white hover:bg-slate-800'
+                    ? 'bg-blue-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
@@ -118,11 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="pt-2">
           <button
             onClick={onOpenGamepad}
-            className={`w-full flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all shadow-xs ${
-              isDark
-                ? 'bg-slate-800 hover:bg-slate-700 text-indigo-400 border-slate-700'
-                : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
-            }`}
+            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg border border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-colors shadow-xs"
           >
             <Gamepad2 className="w-4 h-4" />
             <span>Manette Virtuelle (J1-J4)</span>
@@ -130,8 +116,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      <div className="pt-4 border-t border-slate-200 dark:border-slate-800 text-[11px] text-slate-400 text-center font-mono">
-        KaïroOS Admin Panel
+      <div className="pt-4 border-t border-slate-200 text-[11px] text-slate-400 text-center font-mono">
+        KaïroOS Administration Panel
       </div>
     </aside>
   );

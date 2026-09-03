@@ -1077,6 +1077,7 @@ impl Database {
                 screen_ratio: row.get(5)?,
                 shader: row.get(6)?,
                 auto_save_state: auto_save_int != 0,
+                forced_fullscreen: None,
             })
         })?;
 

@@ -16,6 +16,22 @@ export interface AppSettings {
   default_sort?: import('../utils/sort').SortOption;
   auto_kiosk?: boolean;
   arcade_ui_scale?: 'normal' | 'large' | 'xl';
+  // RetroBat Advanced Settings
+  retroarch_shader?: 'none' | 'scanlines_light' | 'scanlines_strong' | 'crt_curved';
+  aspect_ratio?: '4:3' | '16:9' | 'pixel_perfect' | 'stretch';
+  brightness?: number;
+  contrast?: number;
+  metadata_language?: 'fr' | 'en';
+  launch_resolution?: 'native' | '720p' | '1080p' | '4k';
+  forced_fullscreen?: 'always' | 'never' | 'per_game';
+  autosave_enabled?: boolean;
+  rewind_enabled?: boolean;
+  cheats_dir?: string;
+  saves_dir?: string;
+  screenshots_dir?: string;
+  scraping_delay_seconds?: number;
+  screenscraper_ssid?: string;
+  screenscraper_sspassword?: string;
 }
 
 export interface RemoteConfig {

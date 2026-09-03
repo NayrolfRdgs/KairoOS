@@ -1,19 +1,30 @@
 {
-  "fullscreen": false,
+  "fullscreen": true,
   "always_on_top": false,
   "kiosk_mode": false,
-  "enabled_franchises": [
-    "pokemon"
-  ],
+  "enabled_franchises": [],
   "custom_franchises": [],
   "roms_path": "C:\\Users\\propo\\AppData\\Roaming\\com.kairo.os\\roms",
   "theme": "retro-80s-light",
-  "enabled_systems": [
-    "n64"
-  ],
+  "enabled_systems": [],
   "enabled_modes": [],
-  "default_sort": "title-asc",
+  "default_sort": "recent",
   "auto_kiosk": false,
-  "game_select_action": "details",
-  "arcade_ui_scale": "large"
+  "game_select_action": "launch",
+  "arcade_ui_scale": "normal",
+  "retroarch_shader": null,
+  "aspect_ratio": null,
+  "brightness": null,
+  "contrast": null,
+  "metadata_language": null,
+  "launch_resolution": null,
+  "forced_fullscreen": null,
+  "autosave_enabled": null,
+  "rewind_enabled": null,
+  "cheats_dir": null,
+  "saves_dir": null,
+  "screenshots_dir": null,
+  "scraping_delay_seconds": null,
+  "screenscraper_ssid": null,
+  "screenscraper_sspassword": null
 }

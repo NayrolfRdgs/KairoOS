@@ -90,6 +90,8 @@ pub struct GameConfig {
     pub screen_ratio: Option<String>,  // ex: "4:3", "16:9", "pixel_perfect"
     pub shader: Option<String>,        // ex: "crt-easymode", "bilinear"
     pub auto_save_state: bool,
+    #[serde(default)]
+    pub forced_fullscreen: Option<String>, // "always", "never", "per_game"
 }
 
 /// Configuration & Remapping d'une manette / joystick d'arcade pour un joueur
@@ -176,6 +178,37 @@ pub struct AppSettings {
     pub game_select_action: Option<String>,
     #[serde(default)]
     pub arcade_ui_scale: Option<String>,
+    // RetroBat Advanced Settings
+    #[serde(default)]
+    pub retroarch_shader: Option<String>, // "none", "scanlines_light", "scanlines_strong", "crt_curved"
+    #[serde(default)]
+    pub aspect_ratio: Option<String>, // "4:3", "16:9", "pixel_perfect", "stretch"
+    #[serde(default)]
+    pub brightness: Option<u8>,
+    #[serde(default)]
+    pub contrast: Option<u8>,
+    #[serde(default)]
+    pub metadata_language: Option<String>, // "fr", "en"
+    #[serde(default)]
+    pub launch_resolution: Option<String>, // "native", "720p", "1080p", "4k"
+    #[serde(default)]
+    pub forced_fullscreen: Option<String>, // "always", "never", "per_game"
+    #[serde(default)]
+    pub autosave_enabled: Option<bool>,
+    #[serde(default)]
+    pub rewind_enabled: Option<bool>,
+    #[serde(default)]
+    pub cheats_dir: Option<String>,
+    #[serde(default)]
+    pub saves_dir: Option<String>,
+    #[serde(default)]
+    pub screenshots_dir: Option<String>,
+    #[serde(default)]
+    pub scraping_delay_seconds: Option<u32>,
+    #[serde(default)]
+    pub screenscraper_ssid: Option<String>,
+    #[serde(default)]
+    pub screenscraper_sspassword: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -201,6 +234,21 @@ impl Default for AppSettings {
             auto_kiosk: false,
             game_select_action: Some("details".into()),
             arcade_ui_scale: Some("normal".into()),
+            retroarch_shader: Some("none".into()),
+            aspect_ratio: Some("4:3".into()),
+            brightness: Some(50),
+            contrast: Some(50),
+            metadata_language: Some("fr".into()),
+            launch_resolution: Some("native".into()),
+            forced_fullscreen: Some("per_game".into()),
+            autosave_enabled: Some(true),
+            rewind_enabled: Some(false),
+            cheats_dir: None,
+            saves_dir: None,
+            screenshots_dir: None,
+            scraping_delay_seconds: Some(1),
+            screenscraper_ssid: None,
+            screenscraper_sspassword: None,
         }
     }
 }

@@ -19,6 +19,7 @@ mkdirSync(tmpDir, { recursive: true });
 for (const base of emulatorsBaseDirs) {
   mkdirSync(path.join(base, 'RetroArch'), { recursive: true });
   mkdirSync(path.join(base, 'RetroArch', 'cores'), { recursive: true });
+  mkdirSync(path.resolve('emulators', 'cores'), { recursive: true });
   mkdirSync(path.join(base, 'PCSX2'), { recursive: true });
   mkdirSync(path.join(base, 'Dolphin'), { recursive: true });
   mkdirSync(path.join(base, 'Ryujinx'), { recursive: true });
@@ -107,7 +108,7 @@ async function main() {
     try {
       console.log(`  ⬇️ [${core.desc}] ${core.name}...`);
       await downloadFile(coreZipUrl, tempZip);
-      execSync(`powershell -Command "Expand-Archive -Path '${tempZip}' -DestinationPath '${coresDir}' -Force; Copy-Item '${path.join(coresDir, core.name)}' -Destination '${distCoresDir}' -Force"`, { stdio: 'ignore' });
+      execSync(`powershell -Command "Expand-Archive -Path '${tempZip}' -DestinationPath '${coresDir}' -Force; Copy-Item '${path.join(coresDir, core.name)}' -Destination '${distCoresDir}' -Force; Copy-Item '${path.join(coresDir, core.name)}' -Destination 'emulators/cores' -Force -ErrorAction SilentlyContinue"`, { stdio: 'ignore' });
       console.log(`  ✅ ${core.name} installé !`);
     } catch (err) {
       console.warn(`  ⚠️ Impossible de télécharger ${core.name}: ${err.message}`);

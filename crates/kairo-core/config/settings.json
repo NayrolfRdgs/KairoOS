@@ -18,5 +18,20 @@
   "default_sort": null,
   "auto_kiosk": false,
   "game_select_action": null,
-  "arcade_ui_scale": null
+  "arcade_ui_scale": null,
+  "retroarch_shader": null,
+  "aspect_ratio": null,
+  "brightness": null,
+  "contrast": null,
+  "metadata_language": null,
+  "launch_resolution": null,
+  "forced_fullscreen": null,
+  "autosave_enabled": null,
+  "rewind_enabled": null,
+  "cheats_dir": null,
+  "saves_dir": null,
+  "screenshots_dir": null,
+  "scraping_delay_seconds": null,
+  "screenscraper_ssid": null,
+  "screenscraper_sspassword": null
 }

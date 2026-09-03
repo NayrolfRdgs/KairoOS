@@ -27,13 +27,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <nav
-      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-lg border-t px-2 py-1.5 flex items-center justify-around transition-colors ${
-        isDark
-          ? 'bg-slate-900/95 border-slate-800 text-slate-100'
-          : 'bg-white/95 border-slate-200 text-slate-800 shadow-lg'
-      }`}
-    >
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 px-2 py-1.5 flex items-center justify-around shadow-sm">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = currentTab === item.id;
@@ -42,16 +36,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           <button
             key={item.id}
             onClick={() => onSelectTab(item.id)}
-            className={`flex flex-col items-center gap-1 p-2 rounded-2xl transition-all relative ${
-              isActive
-                ? 'text-indigo-600 dark:text-indigo-400 font-bold'
-                : 'text-slate-400 hover:text-slate-600'
+            className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors relative ${
+              isActive ? 'text-blue-600 font-bold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             <div className="relative">
               <Icon className="w-5 h-5" />
               {item.hasDot && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500" />
               )}
             </div>
             <span className="text-[10px] font-semibold">{item.label}</span>
@@ -62,7 +54,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
       {/* Bouton Manette Mobile direct */}
       <button
         onClick={onOpenGamepad}
-        className="flex flex-col items-center gap-1 p-2 rounded-2xl text-emerald-600 dark:text-emerald-400 font-bold"
+        className="flex flex-col items-center gap-1 p-2 rounded-lg text-emerald-600 hover:text-emerald-700 font-bold transition-colors"
       >
         <Smartphone className="w-5 h-5" />
         <span className="text-[10px]">Manette</span>

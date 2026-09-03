@@ -367,6 +367,7 @@ pub fn add_manual_game(
         screen_ratio: None,
         shader: None,
         auto_save_state: true,
+        forced_fullscreen: None,
     };
     let _ = state.db.upsert_game_config(&config);
 

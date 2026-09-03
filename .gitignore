@@ -26,6 +26,9 @@ kairo_data/
 
 # Temporary Archives & Downloads
 *.zip
+*.dll.zip
+*_libretro.dll.zip
+emulators/cores/
 *.7z
 *.tar.gz
 *.rar

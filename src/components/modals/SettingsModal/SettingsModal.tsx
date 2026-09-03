@@ -17,6 +17,7 @@ import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig, System } 
 import { KioskTab } from './KioskTab';
 import { FoldersTab } from './FoldersTab';
 import { ConsolesTab } from './ConsolesTab';
+import { RetroBatTab } from './RetroBatTab';
 import { ArrowDownAZ } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -44,7 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLockKioskNow,
   onScanComplete,
 }) => {
-  const [activeTab, setActiveTab] = useState<'gameplay' | 'consoles' | 'kiosk' | 'folders'>('gameplay');
+  const [activeTab, setActiveTab] = useState<'gameplay' | 'consoles' | 'retrobat' | 'kiosk' | 'folders'>('gameplay');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
   const [alwaysOnTop, setAlwaysOnTop] = useState(settings.always_on_top);
   const [kioskMode, setKioskMode] = useState(settings.kiosk_mode);
@@ -60,6 +61,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [romsPath, setRomsPath] = useState(settings.roms_path || '');
   const [localRemote, setLocalRemote] = useState<RemoteConfig | undefined>(remoteConfig);
   const [arcadeUiScale, setArcadeUiScale] = useState<'normal' | 'large' | 'xl'>(settings.arcade_ui_scale || 'normal');
+  // RetroBat State
+  const [retroarchShader, setRetroarchShader] = useState(settings.retroarch_shader || 'none');
+  const [aspectRatio, setAspectRatio] = useState(settings.aspect_ratio || '4:3');
+  const [brightness, setBrightness] = useState(settings.brightness ?? 50);
+  const [contrast, setContrast] = useState(settings.contrast ?? 50);
+  const [metadataLanguage, setMetadataLanguage] = useState(settings.metadata_language || 'fr');
+  const [launchResolution, setLaunchResolution] = useState(settings.launch_resolution || 'native');
+  const [forcedFullscreen, setForcedFullscreen] = useState(settings.forced_fullscreen || 'per_game');
+  const [autosaveEnabled, setAutosaveEnabled] = useState(settings.autosave_enabled ?? true);
+  const [rewindEnabled, setRewindEnabled] = useState(settings.rewind_enabled ?? false);
+  const [cheatsDir, setCheatsDir] = useState(settings.cheats_dir || '');
+  const [savesDir, setSavesDir] = useState(settings.saves_dir || '');
+  const [screenshotsDir, setScreenshotsDir] = useState(settings.screenshots_dir || '');
+  const [scrapingDelaySeconds, setScrapingDelaySeconds] = useState(settings.scraping_delay_seconds ?? 1);
+  const [screenscraperSsid, setScreenscraperSsid] = useState(settings.screenscraper_ssid || '');
+  const [screenscraperSspassword, setScreenscraperSspassword] = useState(settings.screenscraper_sspassword || '');
+
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSaveAll = async () => {
@@ -77,6 +95,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       custom_franchises: customFranchises,
       roms_path: romsPath.trim() ? romsPath.trim() : undefined,
       theme: 'retro-80s-light',
+      retroarch_shader: retroarchShader,
+      aspect_ratio: aspectRatio,
+      brightness,
+      contrast,
+      metadata_language: metadataLanguage,
+      launch_resolution: launchResolution,
+      forced_fullscreen: forcedFullscreen,
+      autosave_enabled: autosaveEnabled,
+      rewind_enabled: rewindEnabled,
+      cheats_dir: cheatsDir.trim() ? cheatsDir.trim() : undefined,
+      saves_dir: savesDir.trim() ? savesDir.trim() : undefined,
+      screenshots_dir: screenshotsDir.trim() ? screenshotsDir.trim() : undefined,
+      scraping_delay_seconds: scrapingDelaySeconds,
+      screenscraper_ssid: screenscraperSsid.trim() ? screenscraperSsid.trim() : undefined,
+      screenscraper_sspassword: screenscraperSspassword.trim() ? screenscraperSspassword.trim() : undefined,
     };
 
     await onSave(updated);
@@ -140,6 +173,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Consoles, Modes & Franchises</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('retrobat')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'retrobat'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5" />
+            <span>Émulation & Rendu (RetroBat)</span>
           </button>
 
           <button
@@ -406,6 +451,41 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               setEnabledModes={setEnabledModes}
               enabledFranchises={enabledFranchises}
               setEnabledFranchises={setEnabledFranchises}
+            />
+          )}
+
+          {activeTab === 'retrobat' && (
+            <RetroBatTab
+              retroarchShader={retroarchShader}
+              setRetroarchShader={setRetroarchShader}
+              aspectRatio={aspectRatio}
+              setAspectRatio={setAspectRatio}
+              brightness={brightness}
+              setBrightness={setBrightness}
+              contrast={contrast}
+              setContrast={setContrast}
+              metadataLanguage={metadataLanguage}
+              setMetadataLanguage={setMetadataLanguage}
+              launchResolution={launchResolution}
+              setLaunchResolution={setLaunchResolution}
+              forcedFullscreen={forcedFullscreen}
+              setForcedFullscreen={setForcedFullscreen}
+              autosaveEnabled={autosaveEnabled}
+              setAutosaveEnabled={setAutosaveEnabled}
+              rewindEnabled={rewindEnabled}
+              setRewindEnabled={setRewindEnabled}
+              cheatsDir={cheatsDir}
+              setCheatsDir={setCheatsDir}
+              savesDir={savesDir}
+              setSavesDir={setSavesDir}
+              screenshotsDir={screenshotsDir}
+              setScreenshotsDir={setScreenshotsDir}
+              scrapingDelaySeconds={scrapingDelaySeconds}
+              setScrapingDelaySeconds={setScrapingDelaySeconds}
+              screenscraperSsid={screenscraperSsid}
+              setScreenscraperSsid={setScreenscraperSsid}
+              screenscraperSspassword={screenscraperSspassword}
+              setScreenscraperSspassword={setScreenscraperSspassword}
             />
           )}
 

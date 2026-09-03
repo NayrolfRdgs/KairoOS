@@ -315,6 +315,52 @@ impl Launcher {
             cmd.arg(arg);
         }
 
+        // 4. Injection dynamique des paramètres avancés type RetroBat
+        let app_settings = self.db.get_app_settings().unwrap_or_default();
+        let is_retroarch = emulator.id.to_lowercase() == "retroarch";
+
+        if is_retroarch {
+            // Shaders
+            let chosen_shader = config
+                .and_then(|c| c.shader.clone())
+                .or_else(|| app_settings.retroarch_shader.clone())
+                .unwrap_or_else(|| "none".into());
+            match chosen_shader.as_str() {
+                "scanlines_light" => {
+                    cmd.arg("--set-shader").arg("shaders/shaders_glsl/scanline.glslp");
+                }
+                "scanlines_strong" => {
+                    cmd.arg("--set-shader").arg("shaders/shaders_glsl/scanline-strong.glslp");
+                }
+                "crt_curved" => {
+                    cmd.arg("--set-shader").arg("shaders/shaders_glsl/crt-easymode.glslp");
+                }
+                "none" => {
+                    cmd.arg("--set-shader").arg("none");
+                }
+                custom if !custom.is_empty() => {
+                    cmd.arg("--set-shader").arg(custom);
+                }
+                _ => {}
+            }
+
+            // Mode plein écran forcé
+            let fullscreen_mode = config
+                .and_then(|c| c.forced_fullscreen.clone())
+                .or_else(|| app_settings.forced_fullscreen.clone())
+                .unwrap_or_else(|| "per_game".into());
+            if fullscreen_mode == "always" {
+                cmd.arg("-F");
+            }
+
+            // Dossier de sauvegardes custom
+            if let Some(ref saves) = app_settings.saves_dir {
+                if !saves.trim().is_empty() && Path::new(saves).exists() {
+                    cmd.arg("-s").arg(saves);
+                }
+            }
+        }
+
         cmd.stdin(Stdio::null());
         Ok(cmd)
     }

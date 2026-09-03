@@ -445,6 +445,7 @@ impl RomScanner {
             screen_ratio: None,
             shader: None,
             auto_save_state: true,
+            forced_fullscreen: None,
         });
         let config_path = target_game_dir.join("config.json");
         if let Ok(cfg_json_str) = serde_json::to_string_pretty(&cfg) {

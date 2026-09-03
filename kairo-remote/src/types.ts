@@ -81,12 +81,54 @@ export interface RemoteConfig {
   allowed_origins: string[];
 }
 
+export interface GamepadMapping {
+  player_index: number;
+  device_name: string;
+  device_id: string;
+  controller_type: string;
+  btn_up?: string;
+  btn_down?: string;
+  btn_left?: string;
+  btn_right?: string;
+  btn_a?: string;
+  btn_b?: string;
+  btn_x?: string;
+  btn_y?: string;
+  btn_l1?: string;
+  btn_r1?: string;
+  btn_l2?: string;
+  btn_r2?: string;
+  btn_select?: string;
+  btn_start?: string;
+}
+
 export interface AppSettings {
   fullscreen: boolean;
   always_on_top: boolean;
   kiosk_mode: boolean;
+  auto_kiosk?: boolean;
+  game_select_action?: string;
+  arcade_ui_scale?: string;
   enabled_franchises: string[];
   custom_franchises: any[];
   roms_path?: string;
   theme: string;
+  enabled_systems?: string[];
+  enabled_modes?: string[];
+  default_sort?: string;
+  retroarch_shader?: string;
+  aspect_ratio?: string;
+  brightness?: number;
+  contrast?: number;
+  metadata_language?: string;
+  launch_resolution?: string;
+  forced_fullscreen?: string;
+  autosave_enabled?: boolean;
+  rewind_enabled?: boolean;
+  cheats_dir?: string;
+  saves_dir?: string;
+  screenshots_dir?: string;
+  scraping_delay_seconds?: number;
+  screenscraper_ssid?: string;
+  screenscraper_sspassword?: string;
 }
