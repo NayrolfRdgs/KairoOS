@@ -1,5 +1,6 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use chrono::Utc;
@@ -58,6 +59,91 @@ impl Launcher {
         copy
     }
 
+    pub fn resolve_emulator_exe(
+        emulator_id: &str,
+        configured_path: Option<&str>,
+    ) -> Result<PathBuf, LauncherError> {
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| PathBuf::from("."));
+
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+
+        // 1. Si un chemin est explicitement configuré et existe
+        if let Some(p_str) = configured_path {
+            if !p_str.trim().is_empty() {
+                let p = PathBuf::from(p_str);
+                if p.exists() {
+                    return Ok(p);
+                }
+                let relative_to_current = current_dir.join(&p);
+                if relative_to_current.exists() {
+                    return Ok(relative_to_current);
+                }
+                let relative_to_exe = exe_dir.join(&p);
+                if relative_to_exe.exists() {
+                    return Ok(relative_to_exe);
+                }
+            }
+        }
+
+        // 2. Détection automatique selon le nom de l'émulateur (multiples dossiers et casses)
+        let candidates: Vec<PathBuf> = match emulator_id {
+            "retroarch" => vec![
+                PathBuf::from("emulators/RetroArch/retroarch.exe"),
+                PathBuf::from("emulators/retroarch/retroarch.exe"),
+                exe_dir.join("emulators/RetroArch/retroarch.exe"),
+                exe_dir.join("emulators/retroarch/retroarch.exe"),
+                current_dir.join("emulators/RetroArch/retroarch.exe"),
+                current_dir.join("emulators/retroarch/retroarch.exe"),
+                PathBuf::from("C:\\Emulators\\RetroArch\\retroarch.exe"),
+            ],
+            "pcsx2" => vec![
+                PathBuf::from("emulators/PCSX2/pcsx2-qt.exe"),
+                PathBuf::from("emulators/PCSX2/pcsx2.exe"),
+                exe_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
+                exe_dir.join("emulators/PCSX2/pcsx2.exe"),
+                current_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
+                current_dir.join("emulators/PCSX2/pcsx2.exe"),
+                PathBuf::from("C:\\Emulators\\PCSX2\\pcsx2-qt.exe"),
+            ],
+            "dolphin" => vec![
+                PathBuf::from("emulators/Dolphin/Dolphin.exe"),
+                exe_dir.join("emulators/Dolphin/Dolphin.exe"),
+                current_dir.join("emulators/Dolphin/Dolphin.exe"),
+                PathBuf::from("C:\\Emulators\\Dolphin\\Dolphin.exe"),
+            ],
+            "ryujinx" => vec![
+                PathBuf::from("emulators/Ryujinx/Ryujinx.exe"),
+                PathBuf::from("emulators/Ryujinx/Ryubing.exe"),
+                exe_dir.join("emulators/Ryujinx/Ryujinx.exe"),
+                exe_dir.join("emulators/Ryujinx/Ryubing.exe"),
+                current_dir.join("emulators/Ryujinx/Ryujinx.exe"),
+                current_dir.join("emulators/Ryujinx/Ryubing.exe"),
+                PathBuf::from("C:\\Emulators\\Ryujinx\\Ryujinx.exe"),
+            ],
+            "rpcs3" => vec![
+                PathBuf::from("emulators/RPCS3/rpcs3.exe"),
+                exe_dir.join("emulators/RPCS3/rpcs3.exe"),
+                current_dir.join("emulators/RPCS3/rpcs3.exe"),
+                PathBuf::from("C:\\Emulators\\RPCS3\\rpcs3.exe"),
+            ],
+            _ => vec![],
+        };
+
+        for candidate in candidates {
+            if candidate.exists() {
+                return Ok(candidate);
+            }
+        }
+
+        Err(LauncherError::ExecutableNotFound(format!(
+            "Émulateur '{}' introuvable (vérifiez que le dossier emulators/ contient l'exécutable)",
+            emulator_id
+        )))
+    }
+
     pub fn build_command(
         &self,
         game: &Game,
@@ -72,49 +158,69 @@ impl Launcher {
 
         let is_native = emulator.id == "native" || system.id == "windows";
 
-        let (exe_str, args_template) = if is_native {
-            let exe = game.file_path.clone();
+        let (exe_path_buf, args_template) = if is_native {
+            let exe = PathBuf::from(&game.file_path);
             let args = config
                 .and_then(|c| c.custom_cli_args.clone())
                 .unwrap_or_default();
             (exe, args)
         } else {
-            let exe = match &emulator.exe_path {
-                Some(p) if !p.trim().is_empty() => p.clone(),
-                _ => return Err(LauncherError::ExecutableNotFound(emulator.name.clone())),
-            };
-
+            let exe = Self::resolve_emulator_exe(&emulator.id, emulator.exe_path.as_deref())?;
             let args = config
                 .and_then(|c| c.custom_cli_args.clone())
                 .unwrap_or_else(|| emulator.default_args.clone());
-
             (exe, args)
         };
 
-        let mut cmd = Command::new(&exe_str);
+        let mut cmd = Command::new(&exe_path_buf);
 
         if is_native {
             if let Some(parent) = rom_path.parent() {
                 cmd.current_dir(parent);
             }
-        } else if let Some(parent) = Path::new(&exe_str).parent() {
+        } else if let Some(parent) = exe_path_buf.parent() {
             cmd.current_dir(parent);
         }
 
+        // Résolution du core RetroArch
         let core_name = config
             .and_then(|c| c.custom_core.clone())
             .or_else(|| system.default_core.clone())
             .unwrap_or_default();
 
-        let core_path = if let Some(emu_dir) = Path::new(&exe_str).parent() {
-            emu_dir.join("cores").join(&core_name).to_string_lossy().to_string()
+        let core_path = if !core_name.is_empty() {
+            let mut resolved = core_name.clone();
+            if let Some(emu_parent) = exe_path_buf.parent() {
+                let candidate1 = emu_parent.join("cores").join(&core_name);
+                if candidate1.exists() {
+                    resolved = candidate1.to_string_lossy().to_string();
+                } else {
+                    let candidate2 = emu_parent.join(&core_name);
+                    if candidate2.exists() {
+                        resolved = candidate2.to_string_lossy().to_string();
+                    }
+                }
+            }
+            resolved
         } else {
-            core_name.clone()
+            String::new()
+        };
+
+        // Formater le chemin de la ROM en chemin propre (sans préfixe UNC \\?\ si Windows)
+        let clean_rom_path = if let Ok(canonical) = std::fs::canonicalize(rom_path) {
+            let s = canonical.to_string_lossy().to_string();
+            if let Some(stripped) = s.strip_prefix(r"\\?\") {
+                stripped.to_string()
+            } else {
+                s
+            }
+        } else {
+            game.file_path.clone()
         };
 
         let processed_args = Self::format_cli_arguments(
             &args_template,
-            &game.file_path,
+            &clean_rom_path,
             &game.title,
             &core_path,
         );
@@ -127,6 +233,7 @@ impl Launcher {
         cmd.stdin(Stdio::null());
         Ok(cmd)
     }
+
 
     pub fn launch_game_by_id(&self, game_id: &str) -> Result<LaunchStatus, LauncherError> {
         {

@@ -9,8 +9,15 @@ export function useLauncher(onGameFinished?: () => void) {
     try {
       const status = await apiLaunchGame(game.id);
       setLaunchStatus(status);
-    } catch (err) {
-      console.warn('[useLauncher] Web/simulation fallback:', err);
+    } catch (err: any) {
+      console.error('[useLauncher] Launch error:', err);
+      // En environnement Tauri natif, informer l'utilisateur de l'erreur exacte
+      if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
+        alert(`Impossible de lancer le jeu :\n${err?.message || err}`);
+        setLaunchStatus({ is_running: false });
+        return;
+      }
+      // Simulation dans le navigateur web pur
       setLaunchStatus({
         is_running: true,
         current_game_id: game.id,
@@ -22,6 +29,7 @@ export function useLauncher(onGameFinished?: () => void) {
       });
     }
   }, []);
+
 
   const kill = useCallback(async () => {
     try {
