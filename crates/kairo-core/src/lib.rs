@@ -15,7 +15,10 @@ mod tests {
     use super::*;
     use std::fs::{self, File};
     use std::io::Write;
+    use std::path::PathBuf;
+    use chrono::Utc;
     use tempfile::tempdir;
+
 
     #[test]
     fn test_db_init_and_seed() {
@@ -201,4 +204,52 @@ mod tests {
         assert_eq!(tokens[4], "--title");
         assert_eq!(tokens[5], "Super Mario World");
     }
+
+    #[test]
+    fn test_launcher_resolve_and_command_build() {
+        let temp = tempfile::tempdir().expect("Échec tempdir");
+        let db_path = temp.path().join("test_launcher.db");
+        let db = Database::open(&db_path).expect("DB init");
+        let launcher = Launcher::new(db.clone());
+
+        // Test with real SNES game file
+        let rom_path = PathBuf::from("roms/snes/Super Mario World.sfc");
+        if rom_path.exists() {
+            let snes_system = db.get_system_by_id("snes").expect("query").unwrap();
+            let retroarch_emu = db.get_emulator_by_id("retroarch").expect("query").unwrap();
+            
+            let game = Game {
+                id: "snes-test".into(),
+                system_id: "snes".into(),
+                title: "Super Mario World".into(),
+                original_title: None,
+                file_path: rom_path.to_string_lossy().to_string(),
+                file_name: "Super Mario World.sfc".into(),
+                file_size: 262144,
+                file_hash: None,
+                franchise: Some("Super Mario".into()),
+                cover_url: None,
+                backdrop_url: None,
+                logo_url: None,
+                release_date: Some("1990-11-21".into()),
+                publisher: None,
+                developer: Some("Nintendo EAD".into()),
+                genre: Some("Plateforme".into()),
+                players: Some(2),
+                rating: Some(5.0),
+                synopsis: None,
+                favorite: false,
+                hidden: false,
+                play_count: 0,
+                play_time_seconds: 0,
+                last_played: None,
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            };
+
+            let cmd_res = launcher.build_command(&game, &snes_system, &retroarch_emu, None);
+            assert!(cmd_res.is_ok(), "build_command failed: {:?}", cmd_res.err());
+        }
+    }
 }
+
