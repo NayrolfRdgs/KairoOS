@@ -15,10 +15,17 @@ export default {
           cyan: '#00f0ff',
           yellow: '#ffcc00',
           green: '#00ff66',
+          orange: '#ff5500',
+          warm: '#f4efe6',
+          text: '#282238',
         },
       },
       fontFamily: {
         arcade: ['"Courier New"', 'monospace'],
+      },
+      boxShadow: {
+        retro: '0 4px 14px 0 rgba(255, 51, 102, 0.25)',
+        'retro-neon': '0 0 20px rgba(0, 240, 255, 0.35)',
       },
     },
   },

@@ -1,0 +1,9 @@
+{
+  "fullscreen": false,
+  "always_on_top": false,
+  "kiosk_mode": false,
+  "enabled_franchises": [],
+  "custom_franchises": [],
+  "roms_path": null,
+  "theme": "retro-80s-light"
+}

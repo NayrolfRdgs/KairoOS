@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use axum::{
-    extract::{Path as AxumPath, State},
-    http::{HeaderMap, StatusCode},
+    extract::{Path as AxumPath, Query, State},
+    http::{header, HeaderMap, StatusCode},
     response::{IntoResponse, Json},
     routing::{get, post},
     Router,
@@ -13,7 +13,7 @@ use tower_http::services::{ServeDir, ServeFile};
 
 use crate::db::Database;
 use crate::launcher::Launcher;
-use crate::models::{AppSettings, Game};
+use crate::models::{AppSettings, Emulator, Game};
 
 /// Configuration du serveur distant (config/remote.json)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -61,7 +61,12 @@ impl RemoteConfig {
             let _ = std::fs::create_dir_all(dir);
         }
         let json = serde_json::to_string_pretty(cfg)?;
-        std::fs::write(dir.join("remote.json"), json)?;
+        std::fs::write(dir.join("remote.json"), &json)?;
+
+        let portable_dir = Path::new("dist-portable/config");
+        if portable_dir.exists() {
+            let _ = std::fs::write(portable_dir.join("remote.json"), &json);
+        }
         Ok(())
     }
 }
@@ -80,10 +85,22 @@ pub struct StatusResponse {
     pub current_game_id: Option<String>,
     pub current_game_title: Option<String>,
     pub current_system_id: Option<String>,
+    pub current_game_cover: Option<String>,
     pub elapsed_seconds: Option<u64>,
     pub kiosk_mode: bool,
     pub port: u16,
+    pub local_ip: String,
     pub version: &'static str,
+}
+
+#[derive(Serialize)]
+pub struct SystemInfoResponse {
+    pub local_ip: String,
+    pub port: u16,
+    pub version: &'static str,
+    pub install_dir: String,
+    pub kiosk_mode: bool,
+    pub total_games: usize,
 }
 
 #[derive(Deserialize)]
@@ -103,6 +120,11 @@ pub struct UnlockRequest {
     pub pin: String,
 }
 
+#[derive(Deserialize)]
+pub struct CoverQuery {
+    pub path: String,
+}
+
 #[derive(Serialize)]
 pub struct ApiResponse<T> {
     pub success: bool,
@@ -110,6 +132,19 @@ pub struct ApiResponse<T> {
     pub data: Option<T>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+/// Détecte l'adresse IP locale principale (ex: 192.168.1.30)
+fn get_local_ip() -> String {
+    use std::net::UdpSocket;
+    if let Ok(socket) = UdpSocket::bind("0.0.0.0:0") {
+        if socket.connect("8.8.8.8:80").is_ok() {
+            if let Ok(local_addr) = socket.local_addr() {
+                return local_addr.ip().to_string();
+            }
+        }
+    }
+    "127.0.0.1".to_string()
 }
 
 /// Vérifie le code PIN via le header X-Kairo-Pin
@@ -170,15 +205,21 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
 
             let api_routes = Router::new()
                 .route("/api/status", get(get_status))
+                .route("/api/system/info", get(get_system_info))
                 .route("/api/games", get(get_games))
+                .route("/api/games/recent", get(get_recent_games))
                 .route("/api/games/:id", get(get_game_by_id))
+                .route("/api/games/:id/favorite", post(toggle_game_favorite))
                 .route("/api/games/launch", post(launch_game))
                 .route("/api/games/stop", post(stop_game))
                 .route("/api/games/add", post(add_game))
                 .route("/api/systems", get(get_systems))
+                .route("/api/emulators", get(get_emulators).post(save_emulators))
                 .route("/api/settings", get(get_settings).post(save_settings))
+                .route("/api/remote/config", get(get_remote_cfg).post(save_remote_cfg))
                 .route("/api/kiosk/lock", post(lock_kiosk))
                 .route("/api/kiosk/unlock", post(unlock_kiosk))
+                .route("/api/media/cover", get(get_cover_image))
                 .with_state(state.clone());
 
             let app = if pwa_dir.exists() {
@@ -191,7 +232,8 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
                 Router::new().merge(api_routes).layer(cors)
             };
 
-            println!("🌐 Serveur distant KaïroOS démarré sur http://localhost:{} (Accès PWA Mobile)", port);
+            let local_ip = get_local_ip();
+            println!("🌐 Serveur distant KaïroOS démarré sur http://{}:{} (Accès PWA Mobile)", local_ip, port);
 
             match tokio::net::TcpListener::bind(addr).await {
                 Ok(listener) => {
@@ -213,21 +255,60 @@ async fn get_status(State(state): State<RemoteServerState>) -> impl IntoResponse
     let launch_status = state.launcher.get_status();
     let settings = state.db.get_app_settings().unwrap_or_default();
     let config = RemoteConfig::load();
+    let local_ip = get_local_ip();
+
+    let mut current_game_cover: Option<String> = None;
+    if let Some(ref gid) = launch_status.current_game_id {
+        if let Ok(Some(g)) = state.db.get_game_by_id(gid) {
+            current_game_cover = g.cover_url;
+        }
+    }
 
     Json(StatusResponse {
         is_running: launch_status.is_running,
         current_game_id: launch_status.current_game_id,
         current_game_title: launch_status.current_game_title,
         current_system_id: launch_status.current_system_id,
+        current_game_cover,
         elapsed_seconds: launch_status.elapsed_seconds,
         kiosk_mode: settings.kiosk_mode,
         port: config.port,
+        local_ip,
         version: "0.1.0",
+    })
+}
+
+async fn get_system_info(State(state): State<RemoteServerState>) -> impl IntoResponse {
+    let settings = state.db.get_app_settings().unwrap_or_default();
+    let config = RemoteConfig::load();
+    let local_ip = get_local_ip();
+    let total_games = state.db.get_all_games().map(|g| g.len()).unwrap_or(0);
+    let install_dir = std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|_| ".".into());
+
+    Json(SystemInfoResponse {
+        local_ip,
+        port: config.port,
+        version: "0.1.0",
+        install_dir,
+        kiosk_mode: settings.kiosk_mode,
+        total_games,
     })
 }
 
 async fn get_games(State(state): State<RemoteServerState>) -> impl IntoResponse {
     match state.db.get_all_games() {
+        Ok(games) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(games), error: None })),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
+        ),
+    }
+}
+
+async fn get_recent_games(State(state): State<RemoteServerState>) -> impl IntoResponse {
+    match state.db.get_recently_played_games(5) {
         Ok(games) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(games), error: None })),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -246,6 +327,28 @@ async fn get_game_by_id(
             StatusCode::NOT_FOUND,
             Json(ApiResponse { success: false, data: None, error: Some("Jeu introuvable".into()) }),
         ),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
+        ),
+    }
+}
+
+async fn toggle_game_favorite(
+    AxumPath(id): AxumPath<String>,
+    headers: HeaderMap,
+    State(state): State<RemoteServerState>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse { success: false, data: None, error: Some("Code PIN non valide".into()) }),
+        );
+    }
+
+    match state.db.toggle_favorite(&id) {
+        Ok(fav) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(fav), error: None })),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
@@ -364,6 +467,51 @@ async fn get_systems(State(state): State<RemoteServerState>) -> impl IntoRespons
     }
 }
 
+async fn get_emulators(State(state): State<RemoteServerState>) -> impl IntoResponse {
+    match state.db.get_emulators() {
+        Ok(emus) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(emus), error: None })),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
+        ),
+    }
+}
+
+async fn save_emulators(
+    headers: HeaderMap,
+    State(state): State<RemoteServerState>,
+    Json(emulators): Json<Vec<Emulator>>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse { success: false, data: None, error: Some("Code PIN non valide".into()) }),
+        );
+    }
+
+    for emu in &emulators {
+        if let Err(e) = state.db.upsert_emulator(emu) {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) }),
+            );
+        }
+    }
+
+    // Écrire également config/emulators.json
+    let config_dir = Path::new("config");
+    if let Ok(pretty) = serde_json::to_string_pretty(&emulators) {
+        let _ = std::fs::write(config_dir.join("emulators.json"), &pretty);
+        let portable_dir = Path::new("dist-portable/config");
+        if portable_dir.exists() {
+            let _ = std::fs::write(portable_dir.join("emulators.json"), &pretty);
+        }
+    }
+
+    (StatusCode::OK, Json(ApiResponse { success: true, data: Some(emulators), error: None }))
+}
+
 async fn get_settings(State(state): State<RemoteServerState>) -> impl IntoResponse {
     match state.db.get_app_settings() {
         Ok(settings) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(settings), error: None })),
@@ -389,6 +537,32 @@ async fn save_settings(
 
     match state.db.save_app_settings(&new_settings) {
         Ok(()) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(new_settings), error: None })),
+        Err(err) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
+        ),
+    }
+}
+
+async fn get_remote_cfg() -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    Json(ApiResponse { success: true, data: Some(config), error: None })
+}
+
+async fn save_remote_cfg(
+    headers: HeaderMap,
+    Json(cfg): Json<RemoteConfig>,
+) -> impl IntoResponse {
+    let current_cfg = RemoteConfig::load();
+    if !verify_pin(&headers, &current_cfg.pin) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse { success: false, data: None, error: Some("Code PIN non valide".into()) }),
+        );
+    }
+
+    match RemoteConfig::save(&cfg) {
+        Ok(()) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(cfg), error: None })),
         Err(err) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ApiResponse { success: false, data: None, error: Some(err.to_string()) }),
@@ -432,4 +606,29 @@ async fn unlock_kiosk(
     let _ = state.db.save_app_settings(&settings);
 
     (StatusCode::OK, Json(ApiResponse { success: true, data: Some("Mode Admin déverrouillé"), error: None }))
+}
+
+async fn get_cover_image(Query(query): Query<CoverQuery>) -> impl IntoResponse {
+    let path = PathBuf::from(&query.path);
+    if !path.exists() {
+        return (StatusCode::NOT_FOUND, "Image non trouvée").into_response();
+    }
+
+    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+    let content_type = match ext.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        _ => "application/octet-stream",
+    };
+
+    match std::fs::read(&path) {
+        Ok(bytes) => (
+            StatusCode::OK,
+            [(header::CONTENT_TYPE, content_type)],
+            bytes,
+        ).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Erreur lecture image").into_response(),
+    }
 }
