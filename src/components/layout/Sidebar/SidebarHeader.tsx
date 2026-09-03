@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gamepad2, Settings as SettingsIcon, Lock } from 'lucide-react';
+import { Gamepad2, Settings as SettingsIcon, Lock, PlusCircle } from 'lucide-react';
 import { AppMode } from '../../../types';
 
 interface SidebarHeaderProps {
@@ -9,6 +9,7 @@ interface SidebarHeaderProps {
   onOpenSettings: () => void;
   onOpenGamepadSettings?: () => void;
   onOpenKioskUnlock?: () => void;
+  onOpenAddGame?: () => void;
 }
 
 export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
@@ -18,7 +19,9 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
   onOpenSettings,
   onOpenGamepadSettings,
   onOpenKioskUnlock,
+  onOpenAddGame,
 }) => {
+
   const isKiosk = appMode === 'kiosk';
 
   return (
@@ -68,6 +71,15 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
         ) : (
           <>
             <button
+              onClick={onOpenAddGame}
+              title="Ajouter un jeu manuellement (ROM / Exécutable)"
+              className="p-2 rounded-xl border border-purple-100 bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-500 hover:border-rose-200 shadow-xs transition-all"
+            >
+              <PlusCircle className="w-4 h-4" />
+            </button>
+
+
+            <button
               onClick={onOpenGamepadSettings}
               title={
                 gamepadConnected
@@ -96,3 +108,4 @@ export const SidebarHeader: React.FC<SidebarHeaderProps> = ({
     </div>
   );
 };
+

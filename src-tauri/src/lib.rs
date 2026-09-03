@@ -121,7 +121,9 @@ pub fn run() {
             commands::set_app_mode,
             commands::get_remote_config,
             commands::save_remote_config,
+            commands::add_manual_game,
         ])
         .run(tauri::generate_context!())
+
         .expect("Erreur lors de l'exécution de KaïroOS");
 }

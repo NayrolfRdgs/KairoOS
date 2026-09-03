@@ -9,6 +9,7 @@ import {
   ScannerModal,
   FranchiseOrganizerModal,
   KioskUnlockModal,
+  AddGameModal,
 } from './components/modals';
 import { LaunchOverlay } from './components/overlay';
 import { useLibrary, useLauncher, useAppSettings, useGamepad } from './hooks';
@@ -19,6 +20,7 @@ import {
   saveLocalGameMetadata,
   organizeGameIntoFranchise,
   scanRomsDirectory,
+  addManualGame,
 } from './api';
 
 export const App: React.FC = () => {
@@ -71,16 +73,29 @@ export const App: React.FC = () => {
   const [gameConfigForDetails, setGameConfigForDetails] = useState<GameConfig | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addGameOpen, setAddGameOpen] = useState(false);
   const [gamepadSettingsOpen, setGamepadSettingsOpen] = useState(false);
   const [kioskUnlockOpen, setKioskUnlockOpen] = useState(false);
   const [franchiseOrganizerGame, setFranchiseOrganizerGame] = useState<Game | null>(null);
 
   const isKiosk = appMode === 'kiosk';
 
-  // Chargement initial des données
+  // Chargement initial des données & Auto-scan du dossier ROMs (ex: ./roms en mode portable)
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const initApp = async () => {
+      await loadData();
+      try {
+        const romPath = settings.roms_path || './roms';
+        const stats = await scanRomsDirectory(romPath);
+        if (stats.games_added > 0 || stats.games_updated > 0) {
+          await loadData();
+        }
+      } catch (err) {
+        console.warn('[App] Auto-scan background:', err);
+      }
+    };
+    initApp();
+  }, [loadData, settings.roms_path]);
 
   // Raccourcis clavier globaux (F11 plein écran, Échap fermeture modales, Ctrl+K focus recherche)
   useEffect(() => {
@@ -92,6 +107,7 @@ export const App: React.FC = () => {
         if (selectedGameForDetails) setSelectedGameForDetails(null);
         else if (scannerOpen) setScannerOpen(false);
         else if (settingsOpen) setSettingsOpen(false);
+        else if (addGameOpen) setAddGameOpen(false);
         else if (gamepadSettingsOpen) setGamepadSettingsOpen(false);
         else if (kioskUnlockOpen) setKioskUnlockOpen(false);
         else if (franchiseOrganizerGame) setFranchiseOrganizerGame(null);
@@ -104,6 +120,7 @@ export const App: React.FC = () => {
     selectedGameForDetails,
     scannerOpen,
     settingsOpen,
+    addGameOpen,
     gamepadSettingsOpen,
     kioskUnlockOpen,
     franchiseOrganizerGame,
@@ -145,11 +162,28 @@ export const App: React.FC = () => {
     if (isKiosk) return;
     try {
       await saveLocalGameMetadata(gameId, metadata);
-      loadData();
+      await loadData();
     } catch (err) {
       console.warn('[App] Save metadata fallback:', err);
       updateLocalGame(gameId, metadata);
     }
+  };
+
+  const handleAddManualGame = async (gameData: {
+    filePath: string;
+    systemId: string;
+    title?: string;
+    coverUrl?: string;
+    franchise?: string;
+    genre?: string;
+    developer?: string;
+    releaseDate?: string;
+    synopsis?: string;
+    rating?: number;
+    players?: number;
+  }) => {
+    await addManualGame(gameData);
+    await loadData();
   };
 
   // Actions de navigation Manette
@@ -160,6 +194,7 @@ export const App: React.FC = () => {
           selectedGameForDetails ||
           scannerOpen ||
           settingsOpen ||
+          addGameOpen ||
           gamepadSettingsOpen ||
           kioskUnlockOpen ||
           franchiseOrganizerGame ||
@@ -184,6 +219,7 @@ export const App: React.FC = () => {
         } else if (
           !scannerOpen &&
           !settingsOpen &&
+          !addGameOpen &&
           !gamepadSettingsOpen &&
           !kioskUnlockOpen &&
           !franchiseOrganizerGame &&
@@ -202,6 +238,7 @@ export const App: React.FC = () => {
         if (selectedGameForDetails) setSelectedGameForDetails(null);
         else if (scannerOpen) setScannerOpen(false);
         else if (settingsOpen) setSettingsOpen(false);
+        else if (addGameOpen) setAddGameOpen(false);
         else if (gamepadSettingsOpen) setGamepadSettingsOpen(false);
         else if (kioskUnlockOpen) setKioskUnlockOpen(false);
         else if (franchiseOrganizerGame) setFranchiseOrganizerGame(null);
@@ -216,6 +253,7 @@ export const App: React.FC = () => {
           !selectedGameForDetails &&
           !scannerOpen &&
           !settingsOpen &&
+          !addGameOpen &&
           !gamepadSettingsOpen &&
           !kioskUnlockOpen &&
           filteredAndSortedGames[focusedIndex]
@@ -240,6 +278,7 @@ export const App: React.FC = () => {
       selectedGameForDetails,
       scannerOpen,
       settingsOpen,
+      addGameOpen,
       gamepadSettingsOpen,
       kioskUnlockOpen,
       franchiseOrganizerGame,
@@ -255,6 +294,7 @@ export const App: React.FC = () => {
   const isAnyModalOpen =
     scannerOpen ||
     settingsOpen ||
+    addGameOpen ||
     gamepadSettingsOpen ||
     kioskUnlockOpen ||
     franchiseOrganizerGame !== null ||
@@ -294,6 +334,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenGamepadSettings={() => setGamepadSettingsOpen(true)}
         onOpenKioskUnlock={() => setKioskUnlockOpen(true)}
+        onOpenAddGame={() => setAddGameOpen(true)}
       />
 
       {/* 2. Panneau Principal (Barre de Recherche + Catalogue Netflix-Arcade) */}
@@ -346,6 +387,15 @@ export const App: React.FC = () => {
         />
       )}
 
+      {addGameOpen && !isKiosk && (
+        <AddGameModal
+          systems={systems}
+          onClose={() => setAddGameOpen(false)}
+          onAddGame={handleAddManualGame}
+          defaultSystemId={selectedCategory !== 'all' && selectedCategory !== 'favorites' && selectedCategory !== 'recent' ? selectedCategory : 'arcade'}
+        />
+      )}
+
       {scannerOpen && !isKiosk && (
         <ScannerModal
           onClose={() => setScannerOpen(false)}
@@ -371,6 +421,7 @@ export const App: React.FC = () => {
             setSettingsOpen(false);
             lockKiosk();
           }}
+          onScanComplete={loadData}
         />
       )}
 

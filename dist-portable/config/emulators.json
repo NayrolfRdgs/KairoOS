@@ -1,11 +1,19 @@
 [
   {
     "id": "retroarch",
-    "name": "RetroArch (Multi-Systèmes: SNES, PS1, N64, GBA, Arcade)",
+    "name": "RetroArch",
     "exe_path": "./emulators/RetroArch/retroarch.exe",
     "default_args": "-L \"{core_path}\" \"{rom_path}\"",
     "is_builtin": true,
     "website_url": "https://www.retroarch.com/"
+  },
+  {
+    "id": "ryujinx",
+    "name": "Ryujinx (Nintendo Switch)",
+    "exe_path": "./emulators/Ryujinx/Ryujinx.exe",
+    "default_args": "-f -g \"{rom_path}\"",
+    "is_builtin": true,
+    "website_url": "https://ryujinx.org/"
   },
   {
     "id": "pcsx2",
@@ -24,12 +32,12 @@
     "website_url": "https://dolphin-emu.org/"
   },
   {
-    "id": "ryujinx",
-    "name": "Ryujinx (Nintendo Switch)",
-    "exe_path": "./emulators/Ryujinx/Ryujinx.exe",
-    "default_args": "-f -g \"{rom_path}\"",
+    "id": "rpcs3",
+    "name": "RPCS3 (PlayStation 3)",
+    "exe_path": "./emulators/RPCS3/rpcs3.exe",
+    "default_args": "--no-gui \"{rom_path}\"",
     "is_builtin": true,
-    "website_url": "https://github.com/Ryubing/Ryujinx"
+    "website_url": "https://rpcs3.net/"
   },
   {
     "id": "native",

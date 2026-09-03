@@ -1,6 +1,10 @@
 {
-  "enabled": true,
+  "enabled": false,
   "port": 8080,
-  "pin": "1234",
-  "allowed_origins": ["*"]
+  "bind_address": "0.0.0.0",
+  "require_pin": true,
+  "pin_code": "1980",
+  "allow_game_install": true,
+  "allow_remote_control": true,
+  "websocket_sync": true
 }

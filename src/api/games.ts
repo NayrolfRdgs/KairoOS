@@ -44,3 +44,32 @@ export async function organizeGameIntoFranchise(
     targetBaseDir,
   });
 }
+
+export async function addManualGame(params: {
+  filePath: string;
+  systemId: string;
+  title?: string;
+  coverUrl?: string;
+  franchise?: string;
+  genre?: string;
+  developer?: string;
+  releaseDate?: string;
+  synopsis?: string;
+  rating?: number;
+  players?: number;
+}): Promise<Game> {
+  return invokeCommand<Game>('add_manual_game', {
+    filePath: params.filePath,
+    systemId: params.systemId,
+    title: params.title,
+    coverUrl: params.coverUrl,
+    franchise: params.franchise,
+    genre: params.genre,
+    developer: params.developer,
+    releaseDate: params.releaseDate,
+    synopsis: params.synopsis,
+    rating: params.rating,
+    players: params.players,
+  });
+}
+

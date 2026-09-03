@@ -282,4 +282,87 @@ pub fn save_remote_config(config: RemoteConfig) -> Result<(), String> {
     RemoteConfig::save(&config).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+pub fn add_manual_game(
+    file_path: String,
+    system_id: String,
+    title: Option<String>,
+    cover_url: Option<String>,
+    franchise: Option<String>,
+    genre: Option<String>,
+    developer: Option<String>,
+    release_date: Option<String>,
+    synopsis: Option<String>,
+    rating: Option<f32>,
+    players: Option<u32>,
+    state: State<'_, AppState>,
+) -> Result<Game, String> {
+    let path = Path::new(&file_path);
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let file_size = if path.exists() {
+        path.metadata().map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+
+    let clean_title = title.unwrap_or_else(|| {
+        RomScanner::clean_game_title(&file_name)
+    });
+
+    let short_id = uuid::Uuid::new_v4().to_string().replace('-', "");
+    let id = format!("{}-{}", system_id, &short_id[..8]);
+    let now = chrono::Utc::now();
+
+    let game = Game {
+        id: id.clone(),
+        system_id,
+        title: clean_title,
+        original_title: None,
+        file_path: file_path.clone(),
+        file_name,
+        file_size,
+        file_hash: None,
+        franchise,
+        cover_url,
+        backdrop_url: None,
+        logo_url: None,
+        release_date,
+        publisher: None,
+        developer,
+        genre,
+        players: players.or(Some(1)),
+        rating: rating.or(Some(4.5)),
+        synopsis,
+        favorite: false,
+        hidden: false,
+        play_count: 0,
+        play_time_seconds: 0,
+        last_played: None,
+        created_at: now,
+        updated_at: now,
+    };
+
+    state.db.insert_game(&game).map_err(|e| e.to_string())?;
+
+    let config = GameConfig {
+        id: format!("cfg-{}", id),
+        game_id: id,
+        emulator_id_override: None,
+        custom_cli_args: None,
+        custom_core: None,
+        screen_ratio: None,
+        shader: None,
+        auto_save_state: true,
+    };
+    let _ = state.db.upsert_game_config(&config);
+
+    Ok(game)
+}
+
+
 

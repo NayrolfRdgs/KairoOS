@@ -26,6 +26,7 @@ interface SettingsModalProps {
   remoteConfig?: RemoteConfig;
   onSaveRemoteConfig?: (cfg: RemoteConfig) => Promise<void>;
   onLockKioskNow?: () => void;
+  onScanComplete?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -37,7 +38,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   remoteConfig,
   onSaveRemoteConfig,
   onLockKioskNow,
+  onScanComplete,
 }) => {
+
   const [activeTab, setActiveTab] = useState<'gameplay' | 'kiosk' | 'franchises' | 'folders'>('gameplay');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
   const [alwaysOnTop, setAlwaysOnTop] = useState(settings.always_on_top);
@@ -310,8 +313,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <FoldersTab
               romsPath={romsPath}
               setRomsPath={setRomsPath}
+              onScanComplete={onScanComplete}
             />
           )}
+
         </div>
 
         {/* Footer Actions */}
