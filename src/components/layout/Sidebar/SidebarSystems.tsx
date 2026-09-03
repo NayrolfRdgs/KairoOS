@@ -16,6 +16,7 @@ interface SidebarSystemsProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
   gamesCountBySystem: Record<string, number>;
+  enabledSystems?: string[];
 }
 
 export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
@@ -23,7 +24,12 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
   selectedCategory,
   onSelectCategory,
   gamesCountBySystem,
+  enabledSystems,
 }) => {
+  const visibleSystems = systems.filter((s) => {
+    if (!enabledSystems || enabledSystems.length === 0) return true;
+    return enabledSystems.includes(s.id);
+  });
   const getSystemIcon = (id: string) => {
     switch (id.toLowerCase()) {
       case 'windows':
@@ -68,7 +74,7 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
       </h3>
 
       <div className="space-y-0.5">
-        {systems.map((system) => {
+        {visibleSystems.map((system) => {
           const Icon = getSystemIcon(system.id);
           const isSelected = selectedCategory === system.id;
           const count = gamesCountBySystem[system.id] || 0;

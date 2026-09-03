@@ -98,6 +98,15 @@ export function useLibrary({ customFranchises = [] }: UseLibraryProps = {}) {
 
   const totalFavorites = useMemo(() => allGames.filter((g) => g.favorite).length, [allGames]);
   const totalRecent = useMemo(() => allGames.filter((g) => g.play_count > 0).length, [allGames]);
+  const total2Players = useMemo(() => allGames.filter((g) => g.players && g.players >= 2).length, [allGames]);
+  const totalFightGames = useMemo(() => allGames.filter((g) => {
+    const genre = (g.genre || '').toLowerCase();
+    return genre.includes('combat') || genre.includes('fight') || genre.includes('versus');
+  }).length, [allGames]);
+  const totalPlatformGames = useMemo(() => allGames.filter((g) => {
+    const genre = (g.genre || '').toLowerCase();
+    return genre.includes('plateforme') || genre.includes('platform');
+  }).length, [allGames]);
 
   const availableGenres = useMemo(() => {
     const set = new Set<string>();
@@ -110,14 +119,28 @@ export function useLibrary({ customFranchises = [] }: UseLibraryProps = {}) {
   const filteredAndSortedGames = useMemo(() => {
     let list = [...allGames];
 
-    // 1. Filtrage par Catégorie / Console / Franchise
+    // 1. Filtrage par Catégorie / Console / Franchise / Collections Intelligentes
     if (selectedCategory === 'favorites') {
       list = list.filter((g) => g.favorite);
     } else if (selectedCategory === 'recent') {
       list = list.filter((g) => g.play_count > 0);
+    } else if (selectedCategory === '2-players') {
+      list = list.filter((g) => g.players && g.players >= 2);
+    } else if (selectedCategory === 'genre:fight') {
+      list = list.filter((g) => {
+        const genre = (g.genre || '').toLowerCase();
+        return genre.includes('combat') || genre.includes('fight') || genre.includes('versus');
+      });
+    } else if (selectedCategory === 'genre:platform') {
+      list = list.filter((g) => {
+        const genre = (g.genre || '').toLowerCase();
+        return genre.includes('plateforme') || genre.includes('platform');
+      });
     } else if (selectedCategory.startsWith('system:')) {
       const sysId = selectedCategory.replace('system:', '');
       list = list.filter((g) => g.system_id === sysId);
+    } else if (systems.some((s) => s.id === selectedCategory)) {
+      list = list.filter((g) => g.system_id === selectedCategory);
     } else if (selectedCategory.startsWith('franchise:')) {
       const fId = selectedCategory.replace('franchise:', '');
       const franchise = allFranchises.find((f) => f.id === fId);
@@ -177,6 +200,9 @@ export function useLibrary({ customFranchises = [] }: UseLibraryProps = {}) {
     gamesCountByFranchise,
     totalFavorites,
     totalRecent,
+    total2Players,
+    totalFightGames,
+    totalPlatformGames,
     availableGenres,
     filteredAndSortedGames,
   };

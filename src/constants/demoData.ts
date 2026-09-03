@@ -432,4 +432,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   enabled_franchises: ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg'],
   custom_franchises: [],
   theme: 'retro-80s-light',
+  enabled_systems: undefined,
+  default_sort: 'title-asc',
+  auto_kiosk: false,
 };

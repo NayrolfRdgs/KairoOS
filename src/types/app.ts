@@ -11,6 +11,9 @@ export interface AppSettings {
   custom_franchises: import('./system').CustomFranchise[];
   roms_path?: string;
   theme: string;
+  enabled_systems?: string[];
+  default_sort?: import('../utils/sort').SortOption;
+  auto_kiosk?: boolean;
 }
 
 export interface RemoteConfig {

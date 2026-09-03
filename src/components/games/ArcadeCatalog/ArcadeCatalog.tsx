@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Game } from '../../../types';
-import { HeroShowcase } from '../HeroShowcase';
-import { GameShelf } from '../GameShelf';
+import { GameCard } from '../GameCard';
+import { Gamepad2 } from 'lucide-react';
 
 interface ArcadeCatalogProps {
   games: Game[];
@@ -12,6 +12,7 @@ interface ArcadeCatalogProps {
   onOpenGamepadConfig?: () => void;
   selectedCategory: string;
   isSearching: boolean;
+  categoryTitle?: string;
 }
 
 export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
@@ -20,132 +21,48 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
   onSelectGame,
   onLaunchGame,
   onToggleFavorite,
-  onOpenGamepadConfig,
-  selectedCategory,
-  isSearching,
+  categoryTitle,
 }) => {
-  // Jeu mis en avant (Hero) : Priorité au jeu actuellement focus ou au premier jeu 'featured' ou au premier de la liste
-  const featuredGame = useMemo(() => {
-    if (focusedGameId) {
-      const found = games.find((g) => g.id === focusedGameId);
-      if (found) return found;
-    }
-    const hero = games.find((g) => g.featured) || games[0];
-    return hero || null;
-  }, [games, focusedGameId]);
-
-  // Étagère 1 : À l'affiche (Top rated / Featured)
-  const aLafficheGames = useMemo(() => {
-    return games.filter((g) => g.rating && g.rating >= 4.7);
-  }, [games]);
-
-  // Étagère 2 : Recommandés pour vous
-  const recommendedGames = useMemo(() => {
-    return games.filter((g) => !aLafficheGames.some((ag) => ag.id === g.id));
-  }, [games, aLafficheGames]);
-
-  // Étagère 3 : Récemment joués
-  const recentGames = useMemo(() => {
-    return games.filter((g) => g.last_played || g.play_count > 0);
-  }, [games]);
-
-  // Étagère 4 : Favoris
-  const favoriteGames = useMemo(() => {
-    return games.filter((g) => g.favorite);
-  }, [games]);
-
   if (games.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-12 text-center text-slate-400 select-none">
-        <p className="text-sm font-bold font-sans">Aucun jeu trouvé pour cette sélection.</p>
-      </div>
-    );
-  }
-
-  // Si on est en mode recherche ou filtrage précis
-  if (isSearching || (selectedCategory !== 'all' && selectedCategory !== 'favorites' && selectedCategory !== 'recent')) {
-    return (
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
-        {featuredGame && (
-          <HeroShowcase
-            game={featuredGame}
-            onLaunch={onLaunchGame}
-            onOpenDetails={onSelectGame}
-            onToggleFavorite={onToggleFavorite}
-            onOpenGamepadConfig={onOpenGamepadConfig}
-            isFocused={focusedGameId === featuredGame.id}
-          />
-        )}
-
-        <GameShelf
-          title={`JEUX DISPONIBLES (${games.length})`}
-          games={games}
-          focusedGameId={focusedGameId}
-          onSelectGame={onSelectGame}
-          onLaunchGame={onLaunchGame}
-          onToggleFavorite={onToggleFavorite}
-        />
+        <div className="w-16 h-16 rounded-3xl bg-purple-50 border border-purple-100 flex items-center justify-center text-rose-500 mb-3 shadow-xs">
+          <Gamepad2 className="w-8 h-8" />
+        </div>
+        <p className="text-base font-black text-slate-700">Aucun jeu dans cette sélection</p>
+        <p className="text-xs text-slate-400 mt-1">Ajoutez des ROMs ou modifiez les filtres dans les paramètres.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
-      {/* 1. Zone Héro Spectaculaire (À l'affiche) */}
-      {featuredGame && (
-        <HeroShowcase
-          game={featuredGame}
-          onLaunch={onLaunchGame}
-          onOpenDetails={onSelectGame}
-          onToggleFavorite={onToggleFavorite}
-          onOpenGamepadConfig={onOpenGamepadConfig}
-          isFocused={focusedGameId === featuredGame.id}
-        />
-      )}
+    <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin">
+      {/* En-tête de catégorie discret */}
+      <div className="flex items-center justify-between mb-4 pb-2 border-b border-purple-100/60">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs animate-pulse" />
+          <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 font-mono">
+            {categoryTitle || 'CATALOGUE DE JEUX'}
+          </h2>
+        </div>
+        <span className="text-[11px] font-mono font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+          {games.length} {games.length > 1 ? 'JEUX' : 'JEU'}
+        </span>
+      </div>
 
-      {/* 2. Rayon 1 : À L'AFFICHE */}
-      <GameShelf
-        title="À L'AFFICHE"
-        games={aLafficheGames.length > 0 ? aLafficheGames : games.slice(0, 8)}
-        focusedGameId={focusedGameId}
-        onSelectGame={onSelectGame}
-        onLaunchGame={onLaunchGame}
-        onToggleFavorite={onToggleFavorite}
-      />
-
-      {/* 3. Rayon 2 : RECOMMANDÉ POUR VOUS */}
-      <GameShelf
-        title="RECOMMANDÉ POUR VOUS"
-        games={recommendedGames.length > 0 ? recommendedGames : games.slice(6)}
-        focusedGameId={focusedGameId}
-        onSelectGame={onSelectGame}
-        onLaunchGame={onLaunchGame}
-        onToggleFavorite={onToggleFavorite}
-      />
-
-      {/* 4. Rayon 3 : VOS FAVORIS (si présents) */}
-      {favoriteGames.length > 0 && (
-        <GameShelf
-          title="VOS FAVORIS"
-          games={favoriteGames}
-          focusedGameId={focusedGameId}
-          onSelectGame={onSelectGame}
-          onLaunchGame={onLaunchGame}
-          onToggleFavorite={onToggleFavorite}
-        />
-      )}
-
-      {/* 5. Rayon 4 : RÉCEMMENT JOUÉS (si présents) */}
-      {recentGames.length > 0 && (
-        <GameShelf
-          title="RÉCEMMENT JOUÉS"
-          games={recentGames}
-          focusedGameId={focusedGameId}
-          onSelectGame={onSelectGame}
-          onLaunchGame={onLaunchGame}
-          onToggleFavorite={onToggleFavorite}
-        />
-      )}
+      {/* Grille Plein Écran de tous les jeux */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 sm:gap-5 justify-items-center">
+        {games.map((game) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            isFocused={focusedGameId === game.id}
+            onSelect={onSelectGame}
+            onLaunch={onLaunchGame}
+            onToggleFavorite={onToggleFavorite}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -164,6 +164,14 @@ pub struct AppSettings {
     pub custom_franchises: Vec<CustomFranchise>,
     pub roms_path: Option<String>,
     pub theme: String,
+    #[serde(default)]
+    pub enabled_systems: Option<Vec<String>>,
+    #[serde(default)]
+    pub default_sort: Option<String>,
+    #[serde(default)]
+    pub auto_kiosk: bool,
+    #[serde(default)]
+    pub game_select_action: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -183,6 +191,10 @@ impl Default for AppSettings {
             custom_franchises: Vec::new(),
             roms_path: Some("./roms".into()),
             theme: "retro-80s-light".into(),
+            enabled_systems: None,
+            default_sort: Some("title_asc".into()),
+            auto_kiosk: false,
+            game_select_action: Some("details".into()),
         }
     }
 }

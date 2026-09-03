@@ -107,7 +107,14 @@ impl RomScanner {
                 let file_size = actual_path.metadata().map(|m| m.len()).unwrap_or(0);
                 
                 // 1. Lire les métadonnées locales adjacentes (.json / metadata.json / kairo.json)
-                let local_meta = Self::read_adjacent_metadata(path_to_use);
+                // Filtrer si le JSON appartient manifestement à une autre console (anti-collision)
+                let local_meta = Self::read_adjacent_metadata(path_to_use).filter(|m| {
+                    if let Some(ref sys_id) = m.system_id {
+                        sys_id.eq_ignore_ascii_case(&system.id)
+                    } else {
+                        true
+                    }
+                });
 
                 // 2. Détecter l'image jaquette locale adjacente (.png/.jpg / cover.png)
                 let local_cover = Self::find_adjacent_cover(path_to_use);

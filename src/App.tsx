@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
-import { FilterBar } from './components/layout/FilterBar';
 import { ArcadeCatalog } from './components/games';
 import {
   GameDetailsModal,
@@ -50,12 +49,8 @@ export const App: React.FC = () => {
     updateLocalGame,
     selectedCategory,
     setSelectedCategory,
-    searchQuery,
-    setSearchQuery,
     sortBy,
     setSortBy,
-    selectedGenre,
-    setSelectedGenre,
     focusedIndex,
     setFocusedIndex,
     allFranchises,
@@ -63,11 +58,27 @@ export const App: React.FC = () => {
     gamesCountByFranchise,
     totalFavorites,
     totalRecent,
-    availableGenres,
+    total2Players,
+    totalFightGames,
+    totalPlatformGames,
     filteredAndSortedGames,
   } = useLibrary({ customFranchises: settings.custom_franchises });
 
   const { launchStatus, isGameRunning, launch, kill } = useLauncher(loadData);
+
+  // Synchronisation du tri par défaut depuis les paramètres
+  useEffect(() => {
+    if (settings.default_sort && settings.default_sort !== sortBy) {
+      setSortBy(settings.default_sort);
+    }
+  }, [settings.default_sort, setSortBy, sortBy]);
+
+  // Démarrage automatique en mode Kiosque si configuré
+  useEffect(() => {
+    if (settings.auto_kiosk && appMode !== 'kiosk') {
+      lockKiosk();
+    }
+  }, [settings.auto_kiosk, appMode, lockKiosk]);
 
   // 2. États des Modales
   const [selectedGameForDetails, setSelectedGameForDetails] = useState<Game | null>(null);
@@ -194,11 +205,29 @@ export const App: React.FC = () => {
 
   // Liste des catégories pour cycler avec LB / RB à la manette
   const categoryList = useMemo(() => {
-    const list = ['all', 'favorites', 'recent'];
-    systems.forEach((s) => list.push(s.id));
+    const list = ['all', 'favorites', 'recent', '2-players', 'genre:fight', 'genre:platform'];
+    const visibleSystems = systems.filter((s) => {
+      if (!settings.enabled_systems || settings.enabled_systems.length === 0) return true;
+      return settings.enabled_systems.includes(s.id);
+    });
+    visibleSystems.forEach((s) => list.push(s.id));
     allFranchises.forEach((f) => list.push(`franchise:${f.id}`));
     return list;
-  }, [systems, allFranchises]);
+  }, [systems, allFranchises, settings.enabled_systems]);
+
+  const currentCategoryTitle = useMemo(() => {
+    if (selectedCategory === 'all') return 'TOUS LES JEUX';
+    if (selectedCategory === 'favorites') return 'VOS JEUX FAVORIS';
+    if (selectedCategory === 'recent') return 'RÉCEMMENT JOUÉS';
+    if (selectedCategory === '2-players') return 'JEUX À 2 JOUEURS (VERSUS & CO-OP)';
+    if (selectedCategory === 'genre:fight') return 'JEUX DE COMBAT (VERSUS FIGHTING)';
+    if (selectedCategory === 'genre:platform') return 'JEUX DE PLATEFORME';
+    const sys = systems.find((s) => s.id === selectedCategory || `system:${s.id}` === selectedCategory);
+    if (sys) return sys.name.toUpperCase();
+    const fr = allFranchises.find((f) => f.id === selectedCategory || `franchise:${f.id}` === selectedCategory);
+    if (fr) return `FRANCHISE : ${fr.name.toUpperCase()}`;
+    return selectedCategory.toUpperCase();
+  }, [selectedCategory, systems, allFranchises]);
 
   // Actions de navigation Manette
   const gamepadActions = useMemo(
@@ -359,6 +388,10 @@ export const App: React.FC = () => {
         totalAllGames={allGames.length}
         totalFavorites={totalFavorites}
         totalRecent={totalRecent}
+        total2Players={total2Players}
+        totalFightGames={totalFightGames}
+        totalPlatformGames={totalPlatformGames}
+        enabledSystems={settings.enabled_systems}
         gamepadConnected={gamepadConnected}
         gamepadName={gamepadName}
         appMode={appMode}
@@ -369,20 +402,8 @@ export const App: React.FC = () => {
         onOpenAddGame={() => setAddGameOpen(true)}
       />
 
-      {/* 2. Panneau Principal (Barre de Recherche + Catalogue Netflix-Arcade) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-br from-[#f8f7ff] via-white to-purple-50/30">
-        <FilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          selectedGenre={selectedGenre}
-          onGenreChange={setSelectedGenre}
-          availableGenres={availableGenres}
-          totalGames={allGames.length}
-          filteredCount={filteredAndSortedGames.length}
-        />
-
+      {/* 2. Panneau Principal (Catalogue Plein Écran) */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-br from-[#f8f7ff] via-white to-purple-50/20">
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <ArcadeCatalog
             games={filteredAndSortedGames}
@@ -392,7 +413,8 @@ export const App: React.FC = () => {
             onToggleFavorite={toggleFavorite}
             onOpenGamepadConfig={() => setGamepadSettingsOpen(true)}
             selectedCategory={selectedCategory}
-            isSearching={Boolean(searchQuery.trim() || selectedGenre)}
+            isSearching={false}
+            categoryTitle={currentCategoryTitle}
           />
         </main>
       </div>
@@ -440,6 +462,7 @@ export const App: React.FC = () => {
       {settingsOpen && !isKiosk && (
         <SettingsModal
           settings={settings}
+          systems={systems}
           onClose={() => setSettingsOpen(false)}
           onSave={saveSettings}
           onToggleFullscreen={toggleFullscreen}

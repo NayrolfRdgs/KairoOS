@@ -12,13 +12,16 @@ import {
   Layers,
   Wifi,
 } from 'lucide-react';
-import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig } from '../../../types';
+import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig, System } from '../../../types';
 import { KioskTab } from './KioskTab';
 import { FranchisesTab } from './FranchisesTab';
 import { FoldersTab } from './FoldersTab';
+import { ConsolesTab } from './ConsolesTab';
+import { ArrowDownAZ, Box } from 'lucide-react';
 
 interface SettingsModalProps {
   settings: AppSettings;
+  systems?: System[];
   onClose: () => void;
   onSave: (settings: AppSettings) => Promise<void>;
   onToggleFullscreen: () => Promise<boolean | void>;
@@ -31,6 +34,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   settings,
+  systems = [],
   onClose,
   onSave,
   onToggleFullscreen,
@@ -40,11 +44,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLockKioskNow,
   onScanComplete,
 }) => {
-
-  const [activeTab, setActiveTab] = useState<'gameplay' | 'kiosk' | 'franchises' | 'folders'>('gameplay');
+  const [activeTab, setActiveTab] = useState<'gameplay' | 'consoles' | 'kiosk' | 'franchises' | 'folders'>('gameplay');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
   const [alwaysOnTop, setAlwaysOnTop] = useState(settings.always_on_top);
   const [kioskMode, setKioskMode] = useState(settings.kiosk_mode);
+  const [autoKiosk, setAutoKiosk] = useState(settings.auto_kiosk || false);
+  const [defaultSort, setDefaultSort] = useState<NonNullable<AppSettings['default_sort']>>(settings.default_sort || 'title-asc');
+  const [enabledSystems, setEnabledSystems] = useState<string[]>(settings.enabled_systems || []);
   const [gameSelectAction, setGameSelectAction] = useState<GameSelectAction>(
     settings.game_select_action || 'details'
   );
@@ -59,6 +65,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       fullscreen,
       always_on_top: alwaysOnTop,
       kiosk_mode: kioskMode,
+      auto_kiosk: autoKiosk,
+      default_sort: defaultSort,
+      enabled_systems: enabledSystems,
       game_select_action: gameSelectAction,
       enabled_franchises: enabledFranchises,
       custom_franchises: customFranchises,
@@ -115,6 +124,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Tv className="w-3.5 h-3.5" />
             <span>Gameplay & Interface</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('consoles')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'consoles'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Consoles Visibles</span>
           </button>
 
           <button
@@ -266,6 +287,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
+              {/* Tri par Défaut du Catalogue */}
+              <div className="p-5 rounded-3xl bg-white border border-purple-100/90 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <ArrowDownAZ className="w-4 h-4 text-rose-500" />
+                    <span>Tri par défaut du catalogue</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Choisissez le classement automatique des jeux au démarrage et lors de la navigation.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {[
+                    { id: 'title-asc', label: 'Titre (A à Z)' },
+                    { id: 'title-desc', label: 'Titre (Z à A)' },
+                    { id: 'release-desc', label: 'Année de sortie' },
+                    { id: 'rating', label: 'Meilleures notes' },
+                    { id: 'recent', label: 'Récemment joués' },
+                    { id: 'play-time', label: 'Temps de jeu' },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setDefaultSort(option.id as any)}
+                      className={`p-3 rounded-xl border text-xs font-bold text-left transition-all ${
+                        defaultSort === option.id
+                          ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-xs ring-2 ring-rose-500/20'
+                          : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Configuration Manettes raccourci */}
               {onOpenGamepadSettings && (
                 <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex items-center justify-between gap-4 shadow-xs">
@@ -284,6 +342,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
+          {activeTab === 'consoles' && (
+            <ConsolesTab
+              systems={systems}
+              enabledSystems={enabledSystems}
+              setEnabledSystems={setEnabledSystems}
+            />
+          )}
+
           {activeTab === 'kiosk' && (
             <KioskTab
               fullscreen={fullscreen}
@@ -292,6 +358,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               setAlwaysOnTop={setAlwaysOnTop}
               kioskMode={kioskMode}
               setKioskMode={setKioskMode}
+              autoKiosk={autoKiosk}
+              setAutoKiosk={setAutoKiosk}
               onToggleFullscreen={onToggleFullscreen}
               onOpenGamepadSettings={onOpenGamepadSettings}
               remoteConfig={localRemote}

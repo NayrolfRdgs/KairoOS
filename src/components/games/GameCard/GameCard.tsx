@@ -44,15 +44,15 @@ export const GameCard: React.FC<GameCardProps> = ({
       ref={cardRef}
       data-game-id={game.id}
       onClick={() => onSelect(game)}
-      className={`group relative flex flex-col shrink-0 w-44 sm:w-48 select-none cursor-pointer transition-all duration-200 ${
+      className={`group relative flex flex-col shrink-0 w-52 sm:w-56 md:w-60 select-none cursor-pointer transition-all duration-200 ${
         isFocused ? 'scale-105 z-20' : 'hover:scale-[1.02] z-10'
       }`}
     >
-      {/* 3D Jaquette Container */}
+      {/* 4:3 Retro Arcade Container */}
       <div
-        className={`relative w-full aspect-3/4 rounded-2xl overflow-hidden border bg-slate-100 transition-all duration-300 shadow-sm ${
+        className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden border bg-slate-100 transition-all duration-300 shadow-sm ${
           isFocused
-            ? 'border-rose-500 ring-4 ring-rose-500/30 shadow-kairo-glow'
+            ? 'border-rose-500 ring-4 ring-rose-500/40 shadow-kairo-glow'
             : 'border-purple-100/90 group-hover:border-purple-300'
         }`}
       >
@@ -73,12 +73,18 @@ export const GameCard: React.FC<GameCardProps> = ({
           </div>
         )}
 
-        {/* Top Overlay Badge : Année & Note */}
+        {/* Top Overlay Badge : Année, 2P & Note */}
         <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-          {/* Année */}
-          <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-mono font-bold border border-white/10 shadow-xs">
-            {year}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-mono font-bold border border-white/10 shadow-xs">
+              {year}
+            </span>
+            {game.players && game.players >= 2 && (
+              <span className="px-1.5 py-0.5 rounded-md bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-mono font-black border border-white/10 shadow-xs">
+                {game.players}P
+              </span>
+            )}
+          </div>
 
           {/* Star Rating */}
           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-white text-[10px] font-mono font-bold border border-white/10 shadow-xs">

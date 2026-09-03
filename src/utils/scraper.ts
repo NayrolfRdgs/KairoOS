@@ -109,8 +109,35 @@ const KNOWN_GAMES: Record<string, Partial<ScrapedResult>> = {
     backdrop_url: 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7yud.jpg',
     synopsis: 'Action explosive à deux joueurs sur Neo-Geo avec des armes folles et des boss gigantesques.',
   },
-  'mario': {
+  'super mario 64': {
+    title: 'Super Mario 64',
+    system_id: 'n64',
+    genre: 'Plateforme 3D',
+    developer: 'Nintendo EAD',
+    publisher: 'Nintendo',
+    release_date: '1996',
+    rating: 4.95,
+    players: 1,
+    cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1x3m.png',
+    backdrop_url: 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg',
+    synopsis: 'Mario saute à travers les peintures magiques du château de Peach pour récupérer les 120 étoiles dérobées par Bowser.',
+  },
+  'mario 64': {
+    title: 'Super Mario 64',
+    system_id: 'n64',
+    genre: 'Plateforme 3D',
+    developer: 'Nintendo EAD',
+    publisher: 'Nintendo',
+    release_date: '1996',
+    rating: 4.95,
+    players: 1,
+    cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1x3m.png',
+    backdrop_url: 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg',
+    synopsis: 'Mario saute à travers les peintures magiques du château de Peach pour récupérer les 120 étoiles dérobées par Bowser.',
+  },
+  'super mario world': {
     title: 'Super Mario World',
+    system_id: 'snes',
     genre: 'Plateforme',
     developer: 'Nintendo EAD',
     publisher: 'Nintendo',
@@ -120,8 +147,31 @@ const KNOWN_GAMES: Record<string, Partial<ScrapedResult>> = {
     cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1x7d.png',
     synopsis: 'Mario et Yoshi voyagent à travers Dinosaur Land pour délivrer la princesse Peach.',
   },
-  'zelda': {
+  'classic kong': {
+    title: 'Classic Kong Complete',
+    system_id: 'snes',
+    genre: 'Plateforme / Arcade',
+    developer: 'Bubble Zap Productions',
+    publisher: 'Homebrew',
+    release_date: '2012',
+    rating: 4.7,
+    players: 2,
+    synopsis: 'Portage fidèle et soigné du classique Donkey Kong pour Super Nintendo.',
+  },
+  'uwol': {
+    title: 'Uwol: Quest For Money',
+    system_id: 'snes',
+    genre: 'Plateforme / Arcade',
+    developer: 'The Mojon Twins',
+    publisher: 'Homebrew',
+    release_date: '2010',
+    rating: 4.6,
+    players: 1,
+    synopsis: 'Aidez Uwol à récupérer un maximum de pièces d\'or dans le mystérieux manoir de Stormlord.',
+  },
+  'zelda a link to the past': {
     title: 'The Legend of Zelda: A Link to the Past',
+    system_id: 'snes',
     genre: 'Action-RPG / Aventure',
     developer: 'Nintendo',
     publisher: 'Nintendo',
@@ -131,8 +181,9 @@ const KNOWN_GAMES: Record<string, Partial<ScrapedResult>> = {
     cover_url: 'https://images.igdb.com/igdb/image/upload/t_cover_big/co1r8c.png',
     synopsis: 'Link s\'éveille pour sauver Hyrule et le Monde des Ténèbres du maléfique Ganon.',
   },
-  'sonic': {
+  'sonic the hedgehog 2': {
     title: 'Sonic The Hedgehog 2',
+    system_id: 'megadrive',
     genre: 'Plateforme / Vitesse',
     developer: 'Sonic Team',
     publisher: 'Sega',
@@ -186,12 +237,16 @@ export async function searchOnlineGameMetadata(
 ): Promise<ScrapedResult> {
   const cleanQuery = title.toLowerCase().replace(/[^a-z0-9\s]/gi, ' ').trim();
 
-  // 1. Vérification dans le dictionnaire rapide
-  for (const [key, meta] of Object.entries(KNOWN_GAMES)) {
+  // 1. Vérification dans le dictionnaire rapide (priorité aux clés les plus longues & filtrage par console)
+  const sortedEntries = Object.entries(KNOWN_GAMES).sort((a, b) => b[0].length - a[0].length);
+  for (const [key, meta] of sortedEntries) {
+    if (meta.system_id && systemId && meta.system_id.toLowerCase() !== systemId.toLowerCase()) {
+      continue;
+    }
     if (cleanQuery.includes(key)) {
       return {
         title: meta.title || title,
-        system_id: systemId,
+        system_id: systemId || meta.system_id,
         cover_url: meta.cover_url,
         backdrop_url: meta.backdrop_url,
         screenshots: meta.screenshots,

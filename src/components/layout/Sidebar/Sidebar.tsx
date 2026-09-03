@@ -17,6 +17,10 @@ interface SidebarProps {
   totalAllGames: number;
   totalFavorites: number;
   totalRecent: number;
+  total2Players?: number;
+  totalFightGames?: number;
+  totalPlatformGames?: number;
+  enabledSystems?: string[];
   gamepadConnected: boolean;
   gamepadName: string | null;
   appMode?: AppMode;
@@ -35,6 +39,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalAllGames,
   totalFavorites,
   totalRecent,
+  total2Players,
+  totalFightGames,
+  totalPlatformGames,
+  enabledSystems,
   gamepadConnected,
   gamepadName,
   appMode = 'admin',
@@ -56,7 +64,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onOpenAddGame={onOpenAddGame}
       />
 
-
       {/* 2. Corps Déroulant : Bibliothèque + Consoles */}
       <div className="flex-1 overflow-y-auto p-3 space-y-6 scrollbar-thin">
         <SidebarNav
@@ -65,6 +72,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           totalAllGames={totalAllGames}
           totalFavorites={totalFavorites}
           totalRecent={totalRecent}
+          total2Players={total2Players}
+          totalFightGames={totalFightGames}
+          totalPlatformGames={totalPlatformGames}
         />
 
         <SidebarSystems
@@ -72,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           selectedCategory={selectedCategory}
           onSelectCategory={onSelectCategory}
           gamesCountBySystem={gamesCountBySystem}
+          enabledSystems={enabledSystems}
         />
       </div>
 
