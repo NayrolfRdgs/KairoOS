@@ -38,36 +38,36 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
     );
   }
 
-  // Sélection du jeu en vedette pour la borne d'arcade :
-  // Déterminé par le temps de jeu, les favoris et rotation aléatoire (ne change PAS au survol des cartes)
-  const [spotlightGameId, setSpotlightGameId] = React.useState<string | null>(null);
+  // Sélection de jusqu'à 4 jeux en vedette pour le carrousel supérieur (Hero Showcase)
+  // Basé sur le temps de jeu, favoris, récents et découverte
+  const featuredGames = React.useMemo(() => {
+    if (games.length === 0) return [];
+    if (games.length <= 4) return games;
 
-  const pickSpotlightGame = React.useCallback(() => {
-    if (games.length === 0) return;
-    const pool: Game[] = [];
-    for (const g of games) {
-      pool.push(g);
-      if (g.favorite) pool.push(g);
-      if (g.play_time_seconds && g.play_time_seconds > 0) pool.push(g);
-    }
-    const picked = pool[Math.floor(Math.random() * pool.length)] || games[0];
-    setSpotlightGameId(picked.id);
+    const sorted = [...games].sort((a, b) => {
+      const aScore = (a.play_time_seconds || 0) * 2 + (a.favorite ? 1000 : 0);
+      const bScore = (b.play_time_seconds || 0) * 2 + (b.favorite ? 1000 : 0);
+      return bScore - aScore;
+    });
+
+    return sorted.slice(0, 4);
   }, [games]);
 
-  React.useEffect(() => {
-    if (games.length > 0 && (!spotlightGameId || !games.some((g) => g.id === spotlightGameId))) {
-      pickSpotlightGame();
-    }
-  }, [games, selectedCategory, spotlightGameId, pickSpotlightGame]);
+  const [heroIndex, setHeroIndex] = React.useState(0);
 
-  const featuredGame = games.find((g) => g.id === spotlightGameId) || games[0];
+  // Remettre à 0 si la sélection de jeux change
+  React.useEffect(() => {
+    setHeroIndex(0);
+  }, [selectedCategory]);
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin">
-      {/* 1. Grande bannière de proposition de jeux (Hero Showcase) */}
-      {featuredGame && (
+      {/* 1. Grande bannière Carrousel de proposition de jeux (jusqu'à 4 jeux) */}
+      {featuredGames.length > 0 && (
         <HeroShowcase
-          game={featuredGame}
+          games={featuredGames}
+          currentIndex={heroIndex}
+          onIndexChange={setHeroIndex}
           onLaunch={onLaunchGame}
           onOpenDetails={onSelectGame}
           onToggleFavorite={onToggleFavorite}

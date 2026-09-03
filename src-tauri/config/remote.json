@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "port": 8080,
+  "pin": "1234",
+  "allowed_origins": [
+    "*"
+  ]
+}

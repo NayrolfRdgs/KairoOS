@@ -2,8 +2,17 @@
   "fullscreen": false,
   "always_on_top": false,
   "kiosk_mode": false,
-  "enabled_franchises": [],
+  "enabled_franchises": [
+    "pokemon"
+  ],
   "custom_franchises": [],
   "roms_path": "C:\\Users\\propo\\AppData\\Roaming\\com.kairo.os\\roms",
-  "theme": "retro-80s-light"
+  "theme": "retro-80s-light",
+  "enabled_systems": [
+    "n64"
+  ],
+  "enabled_modes": [],
+  "default_sort": "title-asc",
+  "auto_kiosk": false,
+  "game_select_action": "details"
 }
