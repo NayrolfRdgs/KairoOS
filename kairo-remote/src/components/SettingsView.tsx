@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Sliders,
   Wifi,
-  Server,
   Gamepad2,
-  Folder,
-  Shield,
-  RefreshCw,
   Check,
+  Server,
   Info,
-  Tv,
-  AlertCircle,
   Copy,
-  Layers,
+  RefreshCw,
 } from 'lucide-react';
 import {
   ThemeMode,
@@ -44,7 +39,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const isDark = theme === 'dark';
   const [activeSubTab, setActiveSubTab] = useState<'remote' | 'emulators' | 'app' | 'system'>('remote');
 
-  // Form states
   const [remoteCfg, setRemoteCfg] = useState<RemoteConfig>({
     enabled: true,
     port: 8080,
@@ -68,7 +62,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [copiedIp, setCopiedIp] = useState(false);
 
-  // Charger toutes les données de configuration depuis l'API REST
   useEffect(() => {
     const fetchConfigs = async () => {
       try {
@@ -151,35 +144,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Subtab Navigation */}
+    <div className="space-y-6 animate-in fade-in duration-150">
+      {/* Navigation Onglets Réglages */}
       <div
-        className={`p-2 rounded-2xl border flex items-center gap-1.5 overflow-x-auto shadow-sm ${
-          isDark ? 'bg-retro-card border-retro-border' : 'bg-white border-retro-border'
+        className={`p-1.5 rounded-2xl border flex items-center gap-1 overflow-x-auto shadow-xs ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
         }`}
       >
         <button
           onClick={() => setActiveSubTab('remote')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
             activeSubTab === 'remote'
-              ? isDark
-                ? 'bg-retro-primary text-white shadow-md'
-                : 'bg-retro-primary text-white shadow-retro'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           <Wifi className="w-4 h-4" />
-          <span>Serveur Remote</span>
+          <span>Serveur Distant</span>
         </button>
 
         <button
           onClick={() => setActiveSubTab('emulators')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
             activeSubTab === 'emulators'
-              ? isDark
-                ? 'bg-retro-purple text-white shadow-md'
-                : 'bg-retro-purple text-white shadow-retro'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           <Gamepad2 className="w-4 h-4" />
@@ -188,12 +177,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <button
           onClick={() => setActiveSubTab('app')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
             activeSubTab === 'app'
-              ? isDark
-                ? 'bg-retro-cyan text-retro-dark shadow-md font-black'
-                : 'bg-retro-cyan text-retro-dark shadow-retro font-black'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           <Sliders className="w-4 h-4" />
@@ -202,12 +189,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
         <button
           onClick={() => setActiveSubTab('system')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
             activeSubTab === 'system'
-              ? isDark
-                ? 'bg-emerald-500 text-white shadow-md'
-                : 'bg-emerald-500 text-white shadow-retro'
-              : 'text-slate-400 hover:text-white'
+              ? 'bg-indigo-600 text-white shadow-xs'
+              : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
           }`}
         >
           <Info className="w-4 h-4" />
@@ -216,51 +201,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       </div>
 
       {feedback && (
-        <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold font-arcade flex items-center gap-2 animate-bounce">
+        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
           <Check className="w-4 h-4" />
           <span>{feedback}</span>
         </div>
       )}
 
-      {/* 1. Onglet Serveur Remote (config/remote.json) */}
+      {/* 1. Serveur Remote */}
       {activeSubTab === 'remote' && (
         <form onSubmit={handleSaveRemote} className="space-y-6">
           <div
-            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center gap-3 pb-3 border-b border-retro-border/50">
-              <div className="p-2.5 rounded-2xl bg-retro-primary/20 text-retro-primary">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                 <Wifi className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-black font-arcade uppercase tracking-wider">
-                  Configuration Serveur HTTP (config/remote.json)
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Serveur HTTP Embarqué (config/remote.json)
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Pilotez le port d'écoute et le mot de passe PIN de sécurité.
+                <p className="text-xs text-slate-500">
+                  Port d'écoute et code PIN de contrôle à distance.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider block mb-1 text-slate-400">
-                  Port d'Écoute HTTP
+                <label className="text-xs font-semibold block mb-1 text-slate-600 dark:text-slate-400">
+                  Port d'Écoute
                 </label>
                 <input
                   type="number"
                   value={remoteCfg.port}
                   onChange={(e) => setRemoteCfg({ ...remoteCfg, port: parseInt(e.target.value) || 8080 })}
-                  className={`w-full px-3.5 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all focus:outline-none ${
-                    isDark ? 'bg-retro-panel border-retro-border text-white' : 'bg-retro-warm border-retro-border text-retro-text'
+                  className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition-all focus:outline-none ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider block mb-1 text-slate-400">
+                <label className="text-xs font-semibold block mb-1 text-slate-600 dark:text-slate-400">
                   Origines Autorisées (CORS)
                 </label>
                 <input
@@ -272,38 +257,38 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       allowed_origins: e.target.value.split(',').map((s) => s.trim()),
                     })
                   }
-                  className={`w-full px-3.5 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all focus:outline-none ${
-                    isDark ? 'bg-retro-panel border-retro-border text-white' : 'bg-retro-warm border-retro-border text-retro-text'
+                  className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono border transition-all focus:outline-none ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider block mb-1 text-slate-400">
-                  Nouveau Code PIN
+                <label className="text-xs font-semibold block mb-1 text-slate-600 dark:text-slate-400">
+                  Code PIN Borne
                 </label>
                 <input
                   type="password"
                   maxLength={8}
                   value={remoteCfg.pin}
                   onChange={(e) => setRemoteCfg({ ...remoteCfg, pin: e.target.value })}
-                  className={`w-full px-3.5 py-2.5 rounded-xl font-mono text-xs font-bold tracking-widest border transition-all focus:outline-none ${
-                    isDark ? 'bg-retro-panel border-retro-border text-retro-yellow' : 'bg-retro-warm border-retro-border text-retro-primary'
+                  className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono font-bold tracking-widest border transition-all focus:outline-none ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider block mb-1 text-slate-400">
-                  Confirmer le Code PIN
+                <label className="text-xs font-semibold block mb-1 text-slate-600 dark:text-slate-400">
+                  Confirmer le PIN
                 </label>
                 <input
                   type="password"
                   maxLength={8}
                   value={newPinConfirm}
                   onChange={(e) => setNewPinConfirm(e.target.value)}
-                  className={`w-full px-3.5 py-2.5 rounded-xl font-mono text-xs font-bold tracking-widest border transition-all focus:outline-none ${
-                    isDark ? 'bg-retro-panel border-retro-border text-retro-yellow' : 'bg-retro-warm border-retro-border text-retro-primary'
+                  className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono font-bold tracking-widest border transition-all focus:outline-none ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 />
               </div>
@@ -312,85 +297,80 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3.5 rounded-2xl font-black font-arcade text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
-                isDark
-                  ? 'bg-gradient-to-r from-retro-primary to-retro-purple text-white shadow-retro-primary/20'
-                  : 'bg-gradient-to-r from-retro-primary to-retro-orange text-white shadow-retro'
-              }`}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
             >
-              <Check className="w-4 h-4" />
-              <span>ENREGISTRER REMOTE.JSON</span>
+              Enregistrer la Configuration Distante
             </button>
           </div>
         </form>
       )}
 
-      {/* 2. Onglet Émulateurs (config/emulators.json) */}
+      {/* 2. Émulateurs */}
       {activeSubTab === 'emulators' && (
         <form onSubmit={handleSaveEmus} className="space-y-6">
           <div
-            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center gap-3 pb-3 border-b border-retro-border/50">
-              <div className="p-2.5 rounded-2xl bg-retro-purple/20 text-retro-purple">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                 <Gamepad2 className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-black font-arcade uppercase tracking-wider">
-                  Configuration Émulateurs (config/emulators.json)
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Émulateurs & Lignes de Commande (config/emulators.json)
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Modifiez les chemins exécutables et arguments CLI passés par le launcher.
+                <p className="text-xs text-slate-500">
+                  Chemins des exécutables et templates d'arguments CLI.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {emulators.map((emu, idx) => (
                 <div
                   key={emu.id}
                   className={`p-4 rounded-2xl border space-y-3 ${
-                    isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
+                    isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs uppercase font-arcade text-retro-cyan">
+                    <span className="font-bold text-xs text-slate-900 dark:text-white">
                       {emu.name} ({emu.id})
                     </span>
                     {emu.is_builtin && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold">
-                        EMBARQUÉ
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold">
+                        Intégré
                       </span>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase">
-                        Chemin Exécutable (.exe)
+                      <label className="text-[11px] font-semibold text-slate-500 block mb-1">
+                        Chemin de l'exécutable
                       </label>
                       <input
                         type="text"
                         value={emu.exe_path || ''}
                         onChange={(e) => handleEmulatorChange(idx, 'exe_path', e.target.value)}
-                        className={`w-full px-3 py-2 rounded-xl font-mono text-[11px] border transition-all focus:outline-none ${
-                          isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+                        className={`w-full px-3 py-1.5 rounded-lg font-mono text-[11px] border transition-all focus:outline-none ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
                         }`}
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 block mb-1 uppercase">
+                      <label className="text-[11px] font-semibold text-slate-500 block mb-1">
                         Arguments CLI par défaut
                       </label>
                       <input
                         type="text"
                         value={emu.default_args}
                         onChange={(e) => handleEmulatorChange(idx, 'default_args', e.target.value)}
-                        className={`w-full px-3 py-2 rounded-xl font-mono text-[11px] border transition-all focus:outline-none ${
-                          isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+                        className={`w-full px-3 py-1.5 rounded-lg font-mono text-[11px] border transition-all focus:outline-none ${
+                          isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'
                         }`}
                       />
                     </div>
@@ -402,88 +382,87 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3.5 rounded-2xl font-black font-arcade text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
-                isDark
-                  ? 'bg-gradient-to-r from-retro-purple to-retro-cyan text-white shadow-retro-purple/20'
-                  : 'bg-gradient-to-r from-retro-purple to-retro-primary text-white shadow-retro'
-              }`}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
             >
-              <Check className="w-4 h-4" />
-              <span>ENREGISTRER EMULATORS.JSON</span>
+              Enregistrer les Émulateurs
             </button>
           </div>
         </form>
       )}
 
-      {/* 3. Onglet Paramètres Borne (config/settings.json) */}
+      {/* 3. Paramètres Borne */}
       {activeSubTab === 'app' && (
         <form onSubmit={handleSaveApp} className="space-y-6">
           <div
-            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center gap-3 pb-3 border-b border-retro-border/50">
-              <div className="p-2.5 rounded-2xl bg-retro-cyan/20 text-retro-cyan">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                 <Sliders className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-black font-arcade uppercase tracking-wider">
-                  Paramètres Borne KaïroOS (config/settings.json)
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Paramètres Borne (config/settings.json)
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Dossier de stockage, plein écran et mode de démarrage.
+                <p className="text-xs text-slate-500">
+                  Dossier ROMs et comportement de l'affichage.
                 </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider block mb-1 text-slate-400">
-                  Dossier de ROMs par défaut
+                <label className="text-xs font-semibold block mb-1 text-slate-600 dark:text-slate-400">
+                  Dossier ROMs par Défaut
                 </label>
                 <input
                   type="text"
                   value={appSettings.roms_path || './roms'}
                   onChange={(e) => setAppSettings({ ...appSettings, roms_path: e.target.value })}
-                  className={`w-full px-4 py-2.5 rounded-xl font-mono text-xs font-bold border transition-all focus:outline-none ${
-                    isDark ? 'bg-retro-panel border-retro-border text-white' : 'bg-retro-warm border-retro-border text-retro-text'
+                  className={`w-full px-3.5 py-2 rounded-xl text-xs font-mono font-semibold border transition-all focus:outline-none ${
+                    isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-800'
                   }`}
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <label
                   className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
-                    isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
+                    isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="text-xs">
-                    <span className="font-bold block">Mode Kiosk au Démarrage</span>
-                    <span className="text-[10px] text-slate-400">Verrouille les menus dès l'allumage</span>
+                    <span className="font-semibold block text-slate-900 dark:text-white">
+                      Mode Kiosk au Démarrage
+                    </span>
+                    <span className="text-[11px] text-slate-500">Verrouille les menus dès le boot</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={appSettings.kiosk_mode}
                     onChange={(e) => setAppSettings({ ...appSettings, kiosk_mode: e.target.checked })}
-                    className="w-5 h-5 rounded text-retro-primary focus:ring-retro-primary cursor-pointer"
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
                 </label>
 
                 <label
                   className={`p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all ${
-                    isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
+                    isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
                   }`}
                 >
                   <div className="text-xs">
-                    <span className="font-bold block">Toujours au Premier Plan</span>
-                    <span className="text-[10px] text-slate-400">Empêche les fenêtres Windows d'apparaître</span>
+                    <span className="font-semibold block text-slate-900 dark:text-white">
+                      Toujours au Premier Plan
+                    </span>
+                    <span className="text-[11px] text-slate-500">Masque les fenêtres Windows</span>
                   </div>
                   <input
                     type="checkbox"
                     checked={appSettings.always_on_top}
                     onChange={(e) => setAppSettings({ ...appSettings, always_on_top: e.target.checked })}
-                    className="w-5 h-5 rounded text-retro-cyan focus:ring-retro-cyan cursor-pointer"
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                   />
                 </label>
               </div>
@@ -492,108 +471,79 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3.5 rounded-2xl font-black font-arcade text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-2 active:scale-95 ${
-                isDark
-                  ? 'bg-gradient-to-r from-retro-cyan to-retro-purple text-retro-dark font-black shadow-retro-cyan/20'
-                  : 'bg-gradient-to-r from-retro-cyan to-retro-primary text-white shadow-retro'
-              }`}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs transition-all active:scale-95"
             >
-              <Check className="w-4 h-4" />
-              <span>ENREGISTRER SETTINGS.JSON</span>
+              Enregistrer les Paramètres
             </button>
           </div>
         </form>
       )}
 
-      {/* 4. Onglet Infos Système */}
+      {/* 4. Infos Système */}
       {activeSubTab === 'system' && (
         <div className="space-y-6">
           <div
-            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 sm:p-8 rounded-3xl border space-y-5 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center gap-3 pb-3 border-b border-retro-border/50">
-              <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400">
+            <div className="flex items-center gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400">
                 <Server className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-sm font-black font-arcade uppercase tracking-wider">
-                  Informations de la Borne KaïroOS
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Informations Borne & Réseau
                 </h3>
-                <p className="text-[11px] text-slate-400">
-                  Détails réseau, version logicielle et chemin local d'exécution.
+                <p className="text-xs text-slate-500">
+                  Détails de connexion et chemins de la station.
                 </p>
               </div>
             </div>
 
-            {/* Grande Carte IP Réseau */}
             <div
-              className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 ${
-                isDark ? 'bg-retro-panel border-retro-cyan/30' : 'bg-retro-warm border-retro-primary/30'
+              className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-3 ${
+                isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <div className="space-y-1 text-center sm:text-left">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest font-arcade">
-                  Adresse URL pour Smartphone :
-                </span>
-                <h2 className="text-lg sm:text-xl font-black font-mono text-retro-cyan">
+              <div>
+                <span className="text-[11px] text-slate-500 block">URL de connexion smartphone :</span>
+                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">
                   http://{systemInfo?.local_ip || '127.0.0.1'}:{systemInfo?.port || 8080}
-                </h2>
+                </span>
               </div>
 
               <button
                 onClick={handleCopyUrl}
-                className={`px-4 py-2.5 rounded-xl font-bold font-arcade text-xs flex items-center gap-2 border transition-all active:scale-95 shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   copiedIp
-                    ? 'bg-retro-green text-retro-dark border-retro-green font-black'
-                    : isDark
-                    ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-                    : 'bg-white hover:bg-retro-warm text-retro-text border-retro-border'
+                    ? 'bg-emerald-500 text-white border-emerald-500'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}
               >
-                {copiedIp ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                <span>{copiedIp ? 'Copié !' : 'Copier l\'adresse'}</span>
+                {copiedIp ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedIp ? 'Copié' : 'Copier'}</span>
               </button>
             </div>
 
-            {/* Grille Détails */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div
-                className={`p-3.5 rounded-2xl border ${
-                  isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
-                }`}
-              >
-                <span className="text-[10px] text-slate-400 font-bold block uppercase mb-0.5">
-                  Version de KaïroOS
-                </span>
-                <span className="font-mono font-bold text-retro-yellow text-sm">
+              <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="text-slate-400 block text-[11px] mb-0.5">Version</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                   v{systemInfo?.version || '0.1.0'}
                 </span>
               </div>
 
-              <div
-                className={`p-3.5 rounded-2xl border ${
-                  isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
-                }`}
-              >
-                <span className="text-[10px] text-slate-400 font-bold block uppercase mb-0.5">
-                  Total Jeux Indexés
-                </span>
-                <span className="font-mono font-bold text-retro-cyan text-sm">
+              <div className={`p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="text-slate-400 block text-[11px] mb-0.5">Total Jeux</span>
+                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
                   {systemInfo?.total_games || 0} jeux
                 </span>
               </div>
 
-              <div
-                className={`sm:col-span-2 p-3.5 rounded-2xl border ${
-                  isDark ? 'bg-retro-panel/70 border-retro-border' : 'bg-retro-warm/60 border-retro-border'
-                }`}
-              >
-                <span className="text-[10px] text-slate-400 font-bold block uppercase mb-0.5">
-                  Dossier d'Installation
-                </span>
-                <span className="font-mono text-[11px] text-slate-300 break-all">
+              <div className={`sm:col-span-2 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="text-slate-400 block text-[11px] mb-0.5">Dossier Racine</span>
+                <span className="font-mono text-[11px] text-slate-600 dark:text-slate-400 break-all">
                   {systemInfo?.install_dir || '.'}
                 </span>
               </div>
@@ -601,14 +551,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             <button
               onClick={onReloadAll}
-              className={`w-full py-3.5 rounded-2xl border font-bold font-arcade text-xs tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-all ${
-                isDark
-                  ? 'bg-retro-panel hover:bg-slate-700 text-white border-retro-border'
-                  : 'bg-retro-warm hover:bg-slate-200 text-retro-text border-retro-border'
+              className={`w-full py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                isDark ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-200 text-slate-700'
               }`}
             >
               <RefreshCw className="w-4 h-4" />
-              <span>RAFRAÎCHIR LES DONNÉES DU SERVEUR</span>
+              <span>Rafraîchir les Données</span>
             </button>
           </div>
         </div>

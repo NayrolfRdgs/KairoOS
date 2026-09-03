@@ -5,8 +5,6 @@ import {
   Play,
   Star,
   Flame,
-  Layers,
-  Sparkles,
 } from 'lucide-react';
 import { ThemeMode, Game, System, StatusResponse } from '../types';
 
@@ -48,39 +46,16 @@ export const GamesView: React.FC<GamesViewProps> = ({
     return matchesSearch && matchesSystem && matchesFavorites;
   });
 
-  const getSystemBadgeColor = (sysId: string) => {
-    switch (sysId.toLowerCase()) {
-      case 'snes':
-      case 'super_nintendo':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/40';
-      case 'ps1':
-      case 'ps2':
-      case 'playstation':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/40';
-      case 'n64':
-      case 'gamecube':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40';
-      case 'switch':
-      case 'arcade':
-        return 'bg-red-500/20 text-red-400 border-red-500/40';
-      case 'megadrive':
-      case 'genesis':
-        return 'bg-amber-500/20 text-amber-400 border-amber-500/40';
-      default:
-        return 'bg-retro-cyan/20 text-retro-cyan border-retro-cyan/40';
-    }
-  };
-
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
-      {/* 1. Barre de Recherche et Filtres */}
+    <div className="space-y-4 animate-in fade-in duration-150">
+      {/* 1. Recherche & Filtres Propres */}
       <div
-        className={`p-4 rounded-3xl border space-y-3 shadow-sm ${
-          isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+        className={`p-4 rounded-3xl border space-y-3 shadow-xs ${
+          isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
         }`}
       >
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Recherche */}
+          {/* Champ Recherche */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -88,45 +63,43 @@ export const GamesView: React.FC<GamesViewProps> = ({
               placeholder="Rechercher par titre, genre, franchise..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs font-bold font-sans border transition-all focus:outline-none ${
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-xs border transition-all focus:outline-none ${
                 isDark
-                  ? 'bg-retro-panel border-retro-border text-white placeholder-slate-500 focus:border-retro-cyan'
-                  : 'bg-retro-warm border-retro-border text-retro-text placeholder-slate-400 focus:border-retro-primary'
+                  ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500 focus:border-indigo-500'
+                  : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-indigo-500'
               }`}
             />
           </div>
 
-          {/* Bouton Favoris Only */}
+          {/* Filtre Favoris */}
           <button
             onClick={() => setFavoritesOnly(!favoritesOnly)}
-            className={`px-4 py-2.5 rounded-2xl text-xs font-bold font-arcade flex items-center justify-center gap-1.5 border transition-all shrink-0 ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 border transition-all shrink-0 ${
               favoritesOnly
-                ? 'bg-retro-yellow text-retro-dark border-retro-yellow font-black shadow-md'
+                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700'
                 : isDark
-                ? 'bg-retro-panel border-retro-border text-slate-400 hover:text-white'
-                : 'bg-retro-warm border-retro-border text-slate-600 hover:text-retro-text'
+                ? 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                : 'bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Star className={`w-4 h-4 ${favoritesOnly ? 'fill-current' : ''}`} />
+            <Star className={`w-3.5 h-3.5 ${favoritesOnly ? 'fill-current text-amber-500' : ''}`} />
             <span>Favoris ({games.filter((g) => g.favorite).length})</span>
           </button>
         </div>
 
-        {/* Filtres par Système (Pills horizontales) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
+        {/* Pilules Consoles */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
           <button
             onClick={() => setSelectedSystem('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
               selectedSystem === 'all'
-                ? isDark
-                  ? 'bg-retro-primary text-white shadow-md shadow-retro-primary/30'
-                  : 'bg-retro-primary text-white shadow-retro'
+                ? 'bg-indigo-600 text-white shadow-xs'
                 : isDark
-                ? 'bg-retro-panel text-slate-400 hover:text-white'
-                : 'bg-retro-warm text-slate-600 hover:text-retro-text'
+                ? 'bg-slate-800 text-slate-400 hover:text-white'
+                : 'bg-slate-100 text-slate-600 hover:text-slate-900'
             }`}
           >
-            TOUS ({games.length})
+            Tous ({games.length})
           </button>
 
           {systems.map((sys) => {
@@ -138,12 +111,12 @@ export const GamesView: React.FC<GamesViewProps> = ({
               <button
                 key={sys.id}
                 onClick={() => setSelectedSystem(sys.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-arcade whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   isSelected
-                    ? 'bg-retro-purple text-white shadow-md shadow-retro-purple/30'
+                    ? 'bg-indigo-600 text-white shadow-xs'
                     : isDark
-                    ? 'bg-retro-panel text-slate-400 hover:text-white'
-                    : 'bg-retro-warm text-slate-600 hover:text-retro-text'
+                    ? 'bg-slate-800 text-slate-400 hover:text-white'
+                    : 'bg-slate-100 text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {sys.short_name || sys.name} ({count})
@@ -153,15 +126,15 @@ export const GamesView: React.FC<GamesViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Grille Responsive des Jeux */}
+      {/* 2. Grille des Jeux */}
       {filteredGames.length === 0 ? (
         <div
-          className={`p-12 rounded-3xl border text-center space-y-3 ${
-            isDark ? 'bg-retro-card border-retro-border text-slate-400' : 'bg-white border-retro-border text-slate-500'
+          className={`p-12 rounded-3xl border text-center space-y-2 ${
+            isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-500'
           }`}
         >
-          <Gamepad2 className="w-10 h-10 mx-auto opacity-40" />
-          <p className="text-xs font-bold font-arcade">Aucun jeu ne correspond à vos critères de recherche.</p>
+          <Gamepad2 className="w-8 h-8 mx-auto opacity-40" />
+          <p className="text-xs font-medium">Aucun jeu trouvé.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -171,61 +144,51 @@ export const GamesView: React.FC<GamesViewProps> = ({
             return (
               <div
                 key={game.id}
-                className={`p-4 rounded-3xl border flex flex-col justify-between transition-all duration-200 relative group overflow-hidden ${
+                className={`p-4 rounded-3xl border flex flex-col justify-between transition-all shadow-xs ${
                   isCurrent
-                    ? isDark
-                      ? 'bg-retro-panel border-retro-green shadow-[0_0_20px_rgba(0,255,136,0.3)] ring-2 ring-retro-green/50'
-                      : 'bg-white border-retro-green shadow-retro-neon ring-2 ring-retro-green/50'
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900'
                     : isDark
-                    ? 'bg-retro-card border-retro-border hover:border-retro-primary/60 text-white'
-                    : 'bg-white border-retro-border hover:border-retro-primary text-retro-text shadow-sm'
+                    ? 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                    : 'bg-white border-slate-200 hover:border-indigo-300'
                 }`}
               >
-                {/* En-tête de Carte : Badge Système + Bouton Favori */}
+                {/* En-tête de Carte */}
                 <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`text-[10px] font-black uppercase font-mono px-2 py-0.5 rounded-lg border ${getSystemBadgeColor(
-                      game.system_id
-                    )}`}
-                  >
+                  <span className="text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                     {game.system_id}
                   </span>
 
                   <button
                     onClick={() => onToggleFavorite(game.id)}
                     title={game.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                    className={`p-1.5 rounded-xl border transition-all active:scale-90 ${
+                    className={`p-1 rounded-lg border transition-all ${
                       game.favorite
-                        ? 'bg-retro-yellow text-retro-dark border-retro-yellow shadow-xs'
+                        ? 'bg-amber-50 text-amber-500 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800'
                         : isDark
-                        ? 'bg-retro-panel border-retro-border text-slate-500 hover:text-retro-yellow'
-                        : 'bg-retro-warm border-retro-border text-slate-400 hover:text-retro-yellow'
+                        ? 'bg-slate-800 border-slate-700 text-slate-500 hover:text-amber-400'
+                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-amber-500'
                     }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${game.favorite ? 'fill-current' : ''}`} />
                   </button>
                 </div>
 
-                {/* Corps de Carte : Jaquette & Titre */}
-                <div className="flex items-center gap-3.5 mb-4">
-                  <div className="w-16 h-20 rounded-2xl bg-retro-panel border border-retro-border shrink-0 flex items-center justify-center overflow-hidden shadow-sm relative">
+                {/* Jaquette & Titre */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-14 h-18 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0 flex items-center justify-center overflow-hidden">
                     {game.cover_url ? (
                       <img src={game.cover_url} alt={game.title} className="w-full h-full object-cover" />
                     ) : (
-                      <Gamepad2 className="w-7 h-7 text-slate-500" />
-                    )}
-
-                    {isCurrent && (
-                      <div className="absolute inset-0 bg-retro-green/20 backdrop-blur-[1px] flex items-center justify-center">
-                        <Flame className="w-6 h-6 text-retro-green animate-bounce" />
-                      </div>
+                      <Gamepad2 className="w-6 h-6 text-slate-400" />
                     )}
                   </div>
 
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <h3 className="font-bold text-xs leading-snug line-clamp-2">{game.title}</h3>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug line-clamp-2">
+                      {game.title}
+                    </h3>
                     {game.franchise && (
-                      <p className="text-[10px] text-retro-cyan font-semibold truncate">
+                      <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium truncate">
                         {game.franchise}
                       </p>
                     )}
@@ -235,24 +198,20 @@ export const GamesView: React.FC<GamesViewProps> = ({
                   </div>
                 </div>
 
-                {/* Pied de Carte : Bouton Lancer / Statut en Jeu */}
+                {/* Bouton de Lancement */}
                 {isCurrent ? (
-                  <div className="w-full py-2.5 rounded-2xl bg-retro-green/20 border border-retro-green/40 text-retro-green font-black font-arcade text-xs text-center flex items-center justify-center gap-1.5 animate-pulse">
-                    <Flame className="w-4 h-4" />
-                    <span>ACTUELLEMENT EN JEU</span>
+                  <div className="w-full py-2 rounded-xl bg-emerald-500 text-white font-bold text-xs text-center flex items-center justify-center gap-1.5 shadow-xs">
+                    <Flame className="w-3.5 h-3.5" />
+                    <span>EN COURS DE JEU</span>
                   </div>
                 ) : (
                   <button
                     onClick={() => onLaunchGame(game.id)}
                     disabled={loading || status?.is_running}
-                    className={`w-full py-2.5 rounded-2xl font-bold font-arcade text-xs tracking-wider uppercase transition-all shadow-md flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
-                      isDark
-                        ? 'bg-gradient-to-r from-retro-primary to-retro-purple hover:shadow-retro-primary/30 text-white'
-                        : 'bg-gradient-to-r from-retro-primary to-retro-orange text-white shadow-retro'
-                    }`}
+                    className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs shadow-xs flex items-center justify-center gap-1.5 transition-all active:scale-95 disabled:opacity-40"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>LANCER SUR LA BORNE</span>
+                    <span>Lancer sur la borne</span>
                   </button>
                 )}
               </div>

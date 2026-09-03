@@ -22,5 +22,8 @@ axum = { version = "0.7", features = ["macros", "json", "matched-path"] }
 tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors", "fs", "trace"] }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = ["Win32_UI_Input_KeyboardAndMouse"] }
+
 [dev-dependencies]
 tempfile = "3.10"

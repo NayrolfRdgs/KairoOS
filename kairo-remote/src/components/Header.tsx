@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gamepad2, Sun, Moon, KeyRound, Wifi, WifiOff } from 'lucide-react';
+import { Gamepad2, Sliders, Sun, Moon, KeyRound, LogOut, Smartphone } from 'lucide-react';
 import { ThemeMode } from '../types';
 
 interface HeaderProps {
@@ -8,6 +8,9 @@ interface HeaderProps {
   onToggleTheme: () => void;
   pin: string;
   onOpenPinModal: () => void;
+  appMode: 'admin' | 'gamepad';
+  onToggleAppMode: () => void;
+  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,83 +19,103 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   pin,
   onOpenPinModal,
+  appMode,
+  onToggleAppMode,
+  onLogout,
 }) => {
   const isDark = theme === 'dark';
 
   return (
     <header
-      className={`sticky top-0 z-40 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between transition-colors ${
+      className={`sticky top-0 z-40 backdrop-blur-md border-b px-4 sm:px-6 py-3 flex items-center justify-between transition-colors ${
         isDark
-          ? 'bg-retro-card/90 border-retro-border text-white'
-          : 'bg-white/95 border-retro-border text-retro-text shadow-sm'
+          ? 'bg-slate-900/95 border-slate-800 text-slate-100'
+          : 'bg-white/95 border-slate-200 text-slate-800 shadow-xs'
       }`}
     >
-      {/* Brand & Connection Status */}
+      {/* Marque & Statut de Connexion */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-retro-primary to-retro-purple flex items-center justify-center text-white shadow-md">
-          <Gamepad2 className="w-5 h-5" />
+        <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-sm font-bold text-xs">
+          K
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="font-black text-sm tracking-wider uppercase font-arcade">
-              Kaïro<span className="text-retro-primary">OS</span>
+            <span className="font-bold text-sm tracking-tight font-sans">
+              KaïroOS <span className="text-indigo-600 dark:text-indigo-400">Admin</span>
             </span>
             <span
-              className={`text-[9px] px-1.5 py-0.5 rounded-md font-mono font-bold tracking-widest ${
+              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
                 isDark
-                  ? 'bg-retro-purple/30 text-retro-cyan border border-retro-purple/50'
-                  : 'bg-retro-primary/10 text-retro-primary border border-retro-primary/20'
+                  ? 'bg-slate-800 text-slate-300'
+                  : 'bg-slate-100 text-slate-600 border border-slate-200'
               }`}
             >
               REMOTE
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[10px]">
+          <div className="flex items-center gap-1.5 text-[11px]">
             {connected ? (
               <>
-                <span className="w-2 h-2 rounded-full bg-retro-green animate-pulse" />
-                <span className="text-retro-green font-bold">Borne En Ligne</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Borne Connectée</span>
               </>
             ) : (
               <>
-                <span className="w-2 h-2 rounded-full bg-retro-primary animate-ping" />
-                <span className="text-retro-primary font-bold">Déconnecté</span>
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                <span className="text-red-500 font-medium">Hors-ligne</span>
               </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Right Controls: Theme Toggle + PIN */}
+      {/* Contrôles Header : Bascule Manette / Thème / PIN / Logout */}
       <div className="flex items-center gap-2">
-        {/* Dark / Light Toggle */}
+        {/* Bascule vers Mode Manette Virtuelle */}
+        <button
+          onClick={onToggleAppMode}
+          title={appMode === 'admin' ? 'Ouvrir la Manette Virtuelle' : 'Ouvrir le Panneau Admin'}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:hover:bg-indigo-900 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 text-xs font-semibold shadow-xs transition-all"
+        >
+          <Gamepad2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Manette Virtuelle</span>
+        </button>
+
+        {/* PIN Button */}
+        <button
+          onClick={onOpenPinModal}
+          title="Modifier le Code PIN"
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-mono font-semibold transition-all ${
+            isDark
+              ? 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+              : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900'
+          }`}
+        >
+          <KeyRound className="w-3.5 h-3.5 text-amber-500" />
+          <span>••••</span>
+        </button>
+
+        {/* Thème clair / sombre */}
         <button
           onClick={onToggleTheme}
-          title={isDark ? 'Passer au thème clair (Arcade 80s)' : 'Passer au thème sombre'}
-          className={`p-2 rounded-xl border transition-all active:scale-90 ${
+          title={isDark ? 'Passer au thème clair' : 'Passer au thème sombre'}
+          className={`p-1.5 rounded-xl border transition-all ${
             isDark
-              ? 'bg-retro-panel border-retro-border text-retro-yellow hover:border-retro-yellow/50 shadow-sm'
-              : 'bg-retro-warm border-retro-border text-retro-primary hover:border-retro-primary/50 shadow-sm'
+              ? 'bg-slate-800 border-slate-700 text-amber-400 hover:bg-slate-700'
+              : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
           }`}
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
 
-        {/* PIN Badge / Button */}
+        {/* Déconnexion */}
         <button
-          onClick={onOpenPinModal}
-          title="Modifier le Code PIN de session"
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all active:scale-95 ${
-            isDark
-              ? 'bg-retro-panel border-retro-border hover:border-retro-cyan text-white shadow-sm'
-              : 'bg-retro-warm border-retro-border hover:border-retro-primary text-retro-text shadow-sm'
-          }`}
+          onClick={onLogout}
+          title="Se déconnecter"
+          className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-red-500 hover:border-red-200 transition-all"
         >
-          <KeyRound className="w-3.5 h-3.5 text-retro-yellow" />
-          <span className="font-mono text-xs font-bold tracking-wider">
-            {pin ? '••••' : 'Saisir PIN'}
-          </span>
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
     </header>

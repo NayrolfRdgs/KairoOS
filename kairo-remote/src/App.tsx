@@ -4,6 +4,9 @@ import {
   Sidebar,
   BottomNav,
   PinModal,
+  LoginScreen,
+  ModeSelector,
+  VirtualGamepad,
   DashboardView,
   GamesView,
   AddGameView,
@@ -22,13 +25,15 @@ import {
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function App() {
-  // 1. États Globaux en Mémoire (Persistance en variable d'état React, pas de localStorage)
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  // 1. États d'Authentification & Mode (Thème par défaut : Clair / Sobra)
+  const [theme, setTheme] = useState<ThemeMode>('light');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [activeMode, setActiveMode] = useState<'hub' | 'admin' | 'gamepad'>('hub');
   const [pin, setPin] = useState<string>('1234');
-  const [pinModalOpen, setPinModalOpen] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState<boolean>(false);
   const [currentTab, setCurrentTab] = useState<'dashboard' | 'games' | 'add' | 'settings' | 'unlock'>('dashboard');
 
-  // 2. États Données & Réseau
+  // 2. États Réseau & Données
   const [connected, setConnected] = useState<boolean>(false);
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [games, setGames] = useState<Game[]>([]);
@@ -42,7 +47,7 @@ export default function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // 3. Polling du Statut (toutes les 2 secondes)
+  // 3. Polling de l'état de la borne (toutes les 2 secondes)
   const fetchStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/status');
@@ -58,7 +63,7 @@ export default function App() {
     }
   }, []);
 
-  // 4. Chargement de la Bibliothèque
+  // 4. Chargement de la bibliothèque
   const loadData = useCallback(async () => {
     try {
       const [gamesRes, recentRes, systemsRes] = await Promise.all([
@@ -93,7 +98,35 @@ export default function App() {
     return () => clearInterval(interval);
   }, [fetchStatus, loadData]);
 
-  // 5. Actions REST avec En-tête X-Kairo-Pin
+  // 5. Authentification initiale obligatoire
+  const handleLogin = async (enteredPin: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: enteredPin }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setPin(enteredPin);
+        setIsAuthenticated(true);
+        setActiveMode('hub');
+        showToast('Connexion réussie !');
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setActiveMode('hub');
+    showToast('Déconnecté');
+  };
+
+  // 6. Actions REST
   const handleLaunchGame = async (gameId: string) => {
     setLoading(true);
     try {
@@ -138,7 +171,7 @@ export default function App() {
         fetchStatus();
         loadData();
       } else {
-        showToast(json.error || 'Erreur lors de l\'arrêt du jeu', 'error');
+        showToast(json.error || "Erreur lors de l'arrêt du jeu", 'error');
         if (res.status === 401) setPinModalOpen(true);
       }
     } catch (err: any) {
@@ -163,8 +196,7 @@ export default function App() {
         );
         showToast(json.data ? '⭐ Ajouté aux favoris' : 'Favori retiré');
       } else {
-        showToast(json.error || 'Erreur de favori (Vérifiez le PIN)', 'error');
-        if (res.status === 401) setPinModalOpen(true);
+        showToast(json.error || 'Erreur de favori', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -184,12 +216,11 @@ export default function App() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast('✅ Jeu ajouté à la borne !');
+        showToast('✅ ROM ajoutée à la borne !');
         loadData();
         setCurrentTab('games');
       } else {
-        showToast(json.error || 'Erreur ajout jeu (Vérifiez le PIN)', 'error');
-        if (res.status === 401) setPinModalOpen(true);
+        showToast(json.error || 'Erreur ajout ROM', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -207,11 +238,10 @@ export default function App() {
       });
       const json = await res.json();
       if (res.ok && json.success) {
-        showToast('🔒 Mode Kiosk activé sur la borne !');
+        showToast('🔒 Mode Kiosk activé !');
         fetchStatus();
       } else {
-        showToast(json.error || 'Erreur verrouillage (Vérifiez le PIN)', 'error');
-        if (res.status === 401) setPinModalOpen(true);
+        showToast(json.error || 'Erreur verrouillage', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -260,8 +290,7 @@ export default function App() {
         showToast('Configuration Remote enregistrée !');
         fetchStatus();
       } else {
-        showToast(json.error || 'Erreur enregistrement (Vérifiez le PIN)', 'error');
-        if (res.status === 401) setPinModalOpen(true);
+        showToast(json.error || 'Erreur enregistrement', 'error');
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -287,7 +316,6 @@ export default function App() {
         fetchStatus();
       } else {
         showToast(json.error || 'Erreur enregistrement', 'error');
-        if (res.status === 401) setPinModalOpen(true);
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -312,7 +340,6 @@ export default function App() {
         showToast('Émulateurs enregistrés avec succès !');
       } else {
         showToast(json.error || 'Erreur enregistrement émulateurs', 'error');
-        if (res.status === 401) setPinModalOpen(true);
       }
     } catch (err: any) {
       showToast(err.message, 'error');
@@ -323,19 +350,50 @@ export default function App() {
 
   const isDark = theme === 'dark';
 
+  // 1. Si NON Authentifié : Écran de connexion obligatoire
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={handleLogin} theme={theme} />;
+  }
+
+  // 2. Si sur l'écran Sélecteur de Mode (Hub)
+  if (activeMode === 'hub') {
+    return (
+      <ModeSelector
+        onSelectMode={(mode) => setActiveMode(mode)}
+        status={status}
+        onLogout={handleLogout}
+        theme={theme}
+      />
+    );
+  }
+
+  // 3. Si en Mode Manette Virtuelle (Gamepad)
+  if (activeMode === 'gamepad') {
+    return (
+      <VirtualGamepad
+        pin={pin}
+        status={status}
+        onBackToHub={() => setActiveMode('hub')}
+        onStopGame={handleStopGame}
+        theme={theme}
+      />
+    );
+  }
+
+  // 4. Mode Panneau d'Administration (Clean & Sobre)
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans transition-colors duration-200 select-none ${
-        isDark ? 'bg-retro-dark text-[#f4f0e8]' : 'bg-[#fbf8f2] text-retro-text'
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-150 select-none ${
+        isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'
       }`}
     >
       {/* Toast Notification */}
       {toast && (
         <div
-          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-xs font-bold font-arcade shadow-2xl flex items-center gap-2 animate-bounce ${
+          className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-xl flex items-center gap-2 animate-bounce ${
             toast.type === 'success'
-              ? 'bg-retro-green text-retro-dark'
-              : 'bg-retro-primary text-white'
+              ? 'bg-emerald-600 text-white'
+              : 'bg-red-600 text-white'
           }`}
         >
           {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
@@ -343,13 +401,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Header Fixe */}
+      {/* Header Propre */}
       <Header
         connected={connected}
         theme={theme}
         onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
         pin={pin}
         onOpenPinModal={() => setPinModalOpen(true)}
+        appMode="admin"
+        onToggleAppMode={() => setActiveMode('gamepad')}
+        onLogout={handleLogout}
       />
 
       {/* Corps Principal Responsive (Sidebar Desktop + Contenu Central) */}
@@ -361,6 +422,7 @@ export default function App() {
           status={status}
           gamesCount={games.length}
           theme={theme}
+          onOpenGamepad={() => setActiveMode('gamepad')}
         />
 
         {/* Zone de Contenu Principal */}
@@ -374,6 +436,7 @@ export default function App() {
               onLockKiosk={handleLockKiosk}
               onOpenUnlockModal={() => setCurrentTab('unlock')}
               onNavigateToGames={() => setCurrentTab('games')}
+              onOpenGamepad={() => setActiveMode('gamepad')}
               loading={loading}
               theme={theme}
             />
@@ -434,15 +497,16 @@ export default function App() {
         onSelectTab={setCurrentTab}
         status={status}
         theme={theme}
+        onOpenGamepad={() => setActiveMode('gamepad')}
       />
 
-      {/* Modale PIN Rapide */}
+      {/* Modale Modification PIN */}
       <PinModal
         isOpen={pinModalOpen}
         onClose={() => setPinModalOpen(false)}
         onConfirm={async (enteredPin) => {
           setPin(enteredPin);
-          showToast('Code PIN mis à jour !');
+          showToast('Code PIN de session mis à jour !');
         }}
         initialPin={pin}
         theme={theme}

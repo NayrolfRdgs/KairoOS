@@ -121,6 +121,18 @@ pub struct UnlockRequest {
 }
 
 #[derive(Deserialize)]
+pub struct LoginRequest {
+    pub pin: String,
+}
+
+#[derive(Deserialize)]
+pub struct GamepadInputRequest {
+    pub player_index: u8,
+    pub button: String,
+    pub is_down: bool,
+}
+
+#[derive(Deserialize)]
 pub struct CoverQuery {
     pub path: String,
 }
@@ -132,6 +144,103 @@ pub struct ApiResponse<T> {
     pub data: Option<T>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+#[cfg(windows)]
+pub fn simulate_key_event(vk_code: u16, is_down: bool) {
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP,
+    };
+    use std::mem::size_of;
+
+    let flags = if is_down { 0 } else { KEYEVENTF_KEYUP };
+    let input = INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: vk_code,
+                wScan: 0,
+                dwFlags: flags,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    };
+
+    unsafe {
+        SendInput(1, &input, size_of::<INPUT>() as i32);
+    }
+}
+
+#[cfg(not(windows))]
+pub fn simulate_key_event(_vk_code: u16, _is_down: bool) {}
+
+fn map_player_button_to_vk(player: u8, button: &str) -> Option<u16> {
+    let btn = button.to_lowercase();
+    match player {
+        0 => match btn.as_str() {
+            "up" => Some(0x26),       // VK_UP
+            "down" => Some(0x28),     // VK_DOWN
+            "left" => Some(0x25),     // VK_LEFT
+            "right" => Some(0x27),    // VK_RIGHT
+            "a" => Some(0x58),        // 'X'
+            "b" => Some(0x5A),        // 'Z'
+            "x" => Some(0x53),        // 'S'
+            "y" => Some(0x41),        // 'A'
+            "l1" => Some(0x51),       // 'Q'
+            "r1" => Some(0x57),       // 'W'
+            "l2" => Some(0x45),       // 'E'
+            "r2" => Some(0x52),       // 'R'
+            "start" => Some(0x0D),    // VK_RETURN
+            "select" | "coin" => Some(0x20), // VK_SPACE
+            _ => None,
+        },
+        1 => match btn.as_str() {
+            "up" => Some(0x68),       // VK_NUMPAD8
+            "down" => Some(0x62),     // VK_NUMPAD2
+            "left" => Some(0x64),     // VK_NUMPAD4
+            "right" => Some(0x66),    // VK_NUMPAD6
+            "a" => Some(0x61),        // VK_NUMPAD1
+            "b" => Some(0x63),        // VK_NUMPAD3
+            "x" => Some(0x65),        // VK_NUMPAD5
+            "y" => Some(0x67),        // VK_NUMPAD7
+            "l1" => Some(0x69),       // VK_NUMPAD9
+            "r1" => Some(0x60),       // VK_NUMPAD0
+            "l2" => Some(0x6A),       // VK_MULTIPLY
+            "r2" => Some(0x6B),       // VK_ADD
+            "start" => Some(0x6D),    // VK_SUBTRACT
+            "select" | "coin" => Some(0x6E), // VK_DECIMAL
+            _ => None,
+        },
+        2 => match btn.as_str() {
+            "up" => Some(0x49),       // 'I'
+            "down" => Some(0x4B),     // 'K'
+            "left" => Some(0x4A),     // 'J'
+            "right" => Some(0x4C),    // 'L'
+            "a" => Some(0x55),        // 'U'
+            "b" => Some(0x4F),        // 'O'
+            "x" => Some(0x50),        // 'P'
+            "y" => Some(0x59),        // 'Y'
+            "l1" => Some(0x54),       // 'T'
+            "r1" => Some(0x47),       // 'G'
+            "start" => Some(0x48),    // 'H'
+            "select" | "coin" => Some(0x42), // 'B'
+            _ => None,
+        },
+        _ => match btn.as_str() {
+            "up" => Some(0x26),
+            "down" => Some(0x28),
+            "left" => Some(0x25),
+            "right" => Some(0x27),
+            "a" => Some(0x58),
+            "b" => Some(0x5A),
+            "x" => Some(0x53),
+            "y" => Some(0x41),
+            "start" => Some(0x0D),
+            "select" | "coin" => Some(0x20),
+            _ => None,
+        },
+    }
 }
 
 /// Détecte l'adresse IP locale principale (ex: 192.168.1.30)
@@ -204,6 +313,8 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
                 .allow_headers(Any);
 
             let api_routes = Router::new()
+                .route("/api/auth/login", post(login_auth))
+                .route("/api/gamepad/input", post(gamepad_input))
                 .route("/api/status", get(get_status))
                 .route("/api/system/info", get(get_system_info))
                 .route("/api/games", get(get_games))
@@ -632,3 +743,65 @@ async fn get_cover_image(Query(query): Query<CoverQuery>) -> impl IntoResponse {
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Erreur lecture image").into_response(),
     }
 }
+
+async fn login_auth(Json(req): Json<LoginRequest>) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if req.pin.trim() == config.pin.trim() {
+        (
+            StatusCode::OK,
+            Json(ApiResponse {
+                success: true,
+                data: Some("Authentification réussie"),
+                error: None,
+            }),
+        )
+    } else {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Code PIN non valide".into()),
+            }),
+        )
+    }
+}
+
+async fn gamepad_input(
+    headers: HeaderMap,
+    Json(req): Json<GamepadInputRequest>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (
+            StatusCode::UNAUTHORIZED,
+            Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some("Code PIN non valide".into()),
+            }),
+        );
+    }
+
+    if let Some(vk) = map_player_button_to_vk(req.player_index, &req.button) {
+        simulate_key_event(vk, req.is_down);
+        (
+            StatusCode::OK,
+            Json(ApiResponse {
+                success: true,
+                data: Some(format!("Input {} player {} (down={})", req.button, req.player_index + 1, req.is_down)),
+                error: None,
+            }),
+        )
+    } else {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiResponse {
+                success: false,
+                data: None,
+                error: Some(format!("Bouton inconnu: {}", req.button)),
+            }),
+        )
+    }
+}
+

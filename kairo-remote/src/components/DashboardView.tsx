@@ -12,7 +12,7 @@ import {
   Check,
   Flame,
   History,
-  Sparkles,
+  Smartphone,
 } from 'lucide-react';
 import { ThemeMode, StatusResponse, Game } from '../types';
 
@@ -24,6 +24,7 @@ interface DashboardViewProps {
   onLockKiosk: () => Promise<void>;
   onOpenUnlockModal: () => void;
   onNavigateToGames: () => void;
+  onOpenGamepad: () => void;
   loading: boolean;
   theme: ThemeMode;
 }
@@ -36,6 +37,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onLockKiosk,
   onOpenUnlockModal,
   onNavigateToGames,
+  onOpenGamepad,
   loading,
   theme,
 }) => {
@@ -43,7 +45,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const [seconds, setSeconds] = useState<number>(status?.elapsed_seconds || 0);
   const [copiedIp, setCopiedIp] = useState(false);
 
-  // Chronomètre en temps réel
+  // Chronomètre session en temps réel
   useEffect(() => {
     if (status?.is_running) {
       setSeconds(status.elapsed_seconds || 0);
@@ -76,48 +78,48 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
-      {/* 1. Carte Principale : Statut en Jeu ou En Attente */}
+    <div className="space-y-6 animate-in fade-in duration-150">
+      {/* 1. Carte Principale : Statut en Direct (Sobre & Lisible) */}
       <div
-        className={`p-6 rounded-3xl border transition-all relative overflow-hidden shadow-lg ${
+        className={`p-6 rounded-3xl border transition-all shadow-sm ${
           status?.is_running
             ? isDark
-              ? 'bg-gradient-to-br from-retro-panel to-retro-card border-retro-primary shadow-[0_0_30px_rgba(255,51,102,0.2)]'
-              : 'bg-white border-retro-primary shadow-retro-neon'
+              ? 'bg-slate-900 border-emerald-500/50'
+              : 'bg-white border-emerald-300 ring-2 ring-emerald-100'
             : isDark
-            ? 'bg-retro-card border-retro-border'
-            : 'bg-white border-retro-border shadow-sm'
+            ? 'bg-slate-900 border-slate-800'
+            : 'bg-white border-slate-200'
         }`}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span
-              className={`w-3 h-3 rounded-full ${
-                status?.is_running ? 'bg-retro-green animate-pulse' : 'bg-slate-400'
+              className={`w-2.5 h-2.5 rounded-full ${
+                status?.is_running ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
               }`}
             />
-            <span className="text-xs font-bold uppercase tracking-wider font-arcade">
-              {status?.is_running ? 'SESSION EN COURS 🕹️' : 'BORNE DISPONIBLE'}
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {status?.is_running ? 'Session de Jeu Active' : 'Borne Libre (En Attente)'}
             </span>
           </div>
 
           {status?.is_running ? (
-            <span className="px-3 py-1 rounded-full text-xs font-black font-arcade bg-retro-green/20 text-retro-green border border-retro-green/40 flex items-center gap-1.5 animate-pulse">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5" />
               <span>EN JEU</span>
             </span>
           ) : (
-            <span className="px-3 py-1 rounded-full text-xs font-bold font-arcade bg-slate-500/20 text-slate-400">
-              IDLE (EN ATTENTE)
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+              IDLE
             </span>
           )}
         </div>
 
         {status?.is_running ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div className="flex flex-col sm:flex-row items-center gap-5">
-              {/* Jaquette du jeu en cours */}
-              <div className="w-28 h-36 rounded-2xl bg-retro-panel border-2 border-retro-primary/40 flex items-center justify-center shrink-0 overflow-hidden shadow-md">
+              {/* Jaquette */}
+              <div className="w-24 h-32 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden shadow-xs">
                 {status.current_game_cover ? (
                   <img
                     src={status.current_game_cover}
@@ -125,85 +127,103 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <Gamepad2 className="w-12 h-12 text-retro-primary" />
+                  <Gamepad2 className="w-10 h-10 text-slate-400" />
                 )}
               </div>
 
-              {/* Titre & Durée */}
+              {/* Titre & Chronomètre */}
               <div className="flex-1 text-center sm:text-left space-y-2">
-                <span className="inline-block px-2.5 py-0.5 rounded-md bg-retro-cyan/20 text-retro-cyan border border-retro-cyan/40 text-[10px] font-bold font-mono uppercase">
+                <span className="inline-block px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[11px] font-mono font-bold uppercase">
                   {status.current_system_id || 'Arcade'}
                 </span>
-                <h2 className="text-xl sm:text-2xl font-black font-arcade text-white tracking-wide leading-tight">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
                   {status.current_game_title || 'Jeu en cours'}
                 </h2>
 
-                <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-bold text-slate-300 font-mono pt-1">
-                  <Clock className="w-4 h-4 text-retro-yellow animate-spin" />
-                  <span>Durée de session :</span>
-                  <span className="text-retro-yellow font-black text-sm">{formatTime(seconds)}</span>
+                <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 pt-1">
+                  <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Temps écoulé :</span>
+                  <span className="text-indigo-600 dark:text-indigo-400 font-bold font-mono text-sm">
+                    {formatTime(seconds)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Bouton STOP d'urgence */}
-            <button
-              onClick={onStopGame}
-              disabled={loading}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600 to-retro-primary hover:from-red-500 hover:to-retro-primary text-white font-black font-arcade text-xs tracking-wider shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
-            >
-              <Square className="w-4 h-4 fill-white" />
-              <span>ARRÊTER LE JEU (STOP D'URGENCE)</span>
-            </button>
+            {/* Boutons d'Action Rapide : Arrêter + Manette */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={onOpenGamepad}
+                className="py-3 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>OUVRIR LA MANETTE VIRTUELLE 🎮</span>
+              </button>
+
+              <button
+                onClick={onStopGame}
+                disabled={loading}
+                className="py-3 px-4 rounded-2xl bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/60 font-bold text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+              >
+                <Square className="w-4 h-4 fill-current" />
+                <span>ARRÊTER LE JEU (STOP D'URGENCE)</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-retro-primary/10 border border-retro-primary/20 flex items-center justify-center text-retro-primary">
-              <Gamepad2 className="w-8 h-8" />
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+              <Gamepad2 className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="font-bold text-base font-arcade">Borne Prête pour une Partie</h3>
-              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                Choisissez un jeu dans la bibliothèque ou relancez une session depuis l'historique ci-dessous.
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">Borne Prête pour une Partie</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                Lancez un jeu depuis le catalogue ou relancez directement une session précédente ci-dessous.
               </p>
             </div>
-            <button
-              onClick={onNavigateToGames}
-              className={`px-6 py-3 rounded-2xl font-bold font-arcade text-xs shadow-md transition-all active:scale-95 flex items-center gap-2 mx-auto ${
-                isDark
-                  ? 'bg-gradient-to-r from-retro-primary to-retro-purple text-white hover:shadow-retro-primary/30'
-                  : 'bg-gradient-to-r from-retro-primary to-retro-orange text-white shadow-retro'
-              }`}
-            >
-              <Play className="w-4 h-4 fill-current" />
-              <span>PARCOURIR LES JEUX</span>
-            </button>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <button
+                onClick={onNavigateToGames}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-all active:scale-95 flex items-center gap-2"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                <span>PARCOURIR LES JEUX</span>
+              </button>
+
+              <button
+                onClick={onOpenGamepad}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all active:scale-95 flex items-center gap-2"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>MANETTE VIRTUELLE</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
 
-      {/* 2. Grille Desktop / Colonnes : Historique Récent + Contrôle Kiosk */}
+      {/* 2. Colonnes : Historique Récent + Contrôle Kiosk & Réseau */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Historique des 5 derniers jeux (col-span-7) */}
         <div
-          className={`lg:col-span-7 p-6 rounded-3xl border space-y-4 shadow-sm ${
-            isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+          className={`lg:col-span-7 p-6 rounded-3xl border space-y-4 shadow-xs ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
           }`}
         >
-          <div className="flex items-center justify-between pb-2 border-b border-retro-border/50">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
             <div className="flex items-center gap-2">
-              <History className="w-5 h-5 text-retro-cyan" />
-              <h3 className="text-xs font-black uppercase font-arcade tracking-wider">
+              <History className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                 Derniers Jeux Lancés
               </h3>
             </div>
-            <span className="text-[11px] text-slate-400 font-mono">Top 5 récents</span>
+            <span className="text-[11px] text-slate-400 font-mono">5 récents</span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {recentGames.length === 0 ? (
               <div className="text-center py-6 text-xs text-slate-400">
-                Aucun historique de partie récent.
+                Aucun historique récent.
               </div>
             ) : (
               recentGames.map((game) => (
@@ -211,12 +231,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   key={game.id}
                   className={`p-3 rounded-2xl border flex items-center justify-between gap-3 transition-all ${
                     isDark
-                      ? 'bg-retro-panel/60 border-retro-border hover:border-retro-cyan/50'
-                      : 'bg-retro-warm/50 border-retro-border hover:border-retro-primary'
+                      ? 'bg-slate-800/40 border-slate-800 hover:border-slate-700'
+                      : 'bg-slate-50 border-slate-200 hover:border-indigo-300'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-retro-panel border border-retro-border shrink-0 flex items-center justify-center overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 shrink-0 flex items-center justify-center overflow-hidden">
                       {game.cover_url ? (
                         <img src={game.cover_url} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -224,9 +244,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <h4 className="text-xs font-bold truncate">{game.title}</h4>
+                      <h4 className="text-xs font-bold truncate text-slate-900 dark:text-white">
+                        {game.title}
+                      </h4>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                        <span className="font-mono uppercase font-bold text-retro-cyan">
+                        <span className="font-mono uppercase font-bold text-indigo-600 dark:text-indigo-400">
                           {game.system_id}
                         </span>
                         {game.play_count > 0 && <span>• {game.play_count} partie(s)</span>}
@@ -237,10 +259,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <button
                     onClick={() => onLaunchGame(game.id)}
                     disabled={loading || status?.is_running}
-                    className="px-3 py-1.5 rounded-xl bg-retro-primary/20 hover:bg-retro-primary text-retro-primary hover:text-white border border-retro-primary/40 text-xs font-bold font-arcade shrink-0 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-40"
+                    className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shrink-0 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-40"
                   >
                     <Play className="w-3 h-3 fill-current" />
-                    <span>RELANCER</span>
+                    <span>Lancer</span>
                   </button>
                 </div>
               ))
@@ -248,99 +270,96 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Colonne Droite : Mode Kiosk & Accès Réseau (col-span-5) */}
+        {/* Colonne Droite : Mode Salle & IP (col-span-5) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Carte Mode Kiosk */}
+          {/* Mode Kiosk */}
           <div
-            className={`p-6 rounded-3xl border space-y-4 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 rounded-3xl border space-y-4 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center justify-between pb-2 border-b border-retro-border/50">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <span className="text-amber-400">
-                  {status?.kiosk_mode ? <Lock className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
+                <span className="text-amber-500">
+                  {status?.kiosk_mode ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                 </span>
-                <h3 className="text-xs font-black uppercase font-arcade tracking-wider">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
                   Sécurité Mode Salle
                 </h3>
               </div>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-arcade ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                   status?.kiosk_mode
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                    : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                 }`}
               >
-                {status?.kiosk_mode ? 'VERROUILLÉ 🔒' : 'ADMIN 🔓'}
+                {status?.kiosk_mode ? 'Verrouillé 🔒' : 'Admin Libre 🔓'}
               </span>
             </div>
 
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               {status?.kiosk_mode
-                ? 'Les menus de configuration et de scan sont masqués sur la borne pour les joueurs.'
-                : 'La borne est en mode administrateur complet.'}
+                ? 'Les menus et configurations sont masqués sur la borne pour les joueurs.'
+                : 'La borne est en accès libre complet.'}
             </p>
 
             {status?.kiosk_mode ? (
               <button
                 onClick={onOpenUnlockModal}
                 disabled={loading}
-                className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-retro-dark font-black font-arcade text-xs tracking-wider shadow-md active:scale-95 transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-xs active:scale-95 transition-all flex items-center justify-center gap-2"
               >
                 <Unlock className="w-4 h-4" />
-                <span>DÉVERROUILLER AVEC LE PIN</span>
+                <span>Déverrouiller avec le PIN</span>
               </button>
             ) : (
               <button
                 onClick={onLockKiosk}
                 disabled={loading}
-                className={`w-full py-3 rounded-2xl border font-bold font-arcade text-xs tracking-wider active:scale-95 transition-all flex items-center justify-center gap-2 ${
+                className={`w-full py-2.5 rounded-xl border text-xs font-semibold active:scale-95 transition-all flex items-center justify-center gap-2 ${
                   isDark
-                    ? 'bg-retro-panel hover:bg-slate-700 text-white border-retro-border'
-                    : 'bg-retro-warm hover:bg-slate-200 text-retro-text border-retro-border'
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
                 }`}
               >
                 <Lock className="w-4 h-4" />
-                <span>VERROUILLER EN MODE KIOSK</span>
+                <span>Activer le Mode Kiosk</span>
               </button>
             )}
           </div>
 
-          {/* Carte Accès Réseau & Mobile */}
+          {/* Accès Télécommande */}
           <div
-            className={`p-6 rounded-3xl border space-y-3 shadow-sm ${
-              isDark ? 'bg-retro-card border-retro-border text-white' : 'bg-white border-retro-border text-retro-text'
+            className={`p-6 rounded-3xl border space-y-3 shadow-xs ${
+              isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
             }`}
           >
-            <div className="flex items-center gap-2 pb-2 border-b border-retro-border/50">
-              <Wifi className="w-5 h-5 text-retro-cyan" />
-              <h3 className="text-xs font-black uppercase font-arcade tracking-wider">
-                Adresse Télécommande
+            <div className="flex items-center gap-2 pb-3 border-b border-slate-200/80 dark:border-slate-800">
+              <Wifi className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200">
+                Adresse Wi-Fi Borne
               </h3>
             </div>
 
             <div
-              className={`p-3 rounded-2xl border flex items-center justify-between ${
-                isDark ? 'bg-retro-panel border-retro-border font-mono' : 'bg-retro-warm border-retro-border font-mono'
+              className={`p-3 rounded-xl border flex items-center justify-between ${
+                isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'
               }`}
             >
               <div className="text-xs">
-                <span className="text-slate-400 block text-[10px]">URL Wi-Fi Smartphone :</span>
-                <span className="font-bold text-retro-cyan text-sm">
+                <span className="text-slate-400 block text-[10px]">URL Téléphone :</span>
+                <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">
                   http://{status?.local_ip || '127.0.0.1'}:{status?.port || 8080}
                 </span>
               </div>
 
               <button
                 onClick={handleCopyIp}
-                title="Copier l'adresse"
-                className={`p-2 rounded-xl border transition-all active:scale-90 ${
+                className={`p-1.5 rounded-lg border transition-all ${
                   copiedIp
-                    ? 'bg-retro-green text-retro-dark border-retro-green'
-                    : isDark
-                    ? 'bg-white/10 hover:bg-white/20 text-white border-white/20'
-                    : 'bg-white hover:bg-retro-warm text-retro-text border-retro-border'
+                    ? 'bg-emerald-500 text-white border-emerald-500'
+                    : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
                 }`}
               >
                 {copiedIp ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

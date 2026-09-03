@@ -1,7 +1,7 @@
 {
   "fullscreen": false,
   "always_on_top": false,
-  "kiosk_mode": false,
+  "kiosk_mode": true,
   "enabled_franchises": [],
   "custom_franchises": [],
   "roms_path": null,
