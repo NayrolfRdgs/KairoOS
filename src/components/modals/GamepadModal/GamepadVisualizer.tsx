@@ -16,13 +16,13 @@ export const GamepadVisualizer: React.FC<GamepadVisualizerProps> = ({
   onStartWizard,
 }) => {
   return (
-    <div className="lg:col-span-5 bg-retro-dark text-retro-cream rounded-3xl p-6 shadow-inner flex flex-col justify-between">
+    <div className="lg:col-span-5 bg-slate-900 text-white rounded-3xl p-6 shadow-xl border border-purple-900/30 flex flex-col justify-between">
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-arcade text-xs tracking-wider text-arcade-yellow">
+          <h3 className="text-xs font-black uppercase tracking-wider text-rose-400">
             TEST VISUEL — {controllerType.toUpperCase().replace('_', ' ')}
           </h3>
-          <span className="text-[10px] text-white/50">Temps Réel</span>
+          <span className="text-[10px] font-mono text-slate-400">Temps Réel</span>
         </div>
 
         {/* 1. Disposition Borne Arcade */}
@@ -234,7 +234,7 @@ export const GamepadVisualizer: React.FC<GamepadVisualizerProps> = ({
 
       <button
         onClick={onStartWizard}
-        className="w-full mt-4 py-3 rounded-2xl bg-arcade-orange hover:bg-arcade-orange/90 text-white font-bold font-arcade text-xs shadow-md transition-all flex items-center justify-center gap-2"
+        className="w-full mt-4 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-rose-500 hover:from-purple-500 hover:to-rose-400 text-white font-bold text-xs shadow-md shadow-rose-500/30 transition-all flex items-center justify-center gap-2 active:scale-98"
       >
         <Play className="w-4 h-4 fill-white" />
         <span>LANCER L'ASSISTANT DE REMAPPING COMPLET</span>

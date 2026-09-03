@@ -56,6 +56,12 @@ export function useGamepad(
           const lbPressed = currentButtons[4] || false;
           const rbPressed = currentButtons[5] || false;
           const startPressed = currentButtons[9] || false;
+          const coinPressed = currentButtons[8] || false; // Select / Coin 🪙
+
+          // Combo Arcade Quitter le jeu : Coin (8) + 1P Start (9)
+          if (coinPressed && startPressed) {
+            actionsRef.current.onCoinStartExit?.();
+          }
 
           if (lbPressed && rbPressed && startPressed) {
             if (comboStartTimeRef.current === null) {

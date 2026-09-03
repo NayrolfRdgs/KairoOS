@@ -215,34 +215,34 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-retro-dark/75 backdrop-blur-md p-4 animate-in fade-in duration-200 select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 animate-fadeIn select-none"
     >
-      <div className="bg-retro-panel border-4 border-retro-dark/30 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-white border border-purple-100 rounded-3xl w-full max-w-5xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-4 border-b-2 border-retro-dark/10 flex items-center justify-between bg-retro-warm/80">
+        <div className="px-6 py-4 border-b border-purple-100 flex items-center justify-between bg-gradient-to-r from-purple-50 via-pink-50 to-white">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-arcade-orange text-white rounded-2xl shadow-md">
-              <Gamepad2 className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-pink-500/20">
+              <Gamepad2 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold font-arcade tracking-wider text-retro-dark">
+                <h2 className="text-base font-black text-slate-900 font-sans tracking-tight">
                   GESTIONNAIRE DE CONTRÔLEURS & ARCADE STICKS
                 </h2>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-arcade-orange text-white font-arcade uppercase">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono uppercase">
                   1 À 10 JOUEURS
                 </span>
               </div>
-              <p className="text-xs text-retro-dark/65">
+              <p className="text-xs text-slate-500">
                 Assignation des périphériques, priorité J1/J2, remapping interactif et synchronisation automatique avec les émulateurs
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2.5 rounded-2xl text-retro-dark/60 hover:text-retro-dark hover:bg-black/10 transition-all"
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-all"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -262,16 +262,16 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Ligne 1 : Assignation Périphérique & Priorité */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-8 bg-white/80 rounded-2xl p-4 border border-retro-dark/10 shadow-sm flex flex-col justify-between">
+            <div className="md:col-span-8 bg-slate-50 rounded-2xl p-4 border border-purple-100/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-retro-dark/60 uppercase">
+                <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
                   Périphérique Physique Assigné à Joueur {selectedPlayer + 1}
                 </span>
                 <span
-                  className={`px-2.5 py-0.5 rounded-md text-[11px] font-bold ${
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                     activeGamepad
-                      ? 'bg-arcade-green/20 text-arcade-green'
-                      : 'bg-retro-dark/10 text-retro-dark/40'
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200'
                   }`}
                 >
                   {activeGamepad ? `Connecté (Port #${activeGamepad.index})` : 'Aucun contrôleur détecté'}
@@ -283,7 +283,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
                   <select
                     value={currentAssignedIndex}
                     onChange={(e) => handleAssignPad(Number(e.target.value))}
-                    className="flex-1 px-3 py-2 rounded-xl bg-white border-2 border-retro-dark/15 text-xs font-bold text-retro-dark focus:outline-none focus:border-arcade-orange"
+                    className="flex-1 px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-rose-400 shadow-2xs"
                   >
                     {connectedPads.map((pad, idx) => (
                       <option key={idx} value={idx}>
@@ -293,33 +293,33 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
                   </select>
                 </div>
               ) : (
-                <div className="p-2.5 rounded-xl bg-retro-warm/50 border border-dashed border-retro-dark/20 text-xs text-retro-dark/60">
+                <div className="p-2.5 rounded-xl bg-purple-50/50 border border-dashed border-purple-200 text-xs text-slate-500">
                   ⚠️ Branchez une manette ou un encodeur USB arcade, puis appuyez sur un bouton pour l'activer.
                 </div>
               )}
             </div>
 
-            <div className="md:col-span-4 bg-white/80 rounded-2xl p-4 border border-retro-dark/10 shadow-sm flex flex-col justify-between">
-              <span className="text-xs font-bold text-retro-dark/60 uppercase block mb-1">
+            <div className="md:col-span-4 bg-slate-50 rounded-2xl p-4 border border-purple-100/90 shadow-xs flex flex-col justify-between">
+              <span className="text-xs font-black text-slate-700 uppercase tracking-wider block mb-1">
                 Priorité de Navigation
               </span>
               <div className="flex items-center justify-between">
                 <div className="text-xs">
                   {primaryPlayer === selectedPlayer ? (
-                    <span className="text-arcade-green font-bold flex items-center gap-1">
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
                       ⭐ Contrôle Principal Actif
                     </span>
                   ) : (
-                    <span className="text-retro-dark/60">Contrôle Secondaire</span>
+                    <span className="text-slate-400">Contrôle Secondaire</span>
                   )}
                 </div>
                 <button
                   onClick={() => handleSetPrimary(selectedPlayer)}
                   disabled={primaryPlayer === selectedPlayer}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold font-arcade transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs ${
                     primaryPlayer === selectedPlayer
-                      ? 'bg-arcade-green text-white cursor-default'
-                      : 'bg-retro-dark/10 text-retro-dark hover:bg-retro-dark hover:text-white'
+                      ? 'bg-emerald-600 text-white cursor-default'
+                      : 'bg-white border border-purple-200 text-slate-700 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300'
                   }`}
                 >
                   {primaryPlayer === selectedPlayer ? 'PRIORITAIRE' : 'DONNER PRIORITÉ ⭐'}
@@ -372,10 +372,10 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-retro-dark/10 bg-retro-warm/80 flex items-center justify-between">
-          <div className="text-xs text-retro-dark/70">
+        <div className="px-6 py-4 border-t border-purple-100 bg-white flex items-center justify-between">
+          <div className="text-xs text-slate-500">
             {saveSuccess && (
-              <span className="inline-flex items-center gap-1.5 text-arcade-green font-bold">
+              <span className="inline-flex items-center gap-1.5 text-emerald-600 font-bold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Configuration synchronisée avec tous les émulateurs !</span>
               </span>
@@ -384,15 +384,15 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-white border border-retro-dark/15 text-xs font-bold text-retro-dark hover:bg-black/5 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
             >
               Fermer
             </button>
             <button
               onClick={handleSave}
-              className="px-6 py-2.5 rounded-xl bg-retro-dark hover:bg-retro-dark/90 text-retro-cream text-xs font-bold font-arcade shadow-md transition-all flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-rose-500 hover:from-purple-500 hover:to-rose-400 text-white text-xs font-bold shadow-md shadow-rose-500/20 transition-all flex items-center gap-2 active:scale-95"
             >
-              <Save className="w-4 h-4 text-arcade-yellow" />
+              <Save className="w-4 h-4 text-white" />
               <span>ENREGISTRER & APPLIQUER</span>
             </button>
           </div>

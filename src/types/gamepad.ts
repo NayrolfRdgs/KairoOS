@@ -33,6 +33,7 @@ export interface GamepadActions {
   onNextSystem?: () => void;
   onMenu?: () => void;
   onKioskUnlockCombo?: () => void;
+  onCoinStartExit?: () => void;
 }
 
 export interface RemapStep {

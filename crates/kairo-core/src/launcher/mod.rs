@@ -380,14 +380,54 @@ impl Launcher {
         }
 
         thread::spawn(move || {
-            let _wait_res = {
-                let mut guard = current_child_arc.lock().unwrap();
-                if let Some(mut child) = guard.take() {
-                    child.wait()
-                } else {
-                    return;
+            loop {
+                // 1. Détection du combo Arcade Coin + 1P Start (clavier / encodeurs USB arcade)
+                #[cfg(windows)]
+                {
+                    unsafe {
+                        use windows_sys::Win32::UI::Input::KeyboardAndMouse::GetAsyncKeyState;
+                        // Coin : touche '5' (0x35) ou 'c'/'C' (0x43)
+                        let coin_pressed = (GetAsyncKeyState(0x35) as u16 & 0x8000 != 0)
+                            || (GetAsyncKeyState(0x43) as u16 & 0x8000 != 0);
+                        // 1P Start : touche '1' (0x31) ou Entrée (0x0D)
+                        let start_pressed = (GetAsyncKeyState(0x31) as u16 & 0x8000 != 0)
+                            || (GetAsyncKeyState(0x0D) as u16 & 0x8000 != 0);
+
+                        if coin_pressed && start_pressed {
+                            let mut guard = current_child_arc.lock().unwrap();
+                            if let Some(child) = guard.as_mut() {
+                                let _ = child.kill();
+                            }
+                            break;
+                        }
+                    }
                 }
-            };
+
+                // 2. Vérifier si le processus s'est arrêté de lui-même
+                let has_exited = {
+                    let mut guard = current_child_arc.lock().unwrap();
+                    if let Some(child) = guard.as_mut() {
+                        match child.try_wait() {
+                            Ok(Some(_)) => true,
+                            Ok(None) => false,
+                            Err(_) => true,
+                        }
+                    } else {
+                        true
+                    }
+                };
+
+                if has_exited {
+                    break;
+                }
+
+                thread::sleep(std::time::Duration::from_millis(100));
+            }
+
+            {
+                let mut guard = current_child_arc.lock().unwrap();
+                let _ = guard.take();
+            }
 
             let end_time = Utc::now();
             let duration = end_time.signed_duration_since(start_time).num_seconds().max(0) as u64;

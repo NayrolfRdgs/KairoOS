@@ -192,6 +192,14 @@ export const App: React.FC = () => {
     await loadData();
   };
 
+  // Liste des catégories pour cycler avec LB / RB à la manette
+  const categoryList = useMemo(() => {
+    const list = ['all', 'favorites', 'recent'];
+    systems.forEach((s) => list.push(s.id));
+    allFranchises.forEach((f) => list.push(`franchise:${f.id}`));
+    return list;
+  }, [systems, allFranchises]);
+
   // Actions de navigation Manette
   const gamepadActions = useMemo(
     () => ({
@@ -267,6 +275,29 @@ export const App: React.FC = () => {
           handleOpenDetails(filteredAndSortedGames[focusedIndex]);
         }
       },
+      onPrevSystem: () => {
+        if (selectedGameForDetails || settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
+        setSelectedCategory((curr) => {
+          const idx = categoryList.indexOf(curr);
+          const prevIdx = idx <= 0 ? categoryList.length - 1 : idx - 1;
+          setFocusedIndex(0);
+          return categoryList[prevIdx];
+        });
+      },
+      onNextSystem: () => {
+        if (selectedGameForDetails || settingsOpen || addGameOpen || scannerOpen || isGameRunning) return;
+        setSelectedCategory((curr) => {
+          const idx = categoryList.indexOf(curr);
+          const nextIdx = idx === -1 || idx >= categoryList.length - 1 ? 0 : idx + 1;
+          setFocusedIndex(0);
+          return categoryList[nextIdx];
+        });
+      },
+      onCoinStartExit: () => {
+        if (isGameRunning) {
+          kill();
+        }
+      },
       onMenu: () => {
         if (isKiosk) {
           setKioskUnlockOpen(true);
@@ -291,25 +322,20 @@ export const App: React.FC = () => {
       isGameRunning,
       isKiosk,
       settings.game_select_action,
+      categoryList,
       launch,
+      kill,
       toggleFavorite,
       setFocusedIndex,
+      setSelectedCategory,
     ]
   );
 
-  const isAnyModalOpen =
-    scannerOpen ||
-    settingsOpen ||
-    addGameOpen ||
-    gamepadSettingsOpen ||
-    kioskUnlockOpen ||
-    franchiseOrganizerGame !== null ||
-    selectedGameForDetails !== null ||
-    isGameRunning;
-
+  // La manette reste active dans les modales et en jeu (pour Quitter / Valider / Fermer)
+  // Elle n'est désactivée QUE dans le configurateur de manette pour ne pas parasiter le remapping
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(
     gamepadActions,
-    !isAnyModalOpen,
+    !gamepadSettingsOpen,
     primaryPlayerIndex
   );
 

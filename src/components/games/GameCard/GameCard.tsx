@@ -27,8 +27,22 @@ export const GameCard: React.FC<GameCardProps> = ({
   const year = game.release_date ? game.release_date.slice(0, 4) : '1995';
   const rating = game.rating || 4.7;
 
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [isFocused]);
+
   return (
     <div
+      ref={cardRef}
+      data-game-id={game.id}
       onClick={() => onSelect(game)}
       className={`group relative flex flex-col shrink-0 w-44 sm:w-48 select-none cursor-pointer transition-all duration-200 ${
         isFocused ? 'scale-105 z-20' : 'hover:scale-[1.02] z-10'
