@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Game } from '../../../types';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface HeroShowcaseProps {
   games: Game[];
@@ -123,17 +124,18 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
       {/* Content Container with smooth transition on slide */}
       <div key={game.id} className="relative z-20 p-6 sm:p-8 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 min-h-[340px] md:min-h-[380px] animate-fadeIn">
         {/* Left Side: Game Info, Badges, Meta, CTAs */}
-        <div className="flex-1 max-w-xl space-y-3.5 pl-6 sm:pl-4">
-          {/* System Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-100/90 border border-pink-200 text-rose-600 text-[10px] font-black uppercase tracking-wider font-mono shadow-xs">
-            <span>{game.system_id.toUpperCase()}</span>
+        <div className="flex-1 max-w-xl space-y-3.5 pl-6 sm:pl-4 min-w-0">
+          {/* System Badge avec vrai logo de console */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-100/90 border border-pink-200 text-rose-600 text-[10px] font-black uppercase tracking-wider font-mono shadow-xs">
+            <ConsoleLogo systemId={game.system_id} size="sm" />
+            <span className="truncate">{game.system_id.toUpperCase()}</span>
             <span>•</span>
             <span>ARCADE</span>
           </div>
 
           {/* Title & Subtitle */}
-          <div className="space-y-0.5">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tight text-slate-900 leading-none">
+          <div className="space-y-0.5 min-w-0">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tight text-slate-900 leading-tight break-words">
               {game.title}
             </h1>
             {originalTitle && (

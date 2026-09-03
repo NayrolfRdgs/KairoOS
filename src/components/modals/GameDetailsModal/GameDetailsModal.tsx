@@ -4,7 +4,6 @@ import {
   Play,
   Heart,
   Star,
-  Tv,
   Calendar,
   Building,
   Users,
@@ -19,6 +18,7 @@ import { GameInfoTab } from './GameInfoTab';
 import { GameMetadataTab } from './GameMetadataTab';
 import { GameConfigTab } from './GameConfigTab';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface GameDetailsModalProps {
   game: Game;
@@ -183,22 +183,22 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
             </div>
 
             {/* Titre, Métadonnées, Synopsis & NOTE DÉPLACÉE SOUS LA DESCRIPTION */}
-            <div className="space-y-2 flex-1 text-left">
-              <h1 className="text-2xl sm:text-3xl font-black font-sans tracking-tight text-slate-900 leading-tight">
+            <div className="space-y-2 flex-1 text-left min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-black font-sans tracking-tight text-slate-900 leading-tight break-words">
                 {game.title}
               </h1>
 
-              {/* Ligne Métadonnées avec icônes violettes */}
+              {/* Ligne Métadonnées avec logo authentique de la console */}
               <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-bold text-slate-500">
-                <div className="flex items-center gap-1">
-                  <Tv className="w-3.5 h-3.5 text-purple-600" />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <ConsoleLogo systemId={game.system_id} size="sm" />
                   <span className="text-slate-800">{system?.name || game.system_id.toUpperCase()}</span>
                   <span className="text-slate-400 font-normal">Plateforme</span>
                 </div>
 
                 <span>·</span>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <Calendar className="w-3.5 h-3.5 text-purple-600" />
                   <span className="text-slate-800">{year}</span>
                   <span className="text-slate-400 font-normal">Sortie</span>

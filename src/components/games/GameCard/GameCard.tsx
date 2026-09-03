@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Star, Play, Heart, AlertCircle } from 'lucide-react';
 import { Game } from '../../../types';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface GameCardProps {
   game: Game;
@@ -143,13 +144,14 @@ export const GameCard: React.FC<GameCardProps> = ({
       </div>
 
       {/* Card Info Below Cover */}
-      <div className="pt-2 px-0.5 space-y-0.5">
-        <h3 className="font-extrabold text-xs text-slate-900 line-clamp-1 font-sans tracking-tight">
+      <div className="pt-2 px-0.5 space-y-1 min-w-0">
+        <h3 className="font-extrabold text-xs text-slate-900 truncate font-sans tracking-tight">
           {game.title}
         </h3>
-        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans truncate">
-          {game.system_id.toUpperCase()}
-        </p>
+        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans truncate">
+          <ConsoleLogo systemId={game.system_id} size="sm" className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">{game.system_id.toUpperCase()}</span>
+        </div>
       </div>
     </div>
   );

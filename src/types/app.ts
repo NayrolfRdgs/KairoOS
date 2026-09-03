@@ -15,6 +15,7 @@ export interface AppSettings {
   enabled_modes?: string[];
   default_sort?: import('../utils/sort').SortOption;
   auto_kiosk?: boolean;
+  arcade_ui_scale?: 'normal' | 'large' | 'xl';
 }
 
 export interface RemoteConfig {

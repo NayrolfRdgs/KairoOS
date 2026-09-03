@@ -14,5 +14,6 @@
   "enabled_modes": [],
   "default_sort": "title-asc",
   "auto_kiosk": false,
-  "game_select_action": "details"
+  "game_select_action": "details",
+  "arcade_ui_scale": "large"
 }

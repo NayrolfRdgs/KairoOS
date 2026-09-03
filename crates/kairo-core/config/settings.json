@@ -17,5 +17,6 @@
   "enabled_modes": null,
   "default_sort": null,
   "auto_kiosk": false,
-  "game_select_action": null
+  "game_select_action": null,
+  "arcade_ui_scale": null
 }

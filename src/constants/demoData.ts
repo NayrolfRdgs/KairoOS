@@ -435,4 +435,5 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   enabled_systems: undefined,
   default_sort: 'title-asc',
   auto_kiosk: false,
+  arcade_ui_scale: 'normal',
 };

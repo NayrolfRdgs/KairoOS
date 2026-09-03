@@ -11,6 +11,7 @@ import {
   Maximize,
   Layers,
   Wifi,
+  Sparkles,
 } from 'lucide-react';
 import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig, System } from '../../../types';
 import { KioskTab } from './KioskTab';
@@ -58,6 +59,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [customFranchises] = useState<CustomFranchise[]>(settings.custom_franchises || []);
   const [romsPath, setRomsPath] = useState(settings.roms_path || '');
   const [localRemote, setLocalRemote] = useState<RemoteConfig | undefined>(remoteConfig);
+  const [arcadeUiScale, setArcadeUiScale] = useState<'normal' | 'large' | 'xl'>(settings.arcade_ui_scale || 'normal');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleSaveAll = async () => {
@@ -70,6 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       enabled_systems: enabledSystems,
       enabled_modes: enabledModes,
       game_select_action: gameSelectAction,
+      arcade_ui_scale: arcadeUiScale,
       enabled_franchises: enabledFranchises,
       custom_franchises: customFranchises,
       roms_path: romsPath.trim() ? romsPath.trim() : undefined,
@@ -234,6 +237,69 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </p>
                     </div>
                   </label>
+                </div>
+              </div>
+
+              {/* Accessibilité Borne d'Arcade & Échelle d'Affichage */}
+              <div className="p-5 rounded-3xl bg-white border border-purple-100/90 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <span>Taille des Éléments & Accessibilité Borne (Grossir Icônes & Boutons)</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Adaptez la taille globale de l'interface pour une lisibilité et un confort parfaits debout devant votre borne.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setArcadeUiScale('normal')}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+                      arcadeUiScale === 'normal'
+                        ? 'border-purple-600 bg-purple-50/50 shadow-xs ring-2 ring-purple-600/20'
+                        : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-xl mb-1.5">🖥️</div>
+                    <div className="text-xs font-black text-slate-900">Standard (100%)</div>
+                    <div className="text-[10px] text-slate-500 mt-1 leading-snug">
+                      Taille standard pour écran d'ordinateur de bureau ou portable.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setArcadeUiScale('large')}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+                      arcadeUiScale === 'large'
+                        ? 'border-rose-500 bg-rose-50/50 shadow-xs ring-2 ring-rose-500/20'
+                        : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-xl mb-1.5">🕹️</div>
+                    <div className="text-xs font-black text-slate-900">Grand — Borne (115%)</div>
+                    <div className="text-[10px] text-slate-500 mt-1 leading-snug">
+                      Boutons et icônes agrandis pour borne d'arcade et vue debout.
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setArcadeUiScale('xl')}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all ${
+                      arcadeUiScale === 'xl'
+                        ? 'border-rose-600 bg-rose-50/60 shadow-xs ring-2 ring-rose-600/30'
+                        : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                    }`}
+                  >
+                    <div className="text-xl mb-1.5">📺</div>
+                    <div className="text-xs font-black text-slate-900">Très Grand (130%)</div>
+                    <div className="text-[10px] text-slate-500 mt-1 leading-snug">
+                      Visibilité maximale à 2 mètres sur grand écran TV ou borne 4K.
+                    </div>
+                  </button>
                 </div>
               </div>
 

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Game, System } from '../../../types';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface GameInfoTabProps {
   game: Game;
@@ -313,51 +314,52 @@ export const GameInfoTab: React.FC<GameInfoTabProps> = ({ game, system, onSwitch
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Plateforme</span>
-                <span className="font-extrabold text-slate-900 text-right truncate max-w-[130px]">
-                  {system?.name || game.system_id.toUpperCase()}
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Plateforme</span>
+                <span className="font-extrabold text-slate-900 text-right truncate min-w-0 pl-2 flex items-center justify-end gap-1.5">
+                  <ConsoleLogo systemId={game.system_id} size="sm" />
+                  <span className="truncate">{system?.name || game.system_id.toUpperCase()}</span>
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Sortie</span>
-                <span className="font-extrabold text-slate-900">
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Sortie</span>
+                <span className="font-extrabold text-slate-900 text-right truncate min-w-0 pl-2">
                   {game.release_date || '1992'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Développeur</span>
-                <span className="font-extrabold text-slate-900 text-right truncate max-w-[130px]">
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Développeur</span>
+                <span className="font-extrabold text-slate-900 text-right truncate min-w-0 pl-2">
                   {game.developer || 'Capcom'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Éditeur</span>
-                <span className="font-extrabold text-slate-900 text-right truncate max-w-[130px]">
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Éditeur</span>
+                <span className="font-extrabold text-slate-900 text-right truncate min-w-0 pl-2">
                   {game.publisher || game.developer || 'Capcom'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Taille</span>
-                <span className="font-extrabold text-slate-900 font-mono">
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Taille</span>
+                <span className="font-extrabold text-slate-900 font-mono text-right truncate min-w-0 pl-2">
                   {formatFileSize(game.file_size)}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pb-1 border-b border-purple-50">
-                <span className="text-[10px] text-slate-400 font-sans">Joueurs</span>
-                <span className="font-extrabold text-slate-900">
+              <div className="flex items-center justify-between pb-1 border-b border-purple-50 gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Joueurs</span>
+                <span className="font-extrabold text-slate-900 text-right truncate min-w-0 pl-2">
                   {game.players ? `1 à ${game.players} joueurs` : '1 à 2 joueurs'}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-slate-400 font-sans">Région / Ver.</span>
-                <span className="font-extrabold text-slate-900 font-mono">USA / Toutes</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[10px] text-slate-400 font-sans shrink-0">Région / Ver.</span>
+                <span className="font-extrabold text-slate-900 font-mono text-right truncate min-w-0 pl-2">USA / Toutes</span>
               </div>
             </div>
           </div>

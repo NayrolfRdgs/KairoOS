@@ -1,15 +1,6 @@
 import React from 'react';
-import {
-  Monitor,
-  Flame,
-  Gamepad2,
-  Box,
-  Smartphone,
-  Disc,
-  ToggleRight,
-  Radio,
-} from 'lucide-react';
 import { System } from '../../../types';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface SidebarSystemsProps {
   systems: System[];
@@ -30,42 +21,6 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
     if (!enabledSystems || enabledSystems.length === 0) return true;
     return enabledSystems.includes(s.id);
   });
-  const getSystemIcon = (id: string) => {
-    switch (id.toLowerCase()) {
-      case 'windows':
-      case 'pc':
-        return Monitor;
-      case 'arcade':
-      case 'mame':
-      case 'fbneo':
-        return Flame;
-      case 'nes':
-      case 'snes':
-        return Gamepad2;
-      case 'n64':
-        return Box;
-      case 'gb':
-      case 'gbc':
-      case 'gba':
-        return Smartphone;
-      case 'switch':
-        return ToggleRight;
-      case 'megadrive':
-      case 'genesis':
-        return Radio;
-      case 'gamecube':
-      case 'wii':
-      case 'dreamcast':
-      case 'ps1':
-      case 'ps2':
-      case 'ps3':
-      case 'ps4':
-      case 'ps5':
-        return Disc;
-      default:
-        return Gamepad2;
-    }
-  };
 
   return (
     <div className="space-y-1">
@@ -75,7 +30,6 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
 
       <div className="space-y-0.5">
         {visibleSystems.map((system) => {
-          const Icon = getSystemIcon(system.id);
           const isSelected = selectedCategory === system.id;
           const count = gamesCountBySystem[system.id] || 0;
 
@@ -90,11 +44,7 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
               }`}
             >
               <div className="flex items-center gap-2.5 min-w-0">
-                <Icon
-                  className={`w-4 h-4 shrink-0 ${
-                    isSelected ? 'text-rose-500' : 'text-slate-400'
-                  }`}
-                />
+                <ConsoleLogo systemId={system.id} size="sm" className="shrink-0" />
                 <span className="truncate">{system.name}</span>
               </div>
 

@@ -174,6 +174,8 @@ pub struct AppSettings {
     pub auto_kiosk: bool,
     #[serde(default)]
     pub game_select_action: Option<String>,
+    #[serde(default)]
+    pub arcade_ui_scale: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -198,6 +200,7 @@ impl Default for AppSettings {
             default_sort: Some("title_asc".into()),
             auto_kiosk: false,
             game_select_action: Some("details".into()),
+            arcade_ui_scale: Some("normal".into()),
         }
     }
 }

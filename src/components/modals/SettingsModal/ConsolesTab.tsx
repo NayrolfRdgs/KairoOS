@@ -1,6 +1,7 @@
 import React from 'react';
 import { Gamepad2, Check, Tv, Users, Swords, Layers, Sparkles } from 'lucide-react';
 import { System } from '../../../types';
+import { ConsoleLogo } from '../../common/ConsoleLogo';
 
 interface ConsolesTabProps {
   systems: System[];
@@ -203,14 +204,8 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                      active
-                        ? 'bg-gradient-to-tr from-purple-600 to-rose-500 text-white shadow-xs'
-                        : 'bg-slate-200 text-slate-400'
-                    }`}
-                  >
-                    <Gamepad2 className="w-4 h-4" />
+                  <div className="shrink-0 flex items-center justify-center">
+                    <ConsoleLogo systemId={system.id} size="md" />
                   </div>
 
                   <div>

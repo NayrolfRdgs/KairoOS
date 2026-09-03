@@ -407,8 +407,14 @@ export const App: React.FC = () => {
 
   const focusedGame = filteredAndSortedGames[focusedIndex] || null;
 
+  const arcadeScaleClass = settings.arcade_ui_scale === 'large'
+    ? 'arcade-scale-large'
+    : settings.arcade_ui_scale === 'xl'
+    ? 'arcade-scale-xl'
+    : 'arcade-scale-normal';
+
   return (
-    <div className="flex h-screen w-screen bg-[#f8f7ff] text-slate-900 overflow-hidden font-sans antialiased select-none">
+    <div className={`flex h-screen w-screen bg-[#f8f7ff] text-slate-900 overflow-hidden font-sans antialiased select-none ${arcadeScaleClass}`}>
       {/* 1. Navigation Latérale Gauche (Sidebar) */}
       <Sidebar
         systems={systems}
