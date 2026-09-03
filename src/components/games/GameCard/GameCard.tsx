@@ -44,13 +44,13 @@ export const GameCard: React.FC<GameCardProps> = ({
       ref={cardRef}
       data-game-id={game.id}
       onClick={() => onSelect(game)}
-      className={`group relative flex flex-col shrink-0 w-52 sm:w-56 md:w-60 select-none cursor-pointer transition-all duration-200 ${
+      className={`group relative flex flex-col shrink-0 w-44 sm:w-48 md:w-52 select-none cursor-pointer transition-all duration-200 ${
         isFocused ? 'scale-105 z-20' : 'hover:scale-[1.02] z-10'
       }`}
     >
-      {/* 4:3 Retro Arcade Container */}
+      {/* 3:4 Vertical Portrait Arcade Container */}
       <div
-        className={`relative w-full aspect-[4/3] rounded-2xl overflow-hidden border bg-slate-100 transition-all duration-300 shadow-sm ${
+        className={`relative w-full aspect-[3/4] rounded-2xl overflow-hidden border bg-slate-100 transition-all duration-300 shadow-sm ${
           isFocused
             ? 'border-rose-500 ring-4 ring-rose-500/40 shadow-kairo-glow'
             : 'border-purple-100/90 group-hover:border-purple-300'

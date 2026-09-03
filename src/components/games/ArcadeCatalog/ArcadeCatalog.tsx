@@ -1,6 +1,7 @@
 import React from 'react';
 import { Game } from '../../../types';
 import { GameCard } from '../GameCard';
+import { HeroShowcase } from '../HeroShowcase';
 import { Gamepad2 } from 'lucide-react';
 
 interface ArcadeCatalogProps {
@@ -21,6 +22,7 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
   onSelectGame,
   onLaunchGame,
   onToggleFavorite,
+  onOpenGamepadConfig,
   categoryTitle,
 }) => {
   if (games.length === 0) {
@@ -35,10 +37,24 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
     );
   }
 
+  // Le jeu mis en avant dans la grande bannière de proposition (jeu sélectionné/focusé ou premier jeu)
+  const featuredGame = games.find((g) => g.id === focusedGameId) || games[0];
+
   return (
-    <div className="flex-1 overflow-y-auto px-6 py-5 scrollbar-thin">
-      {/* En-tête de catégorie discret */}
-      <div className="flex items-center justify-between mb-4 pb-2 border-b border-purple-100/60">
+    <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin">
+      {/* 1. Grande bannière de proposition de jeux (Hero Showcase) */}
+      {featuredGame && (
+        <HeroShowcase
+          game={featuredGame}
+          onLaunch={onLaunchGame}
+          onOpenDetails={onSelectGame}
+          onToggleFavorite={onToggleFavorite}
+          onOpenGamepadConfig={onOpenGamepadConfig}
+        />
+      )}
+
+      {/* 2. En-tête de catégorie */}
+      <div className="flex items-center justify-between pt-2 pb-2 border-b border-purple-100/60">
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs animate-pulse" />
           <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 font-mono">
@@ -50,7 +66,7 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
         </span>
       </div>
 
-      {/* Grille Plein Écran de tous les jeux */}
+      {/* 3. Grille des jeux au format 3:4 */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 sm:gap-5 justify-items-center">
         {games.map((game) => (
           <GameCard
