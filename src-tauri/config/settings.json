@@ -4,6 +4,6 @@
   "kiosk_mode": false,
   "enabled_franchises": [],
   "custom_franchises": [],
-  "roms_path": null,
+  "roms_path": "C:\\Users\\propo\\AppData\\Roaming\\com.kairo.os\\roms",
   "theme": "retro-80s-light"
 }

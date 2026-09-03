@@ -28,23 +28,17 @@ pub fn run() {
                 }
             }
 
-            // Détection du mode Portable : si ./kairo_data ou ./roms existe à côté de l'exécutable
+            // Détection du mode Portable : si ./kairo_data ou ./roms existe directement à côté de l'exécutable
             let exe_dir = std::env::current_exe()
                 .ok()
                 .and_then(|p| p.parent().map(|p| p.to_path_buf()))
                 .unwrap_or_else(|| PathBuf::from("."));
 
             let is_portable = exe_dir.join("roms").exists()
-                || exe_dir.join("kairo_data").exists()
-                || PathBuf::from("./roms").exists()
-                || PathBuf::from("./kairo_data").exists();
+                || exe_dir.join("kairo_data").exists();
 
             let app_data_dir = if is_portable {
-                let p_dir = if exe_dir.join("kairo_data").exists() || exe_dir.join("roms").exists() {
-                    exe_dir.join("kairo_data")
-                } else {
-                    PathBuf::from("./kairo_data")
-                };
+                let p_dir = exe_dir.join("kairo_data");
                 let _ = fs::create_dir_all(&p_dir);
                 p_dir
             } else {
@@ -60,8 +54,14 @@ pub fn run() {
             let db = Database::open(&db_path).expect("Impossible d'initialiser la base SQLite KaïroOS");
             let launcher = Launcher::new(db.clone());
 
-            // Initialiser le mode application (kiosk / admin)
-            let settings = db.get_app_settings().unwrap_or_default();
+            // Initialiser le mode application (kiosk / admin) et s'assurer que le dossier roms par défaut en dev est dans APPDATA
+            let mut settings = db.get_app_settings().unwrap_or_default();
+            if !is_portable && (settings.roms_path.is_none() || settings.roms_path.as_deref() == Some("./roms")) {
+                let default_roms = app_data_dir.join("roms");
+                let _ = fs::create_dir_all(&default_roms);
+                settings.roms_path = Some(default_roms.to_string_lossy().to_string());
+                let _ = db.save_app_settings(&settings);
+            }
             let initial_mode = match cli_mode {
                 Some(m) => m,
                 None => {

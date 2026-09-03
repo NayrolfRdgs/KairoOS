@@ -88,47 +88,96 @@ impl Launcher {
             }
         }
 
+        let appdata_dir = std::env::var("APPDATA")
+            .ok()
+            .map(|a| PathBuf::from(a).join("com.kairo.os"));
+
         // 2. Détection automatique selon le nom de l'émulateur (multiples dossiers et casses)
         let candidates: Vec<PathBuf> = match emulator_id {
-            "retroarch" => vec![
-                PathBuf::from("emulators/RetroArch/retroarch.exe"),
-                PathBuf::from("emulators/retroarch/retroarch.exe"),
-                exe_dir.join("emulators/RetroArch/retroarch.exe"),
-                exe_dir.join("emulators/retroarch/retroarch.exe"),
-                current_dir.join("emulators/RetroArch/retroarch.exe"),
-                current_dir.join("emulators/retroarch/retroarch.exe"),
-                PathBuf::from("C:\\Emulators\\RetroArch\\retroarch.exe"),
-            ],
-            "pcsx2" => vec![
-                PathBuf::from("emulators/PCSX2/pcsx2-qt.exe"),
-                PathBuf::from("emulators/PCSX2/pcsx2.exe"),
-                exe_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
-                exe_dir.join("emulators/PCSX2/pcsx2.exe"),
-                current_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
-                current_dir.join("emulators/PCSX2/pcsx2.exe"),
-                PathBuf::from("C:\\Emulators\\PCSX2\\pcsx2-qt.exe"),
-            ],
-            "dolphin" => vec![
-                PathBuf::from("emulators/Dolphin/Dolphin.exe"),
-                exe_dir.join("emulators/Dolphin/Dolphin.exe"),
-                current_dir.join("emulators/Dolphin/Dolphin.exe"),
-                PathBuf::from("C:\\Emulators\\Dolphin\\Dolphin.exe"),
-            ],
-            "ryujinx" => vec![
-                PathBuf::from("emulators/Ryujinx/Ryujinx.exe"),
-                PathBuf::from("emulators/Ryujinx/Ryubing.exe"),
-                exe_dir.join("emulators/Ryujinx/Ryujinx.exe"),
-                exe_dir.join("emulators/Ryujinx/Ryubing.exe"),
-                current_dir.join("emulators/Ryujinx/Ryujinx.exe"),
-                current_dir.join("emulators/Ryujinx/Ryubing.exe"),
-                PathBuf::from("C:\\Emulators\\Ryujinx\\Ryujinx.exe"),
-            ],
-            "rpcs3" => vec![
-                PathBuf::from("emulators/RPCS3/rpcs3.exe"),
-                exe_dir.join("emulators/RPCS3/rpcs3.exe"),
-                current_dir.join("emulators/RPCS3/rpcs3.exe"),
-                PathBuf::from("C:\\Emulators\\RPCS3\\rpcs3.exe"),
-            ],
+            "retroarch" => {
+                let mut v = vec![
+                    PathBuf::from("emulators/RetroArch/retroarch.exe"),
+                    PathBuf::from("emulators/retroarch/retroarch.exe"),
+                    PathBuf::from("dist-portable/emulators/RetroArch/retroarch.exe"),
+                    PathBuf::from("dist-portable/emulators/retroarch/retroarch.exe"),
+                    PathBuf::from("../emulators/RetroArch/retroarch.exe"),
+                    PathBuf::from("../../emulators/RetroArch/retroarch.exe"),
+                    exe_dir.join("emulators/RetroArch/retroarch.exe"),
+                    exe_dir.join("emulators/retroarch/retroarch.exe"),
+                    current_dir.join("emulators/RetroArch/retroarch.exe"),
+                    current_dir.join("emulators/retroarch/retroarch.exe"),
+                    PathBuf::from("C:\\Users\\propo\\Music\\Kairo\\emulators\\RetroArch\\retroarch.exe"),
+                    PathBuf::from("C:\\Emulators\\RetroArch\\retroarch.exe"),
+                ];
+                if let Some(ref ad) = appdata_dir {
+                    v.push(ad.join("emulators/RetroArch/retroarch.exe"));
+                    v.push(ad.join("emulators/retroarch/retroarch.exe"));
+                }
+                v
+            }
+            "pcsx2" => {
+                let mut v = vec![
+                    PathBuf::from("emulators/PCSX2/pcsx2-qt.exe"),
+                    PathBuf::from("emulators/PCSX2/pcsx2.exe"),
+                    PathBuf::from("dist-portable/emulators/PCSX2/pcsx2-qt.exe"),
+                    PathBuf::from("../emulators/PCSX2/pcsx2-qt.exe"),
+                    exe_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
+                    exe_dir.join("emulators/PCSX2/pcsx2.exe"),
+                    current_dir.join("emulators/PCSX2/pcsx2-qt.exe"),
+                    current_dir.join("emulators/PCSX2/pcsx2.exe"),
+                    PathBuf::from("C:\\Emulators\\PCSX2\\pcsx2-qt.exe"),
+                ];
+                if let Some(ref ad) = appdata_dir {
+                    v.push(ad.join("emulators/PCSX2/pcsx2-qt.exe"));
+                }
+                v
+            }
+            "dolphin" => {
+                let mut v = vec![
+                    PathBuf::from("emulators/Dolphin/Dolphin.exe"),
+                    PathBuf::from("dist-portable/emulators/Dolphin/Dolphin.exe"),
+                    PathBuf::from("../emulators/Dolphin/Dolphin.exe"),
+                    exe_dir.join("emulators/Dolphin/Dolphin.exe"),
+                    current_dir.join("emulators/Dolphin/Dolphin.exe"),
+                    PathBuf::from("C:\\Emulators\\Dolphin\\Dolphin.exe"),
+                ];
+                if let Some(ref ad) = appdata_dir {
+                    v.push(ad.join("emulators/Dolphin/Dolphin.exe"));
+                }
+                v
+            }
+            "ryujinx" => {
+                let mut v = vec![
+                    PathBuf::from("emulators/Ryujinx/Ryujinx.exe"),
+                    PathBuf::from("emulators/Ryujinx/Ryubing.exe"),
+                    PathBuf::from("dist-portable/emulators/Ryujinx/Ryujinx.exe"),
+                    PathBuf::from("../emulators/Ryujinx/Ryujinx.exe"),
+                    exe_dir.join("emulators/Ryujinx/Ryujinx.exe"),
+                    exe_dir.join("emulators/Ryujinx/Ryubing.exe"),
+                    current_dir.join("emulators/Ryujinx/Ryujinx.exe"),
+                    current_dir.join("emulators/Ryujinx/Ryubing.exe"),
+                    PathBuf::from("C:\\Users\\propo\\Music\\Kairo\\emulators\\Ryujinx\\Ryujinx.exe"),
+                    PathBuf::from("C:\\Emulators\\Ryujinx\\Ryujinx.exe"),
+                ];
+                if let Some(ref ad) = appdata_dir {
+                    v.push(ad.join("emulators/Ryujinx/Ryujinx.exe"));
+                }
+                v
+            }
+            "rpcs3" => {
+                let mut v = vec![
+                    PathBuf::from("emulators/RPCS3/rpcs3.exe"),
+                    PathBuf::from("dist-portable/emulators/RPCS3/rpcs3.exe"),
+                    PathBuf::from("../emulators/RPCS3/rpcs3.exe"),
+                    exe_dir.join("emulators/RPCS3/rpcs3.exe"),
+                    current_dir.join("emulators/RPCS3/rpcs3.exe"),
+                    PathBuf::from("C:\\Emulators\\RPCS3\\rpcs3.exe"),
+                ];
+                if let Some(ref ad) = appdata_dir {
+                    v.push(ad.join("emulators/RPCS3/rpcs3.exe"));
+                }
+                v
+            }
             _ => vec![],
         };
 
