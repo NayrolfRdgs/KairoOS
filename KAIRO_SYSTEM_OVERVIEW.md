@@ -1,23 +1,32 @@
 # 🕹️ KaïroOS — Architecture, État du Projet & Guide Technique (Pour Développeurs & Assistants IA)
 
 > **Document de référence pour le développeur, Claude et les futurs contributeurs.**
-> *Dernière mise à jour : Refonte Graphique Complète — Interface Borne Arcade Premium (Blanc / Lilas / Magenta / Violet)*
+> *Dernière mise à jour : Mode Portable Auto-Scan, Ajout Manuel de ROMs, Scraper 1-Clic Jaquettes & Rescan Paramètres*
 > *Dépôt officiel : [NayrolfRdgs/KairoOS](https://github.com/NayrolfRdgs/KairoOS)*
 
 ---
 
-## 🧭 1. Vue d'Ensemble & Nouvelle Direction Visuelle
+## 🧭 1. Gestion des ROMs & Mode Portable Autonome
 
-**KaïroOS** arbore désormais une **interface de borne d'arcade haut de gamme futuriste et lumineuse** :
-- **Palette Principale** : Fond blanc / blanc bleuté et lavande douce (`#f8f7ff`), accents vibrants **Magenta / Rose néon** (`#e11d48`, `#f43f5e`, `#ec4899`), touches de **Violet** (`#7c3aed`, `#6366f1`), typographie foncée ardoise pour un contraste idéal à distance.
-- **Cartes & Verre Translucide** : Effet glassmorphism léger avec ombres douces et halos néon magenta.
-- **Expérience Catalogue façon Netflix + Arcade** :
-  - **Zone Héro "À L'AFFICHE"** : Immense vitrine interactive (Street Fighter II, Metal Slug 3, Sonic 2, Zelda...) avec grand artwork, note en étoiles, tags de genres, synopsis et carrousel vertical de screenshots.
-  - **Rayons Horizontaux Déroulants** : `| À L'AFFICHE`, `| RECOMMANDÉ POUR VOUS`, `| FAVORIS`, `| RÉCEMMENT JOUÉS` avec jaquettes 3D, badges Année et Note.
-- **Focus Manette / Joystick Arcade Ultra-Visible** : Halo lumineux magenta + agrandissement fluide (`scale-105`) pour repérer instantanément la sélection sur un écran de borne à plusieurs mètres.
-- **Comportement Configurable au Clic / Touche A** :
-  - `Option 1 : Lancer directement` (Instant Launch)
-  - `Option 2 : Afficher la fiche du jeu` (Rich Game Details Page)
+### A. Emplacement Racine des ROMs & Scan Automatique au Démarrage
+- **En mode portable** : Les jeux sont placés directement à la racine de l'application dans le dossier `./roms` (ou le dossier `roms` adjacent à l'exécutable).
+- **Scan automatique au lancement** : Dès le démarrage de **KaïroOS**, l'application déclenche automatiquement un scan en arrière-plan du dossier `./roms`. Tout jeu nouvellement copié est instantanément indexé et affiché dans le catalogue !
+
+### B. Ajout Manuel de Jeu & Parcourir (`AddGameModal`)
+- Bouton **`+` (Ajouter un jeu)** accessible directement en haut de la Sidebar.
+- Permet de parcourir son disque dur / clé USB pour sélectionner une ROM ou un exécutable PC.
+- Choix de la console / système et auto-détection du titre.
+- Bouton **`🔍 Rechercher Jaquette`** intégré pour trouver la jaquette en 1 clic avant l'ajout !
+
+### C. Récupération Automatique de Jaquettes & Métadonnées (Scraping 1-Clic)
+- Dans la fiche d'un jeu (`GameDetailsModal` ➔ `Éditer Métadonnées`) :
+  - Bouton **`🔍 Actualiser automatiquement les informations`** pour récupérer le titre officiel, l'année, le développeur, le genre, la note et la jaquette.
+  - Enregistrement immédiat dans le fichier `.json` adjacent à la ROM pour une portabilité 100% autonome.
+
+### D. Actualisation / Rescan depuis les Paramètres (`SettingsModal`)
+- Dans **Paramètres** ➔ **Dossiers & Réseau** :
+  - Bouton **`🔄 Actualiser les Jeux (Rescan des ROMs)`** avec affichage des statistiques (nombre de fichiers scannés, jeux ajoutés, jeux mis à jour).
+  - Sélecteur de dossier ROMs avec bouton **Parcourir** 📂.
 
 ---
 
@@ -25,35 +34,21 @@
 
 ```mermaid
 graph TD
-    App[src/App.tsx - Contrôleur Principal Arcade] --> Sidebar[Sidebar Gauche Moderne]
-    App --> FilterBar[Barre de Recherche avec CTRL+K & Tri]
-    App --> Catalog[ArcadeCatalog - Catalogue Netflix-Arcade]
+    App[src/App.tsx - Contrôleur Principal Arcade] --> AutoScan[Auto-Scan Startup ./roms]
+    App --> Sidebar[Sidebar avec bouton + Ajouter un jeu]
+    App --> Catalog[ArcadeCatalog - Hero + Rayons Horizontaux]
     
-    Catalog --> Hero[HeroShowcase - Zone À l'affiche]
-    Catalog --> Shelf1[GameShelf - Rayon À l'AFFICHE]
-    Catalog --> Shelf2[GameShelf - Rayon RECOMMANDÉS]
-    Catalog --> Shelf3[GameShelf - Rayon FAVORIS]
-    
-    Shelf1 --> Cards[GameCard - Cartes Jaquettes 3D & Focus Néon]
-    
-    App --> DetailsModal[GameDetailsModal - Fiche Détaillée & Galerie]
-    App --> SettingsModal[SettingsModal - Réglages & Comportement]
+    Sidebar --> AddModal[AddGameModal - Parcourir ROM & Recherche Jaquette]
+    App --> DetailsModal[GameDetailsModal - Fiche Jeu & Scraper 1-Clic]
+    App --> SettingsModal[SettingsModal - Rescan ROMs & Réglages]
 ```
 
 ---
 
-## 📱 3. PWA de Pilotage Distant (`kairo-remote/`)
-
-- Écran de connexion avec vérification de PIN obligatoire (`POST /api/auth/login`).
-- Hub de choix : **Panneau d'Administration** 🖥️ ou **Manette Virtuelle Sans-Fil (J1-J4)** 🎮.
-- Contrôle en temps réel avec simulation d'entrées clavier sous Windows.
-
----
-
-## 🛠️ 4. Commandes de Démarrage
+## 🛠️ 3. Commandes de Démarrage
 
 ```powershell
-# Lancer l'application borne en développement
+# Démarrer KaïroOS en mode Dev
 npm run tauri dev
 
 # Lancer la PWA distante
