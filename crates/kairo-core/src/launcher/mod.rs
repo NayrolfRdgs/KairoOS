@@ -243,13 +243,21 @@ impl Launcher {
             (exe, args)
         };
 
-        let mut cmd = Command::new(&exe_path_buf);
+        // Canonicaliser l'exécutable pour garantir un chemin absolu propre sans préfixe \\?\
+        let clean_exe_path = if let Ok(canonical) = std::fs::canonicalize(&exe_path_buf) {
+            let s = canonical.to_string_lossy().to_string();
+            PathBuf::from(s.strip_prefix(r"\\?\").unwrap_or(&s))
+        } else {
+            exe_path_buf
+        };
+
+        let mut cmd = Command::new(&clean_exe_path);
 
         if is_native {
             if let Some(parent) = rom_path.parent() {
                 cmd.current_dir(parent);
             }
-        } else if let Some(parent) = exe_path_buf.parent() {
+        } else if let Some(parent) = clean_exe_path.parent() {
             cmd.current_dir(parent);
         }
 
@@ -261,14 +269,20 @@ impl Launcher {
 
         let core_path = if !core_name.is_empty() {
             let mut resolved = core_name.clone();
-            if let Some(emu_parent) = exe_path_buf.parent() {
+            if let Some(emu_parent) = clean_exe_path.parent() {
                 let candidate1 = emu_parent.join("cores").join(&core_name);
                 if candidate1.exists() {
-                    resolved = candidate1.to_string_lossy().to_string();
+                    let s = std::fs::canonicalize(&candidate1)
+                        .map(|c| c.to_string_lossy().to_string())
+                        .unwrap_or_else(|_| candidate1.to_string_lossy().to_string());
+                    resolved = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
                 } else {
                     let candidate2 = emu_parent.join(&core_name);
                     if candidate2.exists() {
-                        resolved = candidate2.to_string_lossy().to_string();
+                        let s = std::fs::canonicalize(&candidate2)
+                            .map(|c| c.to_string_lossy().to_string())
+                            .unwrap_or_else(|_| candidate2.to_string_lossy().to_string());
+                        resolved = s.strip_prefix(r"\\?\").unwrap_or(&s).to_string();
                     }
                 }
             }

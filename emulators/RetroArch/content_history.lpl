@@ -9,6 +9,22 @@
   "sort_mode": 2,
   "items": [
     {
+      "path": "C:\\Users\\propo\\AppData\\Roaming\\com.kairo.os\\roms\\snes\\Classic Kong\\Classic Kong.smc",
+      "label": "",
+      "core_path": "C:\\Users\\propo\\Music\\Kairo\\emulators\\RetroArch\\cores\\snes9x_libretro.dll",
+      "core_name": "Nintendo - SNES / SFC (Snes9x)",
+      "crc32": "",
+      "db_name": ""
+    },
+    {
+      "path": "C:\\Users\\propo\\AppData\\Roaming\\com.kairo.os\\roms\\snes\\Super Mario World\\Super Mario World.sfc",
+      "label": "",
+      "core_path": "C:\\Users\\propo\\Music\\Kairo\\emulators\\RetroArch\\cores\\snes9x_libretro.dll",
+      "core_name": "Nintendo - SNES / SFC (Snes9x)",
+      "crc32": "",
+      "db_name": ""
+    },
+    {
       "path": "C:\\Users\\propo\\Music\\Kairo\\roms\\snes\\Super Mario World\\Super Mario World.sfc",
       "label": "",
       "core_path": "C:\\Users\\propo\\Music\\Kairo\\emulators\\RetroArch\\cores\\snes9x_libretro.dll",
