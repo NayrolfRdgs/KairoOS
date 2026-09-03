@@ -167,6 +167,8 @@ pub struct AppSettings {
     #[serde(default)]
     pub enabled_systems: Option<Vec<String>>,
     #[serde(default)]
+    pub enabled_modes: Option<Vec<String>>,
+    #[serde(default)]
     pub default_sort: Option<String>,
     #[serde(default)]
     pub auto_kiosk: bool,
@@ -192,6 +194,7 @@ impl Default for AppSettings {
             roms_path: Some("./roms".into()),
             theme: "retro-80s-light".into(),
             enabled_systems: None,
+            enabled_modes: None,
             default_sort: Some("title_asc".into()),
             auto_kiosk: false,
             game_select_action: Some("details".into()),

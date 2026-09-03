@@ -392,6 +392,7 @@ export const App: React.FC = () => {
         totalFightGames={totalFightGames}
         totalPlatformGames={totalPlatformGames}
         enabledSystems={settings.enabled_systems}
+        enabledModes={settings.enabled_modes}
         gamepadConnected={gamepadConnected}
         gamepadName={gamepadName}
         appMode={appMode}

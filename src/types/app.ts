@@ -12,6 +12,7 @@ export interface AppSettings {
   roms_path?: string;
   theme: string;
   enabled_systems?: string[];
+  enabled_modes?: string[];
   default_sort?: import('../utils/sort').SortOption;
   auto_kiosk?: boolean;
 }

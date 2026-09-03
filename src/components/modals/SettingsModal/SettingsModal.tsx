@@ -14,10 +14,9 @@ import {
 } from 'lucide-react';
 import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig, System } from '../../../types';
 import { KioskTab } from './KioskTab';
-import { FranchisesTab } from './FranchisesTab';
 import { FoldersTab } from './FoldersTab';
 import { ConsolesTab } from './ConsolesTab';
-import { ArrowDownAZ, Box } from 'lucide-react';
+import { ArrowDownAZ } from 'lucide-react';
 
 interface SettingsModalProps {
   settings: AppSettings;
@@ -44,18 +43,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLockKioskNow,
   onScanComplete,
 }) => {
-  const [activeTab, setActiveTab] = useState<'gameplay' | 'consoles' | 'kiosk' | 'franchises' | 'folders'>('gameplay');
+  const [activeTab, setActiveTab] = useState<'gameplay' | 'consoles' | 'kiosk' | 'folders'>('gameplay');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
   const [alwaysOnTop, setAlwaysOnTop] = useState(settings.always_on_top);
   const [kioskMode, setKioskMode] = useState(settings.kiosk_mode);
   const [autoKiosk, setAutoKiosk] = useState(settings.auto_kiosk || false);
   const [defaultSort, setDefaultSort] = useState<NonNullable<AppSettings['default_sort']>>(settings.default_sort || 'title-asc');
   const [enabledSystems, setEnabledSystems] = useState<string[]>(settings.enabled_systems || []);
+  const [enabledModes, setEnabledModes] = useState<string[]>(settings.enabled_modes || ['2-players', 'genre:fight', 'genre:platform']);
   const [gameSelectAction, setGameSelectAction] = useState<GameSelectAction>(
     settings.game_select_action || 'details'
   );
   const [enabledFranchises, setEnabledFranchises] = useState<string[]>(settings.enabled_franchises || []);
-  const [customFranchises, setCustomFranchises] = useState<CustomFranchise[]>(settings.custom_franchises || []);
+  const [customFranchises] = useState<CustomFranchise[]>(settings.custom_franchises || []);
   const [romsPath, setRomsPath] = useState(settings.roms_path || '');
   const [localRemote, setLocalRemote] = useState<RemoteConfig | undefined>(remoteConfig);
   const [savedSuccess, setSavedSuccess] = useState(false);
@@ -68,6 +68,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       auto_kiosk: autoKiosk,
       default_sort: defaultSort,
       enabled_systems: enabledSystems,
+      enabled_modes: enabledModes,
       game_select_action: gameSelectAction,
       enabled_franchises: enabledFranchises,
       custom_franchises: customFranchises,
@@ -134,8 +135,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
             }`}
           >
-            <Box className="w-3.5 h-3.5" />
-            <span>Consoles Visibles</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>Consoles, Modes & Franchises</span>
           </button>
 
           <button
@@ -148,18 +149,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           >
             <Shield className="w-3.5 h-3.5" />
             <span>Mode Salle (Kiosk)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('franchises')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
-              activeTab === 'franchises'
-                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>Franchises</span>
           </button>
 
           <button
@@ -347,6 +336,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               systems={systems}
               enabledSystems={enabledSystems}
               setEnabledSystems={setEnabledSystems}
+              enabledModes={enabledModes}
+              setEnabledModes={setEnabledModes}
+              enabledFranchises={enabledFranchises}
+              setEnabledFranchises={setEnabledFranchises}
             />
           )}
 
@@ -365,15 +358,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               remoteConfig={localRemote}
               setRemoteConfig={setLocalRemote}
               onLockKioskNow={onLockKioskNow}
-            />
-          )}
-
-          {activeTab === 'franchises' && (
-            <FranchisesTab
-              enabledFranchises={enabledFranchises}
-              setEnabledFranchises={setEnabledFranchises}
-              customFranchises={customFranchises}
-              setCustomFranchises={setCustomFranchises}
             />
           )}
 

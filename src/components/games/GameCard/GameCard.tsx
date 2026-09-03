@@ -1,5 +1,5 @@
-import React from 'react';
-import { Star, Gamepad2, Play, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Star, Play, Heart, AlertCircle } from 'lucide-react';
 import { Game } from '../../../types';
 import { convertFileSrc } from '@tauri-apps/api/core';
 
@@ -18,9 +18,11 @@ export const GameCard: React.FC<GameCardProps> = ({
   onLaunch,
   onToggleFavorite,
 }) => {
+  const [hasImgError, setHasImgError] = useState(false);
+
   const getImageUrl = (url?: string) => {
     if (!url) return undefined;
-    if (url.startsWith('http')) return url;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
     return convertFileSrc(url);
   };
 
@@ -50,25 +52,31 @@ export const GameCard: React.FC<GameCardProps> = ({
     >
       {/* 3:4 Vertical Portrait Arcade Container */}
       <div
-        className={`relative w-full aspect-[3/4] rounded-2xl overflow-hidden border bg-slate-100 transition-all duration-300 shadow-sm ${
+        className={`relative w-full aspect-[3/4] rounded-2xl overflow-hidden border bg-white transition-all duration-300 shadow-sm ${
           isFocused
             ? 'border-rose-500 ring-4 ring-rose-500/40 shadow-kairo-glow'
             : 'border-purple-100/90 group-hover:border-purple-300'
         }`}
       >
-        {/* Cover Image */}
-        {game.cover_url ? (
+        {/* Cover Image or White Placeholder with Exclamation */}
+        {game.cover_url && !hasImgError ? (
           <img
             src={getImageUrl(game.cover_url)}
             alt={game.title}
+            onError={() => setHasImgError(true)}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-gradient-to-br from-purple-50 to-pink-50 text-slate-400">
-            <Gamepad2 className="w-10 h-10 mb-2 text-rose-400" />
-            <span className="text-[11px] font-bold line-clamp-2 text-slate-600 font-sans">
+          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-white border-2 border-dashed border-rose-200/80 text-slate-400 select-none">
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 mb-2.5 shadow-2xs animate-pulse">
+              <AlertCircle className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <span className="text-xs font-black uppercase text-slate-800 line-clamp-2 px-1 font-sans">
               {game.title}
+            </span>
+            <span className="text-[10px] font-mono text-rose-500 mt-1 font-bold uppercase tracking-wider">
+              ! Jaquette Manquante
             </span>
           </div>
         )}

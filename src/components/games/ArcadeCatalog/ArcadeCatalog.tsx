@@ -24,6 +24,7 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
   onToggleFavorite,
   onOpenGamepadConfig,
   categoryTitle,
+  selectedCategory,
 }) => {
   if (games.length === 0) {
     return (
@@ -37,8 +38,29 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
     );
   }
 
-  // Le jeu mis en avant dans la grande bannière de proposition (jeu sélectionné/focusé ou premier jeu)
-  const featuredGame = games.find((g) => g.id === focusedGameId) || games[0];
+  // Sélection du jeu en vedette pour la borne d'arcade :
+  // Déterminé par le temps de jeu, les favoris et rotation aléatoire (ne change PAS au survol des cartes)
+  const [spotlightGameId, setSpotlightGameId] = React.useState<string | null>(null);
+
+  const pickSpotlightGame = React.useCallback(() => {
+    if (games.length === 0) return;
+    const pool: Game[] = [];
+    for (const g of games) {
+      pool.push(g);
+      if (g.favorite) pool.push(g);
+      if (g.play_time_seconds && g.play_time_seconds > 0) pool.push(g);
+    }
+    const picked = pool[Math.floor(Math.random() * pool.length)] || games[0];
+    setSpotlightGameId(picked.id);
+  }, [games]);
+
+  React.useEffect(() => {
+    if (games.length > 0 && (!spotlightGameId || !games.some((g) => g.id === spotlightGameId))) {
+      pickSpotlightGame();
+    }
+  }, [games, selectedCategory, spotlightGameId, pickSpotlightGame]);
+
+  const featuredGame = games.find((g) => g.id === spotlightGameId) || games[0];
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 scrollbar-thin">

@@ -52,7 +52,7 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   const backdrop = getImageUrl(backdropRaw);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#f8f7ff] select-none animate-fadeIn overflow-hidden">
+    <div className="fixed inset-y-0 right-0 left-72 z-30 flex flex-col bg-[#f8f7ff] border-l border-purple-100/80 select-none animate-fadeIn overflow-hidden shadow-2xl">
       {/* 1. Hero Banner Top */}
       <div className="relative h-64 sm:h-72 w-full overflow-hidden shrink-0">
         <img

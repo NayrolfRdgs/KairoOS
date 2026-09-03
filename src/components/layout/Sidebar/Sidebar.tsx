@@ -21,6 +21,7 @@ interface SidebarProps {
   totalFightGames?: number;
   totalPlatformGames?: number;
   enabledSystems?: string[];
+  enabledModes?: string[];
   gamepadConnected: boolean;
   gamepadName: string | null;
   appMode?: AppMode;
@@ -43,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   totalFightGames,
   totalPlatformGames,
   enabledSystems,
+  enabledModes,
   gamepadConnected,
   gamepadName,
   appMode = 'admin',
@@ -75,6 +77,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           total2Players={total2Players}
           totalFightGames={totalFightGames}
           totalPlatformGames={totalPlatformGames}
+          enabledModes={enabledModes}
         />
 
         <SidebarSystems

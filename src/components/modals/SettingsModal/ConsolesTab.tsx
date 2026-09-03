@@ -1,18 +1,78 @@
 import React from 'react';
-import { Gamepad2, Check, Tv } from 'lucide-react';
+import { Gamepad2, Check, Tv, Users, Swords, Layers, Sparkles } from 'lucide-react';
 import { System } from '../../../types';
 
 interface ConsolesTabProps {
   systems: System[];
   enabledSystems: string[];
   setEnabledSystems: (systems: string[]) => void;
+  enabledModes?: string[];
+  setEnabledModes?: (modes: string[]) => void;
+  enabledFranchises?: string[];
+  setEnabledFranchises?: (franchises: string[]) => void;
 }
+
+const AVAILABLE_MODES = [
+  {
+    id: '2-players',
+    name: 'Jeux à 2 Joueurs',
+    subtitle: 'Multijoueur simultané, Versus fighting & Co-op',
+    icon: Users,
+    color: 'from-purple-600 to-indigo-500',
+  },
+  {
+    id: 'genre:fight',
+    name: 'Jeux de Combat',
+    subtitle: 'Street Fighter, Tekken, Mortal Kombat, Fatal Fury',
+    icon: Swords,
+    color: 'from-rose-500 to-pink-600',
+  },
+  {
+    id: 'genre:platform',
+    name: 'Jeux de Plateforme',
+    subtitle: 'Mario, Sonic, Donkey Kong, Megaman, Rayman',
+    icon: Gamepad2,
+    color: 'from-pink-500 to-rose-400',
+  },
+];
+
+const DEFAULT_FRANCHISES = [
+  { id: 'mario', name: 'Super Mario', color: '#ef4444' },
+  { id: 'zelda', name: 'The Legend of Zelda', color: '#10b981' },
+  { id: 'pokemon', name: 'Pokémon', color: '#f59e0b' },
+  { id: 'sonic', name: 'Sonic The Hedgehog', color: '#3b82f6' },
+  { id: 'versus', name: 'Versus Fighting', color: '#ec4899' },
+  { id: 'rpg', name: 'RPG & Aventure', color: '#8b5cf6' },
+];
 
 export const ConsolesTab: React.FC<ConsolesTabProps> = ({
   systems,
   enabledSystems,
   setEnabledSystems,
+  enabledModes = ['2-players', 'genre:fight', 'genre:platform'],
+  setEnabledModes,
+  enabledFranchises = ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg'],
+  setEnabledFranchises,
 }) => {
+  // 1. Gestion des Modes & Genres
+  const isModeEnabled = (modeId: string) => {
+    if (!enabledModes || enabledModes.length === 0) return true;
+    return enabledModes.includes(modeId);
+  };
+
+  const toggleMode = (modeId: string) => {
+    if (!setEnabledModes) return;
+    if (enabledModes.length === 0) {
+      const newModes = AVAILABLE_MODES.map((m) => m.id).filter((id) => id !== modeId);
+      setEnabledModes(newModes);
+    } else if (enabledModes.includes(modeId)) {
+      setEnabledModes(enabledModes.filter((id) => id !== modeId));
+    } else {
+      setEnabledModes([...enabledModes, modeId]);
+    }
+  };
+
+  // 2. Gestion des Consoles
   const isSystemEnabled = (sysId: string) => {
     if (enabledSystems.length === 0) return true;
     return enabledSystems.includes(sysId);
@@ -20,7 +80,6 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
 
   const toggleSystem = (sysId: string) => {
     if (enabledSystems.length === 0) {
-      // Toutes étaient actives, désactiver seulement celle-ci
       const newEnabled = systems.map((s) => s.id).filter((id) => id !== sysId);
       setEnabledSystems(newEnabled);
     } else if (enabledSystems.includes(sysId)) {
@@ -30,95 +89,215 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
     }
   };
 
-  const handleEnableAll = () => {
-    setEnabledSystems(systems.map((s) => s.id));
+  // 3. Gestion des Franchises
+  const isFranchiseEnabled = (fId: string) => {
+    if (!enabledFranchises || enabledFranchises.length === 0) return true;
+    return enabledFranchises.includes(fId);
   };
 
-  const handleDisableAll = () => {
-    setEnabledSystems([]);
+  const toggleFranchise = (fId: string) => {
+    if (!setEnabledFranchises) return;
+    if (enabledFranchises.includes(fId)) {
+      setEnabledFranchises(enabledFranchises.filter((id) => id !== fId));
+    } else {
+      setEnabledFranchises([...enabledFranchises, fId]);
+    }
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec Actions Globales */}
-      <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-50 via-pink-50 to-white border border-purple-100 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
-            <Tv className="w-4 h-4 text-rose-500" />
-            <span>Consoles Visibles dans le Menu</span>
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Cochez les consoles et systèmes de jeu que vous souhaitez afficher dans la navigation de la borne.
-          </p>
+    <div className="space-y-8">
+      {/* SECTION 1: Modes & Genres Arcade Intelligents */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 font-sans">
+              MODES & GENRES ARCADE (SIDEBAR)
+            </h3>
+          </div>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {enabledModes.length}/{AVAILABLE_MODES.length} ACTIVÉS
+          </span>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleEnableAll}
-            className="px-3 py-1.5 rounded-xl bg-white border border-purple-200 text-purple-700 text-xs font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95"
-          >
-            Tout Activer
-          </button>
-          <button
-            type="button"
-            onClick={handleDisableAll}
-            className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 shadow-2xs transition-all active:scale-95"
-          >
-            Tout Masquer
-          </button>
-        </div>
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {AVAILABLE_MODES.map((mode) => {
+            const active = isModeEnabled(mode.id);
+            const Icon = mode.icon;
 
-      {/* Grille des Consoles */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {systems.map((system) => {
-          const active = isSystemEnabled(system.id);
-
-          return (
-            <div
-              key={system.id}
-              onClick={() => toggleSystem(system.id)}
-              className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
-                active
-                  ? 'bg-white border-rose-500/80 shadow-rose-500/5'
-                  : 'bg-slate-50/80 border-slate-200/80 opacity-60'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                    active
-                      ? 'bg-gradient-to-tr from-purple-600 to-rose-500 text-white shadow-xs'
-                      : 'bg-slate-200 text-slate-400'
-                  }`}
-                >
-                  <Gamepad2 className="w-5 h-5" />
-                </div>
-
-                <div>
-                  <div className="font-extrabold text-xs text-slate-900">
-                    {system.name}
-                  </div>
-                  <div className="text-[10px] font-mono text-slate-400 uppercase">
-                    {system.id} • {system.extensions.slice(0, 3).join(', ')}
-                  </div>
-                </div>
-              </div>
-
+            return (
               <div
-                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                key={mode.id}
+                onClick={() => toggleMode(mode.id)}
+                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between shadow-xs ${
                   active
-                    ? 'bg-rose-500 text-white shadow-xs'
-                    : 'border border-slate-300 bg-white'
+                    ? 'bg-white border-purple-500 shadow-purple-500/10'
+                    : 'bg-slate-50 border-slate-200 opacity-50'
                 }`}
               >
-                {active && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs bg-gradient-to-tr ${mode.color}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-extrabold text-xs text-slate-900">{mode.name}</div>
+                    <div className="text-[10px] text-slate-500 line-clamp-1">{mode.subtitle}</div>
+                  </div>
+                </div>
+
+                <div
+                  className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                    active ? 'bg-purple-600 text-white shadow-xs' : 'border border-slate-300 bg-white'
+                  }`}
+                >
+                  {active && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+
+      {/* SECTION 2: Consoles & Systèmes */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Tv className="w-4 h-4 text-rose-500" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 font-sans">
+              CONSOLES & SYSTÈMES VISIBLES
+            </h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEnabledSystems(systems.map((s) => s.id))}
+              className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-purple-700 text-[11px] font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95"
+            >
+              Tout Activer
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnabledSystems([])}
+              className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 shadow-2xs transition-all active:scale-95"
+            >
+              Tout Masquer
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {systems.map((system) => {
+            const active = isSystemEnabled(system.id);
+
+            return (
+              <div
+                key={system.id}
+                onClick={() => toggleSystem(system.id)}
+                className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
+                  active
+                    ? 'bg-white border-rose-500 shadow-rose-500/5'
+                    : 'bg-slate-50 border-slate-200 opacity-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                      active
+                        ? 'bg-gradient-to-tr from-purple-600 to-rose-500 text-white shadow-xs'
+                        : 'bg-slate-200 text-slate-400'
+                    }`}
+                  >
+                    <Gamepad2 className="w-4 h-4" />
+                  </div>
+
+                  <div>
+                    <div className="font-extrabold text-xs text-slate-900">{system.name}</div>
+                    <div className="text-[10px] font-mono text-slate-400 uppercase">
+                      {system.id} • {system.extensions.slice(0, 2).join(', ')}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={`w-5 h-5 rounded-md flex items-center justify-center transition-all ${
+                    active ? 'bg-rose-500 text-white shadow-xs' : 'border border-slate-300 bg-white'
+                  }`}
+                >
+                  {active && <Check className="w-3 h-3 stroke-[3]" />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECTION 3: Franchises Populaires */}
+      {setEnabledFranchises && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-indigo-500" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 font-sans">
+                FRANCHISES & COLLECTIONS CÉLÈBRES
+              </h3>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEnabledFranchises(DEFAULT_FRANCHISES.map((f) => f.id))}
+                className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-[11px] font-bold hover:bg-indigo-50 shadow-2xs transition-all active:scale-95"
+              >
+                Tout Activer
+              </button>
+              <button
+                type="button"
+                onClick={() => setEnabledFranchises([])}
+                className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 shadow-2xs transition-all active:scale-95"
+              >
+                Tout Masquer
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {DEFAULT_FRANCHISES.map((franchise) => {
+              const active = isFranchiseEnabled(franchise.id);
+
+              return (
+                <div
+                  key={franchise.id}
+                  onClick={() => toggleFranchise(franchise.id)}
+                  className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
+                    active
+                      ? 'bg-white border-indigo-500 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 opacity-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: franchise.color }}
+                    />
+                    <span className="text-xs font-bold text-slate-800">{franchise.name}</span>
+                  </div>
+
+                  <div
+                    className={`w-4 h-4 rounded flex items-center justify-center ${
+                      active ? 'bg-indigo-600 text-white' : 'border border-slate-300 bg-white'
+                    }`}
+                  >
+                    {active && <Check className="w-2.5 h-2.5 stroke-[3]" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
