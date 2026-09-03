@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, Gamepad2, Play, Heart } from 'lucide-react';
 import { Game } from '../../../types';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 interface GameCardProps {
   game: Game;
@@ -17,6 +18,12 @@ export const GameCard: React.FC<GameCardProps> = ({
   onLaunch,
   onToggleFavorite,
 }) => {
+  const getImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return convertFileSrc(url);
+  };
+
   const year = game.release_date ? game.release_date.slice(0, 4) : '1995';
   const rating = game.rating || 4.7;
 
@@ -38,7 +45,7 @@ export const GameCard: React.FC<GameCardProps> = ({
         {/* Cover Image */}
         {game.cover_url ? (
           <img
-            src={game.cover_url}
+            src={getImageUrl(game.cover_url)}
             alt={game.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"

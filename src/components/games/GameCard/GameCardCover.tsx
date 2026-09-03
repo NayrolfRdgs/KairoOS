@@ -1,6 +1,7 @@
 import React from 'react';
 import { Star, Gamepad2, Award } from 'lucide-react';
 import { Game } from '../../../types';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 interface GameCardCoverProps {
   game: Game;
@@ -8,11 +9,17 @@ interface GameCardCoverProps {
 }
 
 export const GameCardCover: React.FC<GameCardCoverProps> = ({ game, onToggleFavorite }) => {
+  const getImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return convertFileSrc(url);
+  };
+
   return (
     <div className="relative aspect-[3/4] w-full bg-gradient-to-b from-retro-bg to-white flex items-center justify-center overflow-hidden border-b border-retro-border">
       {game.cover_url ? (
         <img
-          src={game.cover_url}
+          src={getImageUrl(game.cover_url)}
           alt={game.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />

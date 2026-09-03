@@ -196,14 +196,23 @@ pub fn save_local_game_metadata(
     if metadata.players.is_some() {
         game.players = metadata.players;
     }
+    if metadata.cover_url.is_some() {
+        game.cover_url = metadata.cover_url.clone();
+    }
+    if metadata.backdrop_url.is_some() {
+        game.backdrop_url = metadata.backdrop_url.clone();
+    }
+    // Note: Since DB game struct doesn't have screenshots or video_url, we just store them in metadata.json if we want.
 
     state.db.update_game(&game).map_err(|e| e.to_string())?;
 
     // 2. Écrire le fichier JSON adjacent à la ROM
     let rom_path = Path::new(&game.file_path);
-    let json_path = rom_path.with_extension("json");
-    if let Ok(json_str) = serde_json::to_string_pretty(&metadata) {
-        let _ = fs::write(json_path, json_str);
+    if let Some(parent) = rom_path.parent() {
+        let json_path = parent.join("metadata.json");
+        if let Ok(json_str) = serde_json::to_string_pretty(&metadata) {
+            let _ = fs::write(json_path, json_str);
+        }
     }
 
     Ok(())

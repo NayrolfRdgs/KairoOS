@@ -4,6 +4,7 @@ export interface ScrapedResult {
   cover_url?: string;
   backdrop_url?: string;
   screenshots?: string[];
+  video_url?: string;
   release_date?: string;
   developer?: string;
   publisher?: string;
@@ -13,6 +14,74 @@ export interface ScrapedResult {
   synopsis?: string;
 }
 
+import { mkdir, writeFile } from '@tauri-apps/plugin-fs';
+import { dirname, join } from '@tauri-apps/api/path';
+import { fetch } from '@tauri-apps/plugin-http';
+
+export async function downloadGameMedia(
+  gameFilePath: string,
+  mediaUrls: { cover?: string; backdrop?: string; screenshots?: string[]; video?: string }
+): Promise<{ cover_url?: string; backdrop_url?: string; screenshots?: string[]; video_url?: string }> {
+  const gameDir = await dirname(gameFilePath);
+  const mediaDir = await join(gameDir, 'media');
+  const screenshotsDir = await join(mediaDir, 'screenshots');
+  const videosDir = await join(mediaDir, 'videos');
+
+  // Create directories
+  await mkdir(mediaDir, { recursive: true }).catch(() => {});
+  await mkdir(screenshotsDir, { recursive: true }).catch(() => {});
+  await mkdir(videosDir, { recursive: true }).catch(() => {});
+
+  const result: { cover_url?: string; backdrop_url?: string; screenshots?: string[]; video_url?: string } = {};
+
+  const downloadFile = async (url: string, destPath: string) => {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        await writeFile(destPath, new Uint8Array(buffer));
+        return destPath;
+      }
+    } catch (err) {
+      console.warn('Failed to download', url, err);
+    }
+    return undefined;
+  };
+
+  if (mediaUrls.cover) {
+    const ext = mediaUrls.cover.split('.').pop()?.split('?')[0] || 'png';
+    const dest = await join(mediaDir, `cover.${ext}`);
+    const savedPath = await downloadFile(mediaUrls.cover, dest);
+    if (savedPath) result.cover_url = savedPath;
+  }
+
+  if (mediaUrls.backdrop) {
+    const ext = mediaUrls.backdrop.split('.').pop()?.split('?')[0] || 'jpg';
+    const dest = await join(mediaDir, `backdrop.${ext}`);
+    const savedPath = await downloadFile(mediaUrls.backdrop, dest);
+    if (savedPath) result.backdrop_url = savedPath;
+  }
+
+  if (mediaUrls.video) {
+    const ext = mediaUrls.video.split('.').pop()?.split('?')[0] || 'mp4';
+    const dest = await join(videosDir, `trailer.${ext}`);
+    const savedPath = await downloadFile(mediaUrls.video, dest);
+    if (savedPath) result.video_url = savedPath;
+  }
+
+  if (mediaUrls.screenshots && mediaUrls.screenshots.length > 0) {
+    result.screenshots = [];
+    for (let i = 0; i < mediaUrls.screenshots.length; i++) {
+      const url = mediaUrls.screenshots[i];
+      const ext = url.split('.').pop()?.split('?')[0] || 'png';
+      const dest = await join(screenshotsDir, `screenshot_${i + 1}.${ext}`);
+      const savedPath = await downloadFile(url, dest);
+      if (savedPath) result.screenshots.push(savedPath);
+    }
+  }
+
+  return result;
+}
 
 // Dictionnaire de correspondances connues et rapides pour les grands classiques de l'arcade et des consoles
 const KNOWN_GAMES: Record<string, Partial<ScrapedResult>> = {
@@ -126,6 +195,7 @@ export async function searchOnlineGameMetadata(
         cover_url: meta.cover_url,
         backdrop_url: meta.backdrop_url,
         screenshots: meta.screenshots,
+        video_url: meta.video_url,
         release_date: meta.release_date,
         developer: meta.developer,
         publisher: meta.publisher,

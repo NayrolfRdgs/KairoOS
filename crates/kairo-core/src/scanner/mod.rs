@@ -79,25 +79,43 @@ impl RomScanner {
 
                 systems_detected.insert(system.id.clone());
 
-                let file_path_str = path.to_string_lossy().to_string();
-                let file_size = entry.metadata().map(|m| m.len()).unwrap_or(0);
-                
-                // 1. Lire les métadonnées locales adjacentes (.json / metadata.json / kairo.json)
-                let local_meta = Self::read_adjacent_metadata(path);
-
-                // 2. Détecter l'image jaquette locale adjacente (.png/.jpg / cover.png)
-                let local_cover = Self::find_adjacent_cover(path);
-
                 let raw_title = Path::new(file_name)
                     .file_stem()
                     .and_then(|s| s.to_str())
                     .unwrap_or(file_name)
                     .to_string();
 
+                let temp_clean = Self::clean_game_title(file_name);
+                let safe_title = temp_clean.replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+
+                let mut actual_path = path.to_path_buf();
+                
+                if let Some(parent) = path.parent() {
+                    let parent_name = parent.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                    if parent_name != safe_title && parent_name != raw_title {
+                        let new_dir = parent.join(&safe_title);
+                        let _ = fs::create_dir_all(&new_dir);
+                        let new_path = new_dir.join(file_name);
+                        if fs::rename(path, &new_path).is_ok() {
+                            actual_path = new_path;
+                        }
+                    }
+                }
+                
+                let path_to_use = actual_path.as_path();
+                let file_path_str = path_to_use.to_string_lossy().to_string();
+                let file_size = actual_path.metadata().map(|m| m.len()).unwrap_or(0);
+                
+                // 1. Lire les métadonnées locales adjacentes (.json / metadata.json / kairo.json)
+                let local_meta = Self::read_adjacent_metadata(path_to_use);
+
+                // 2. Détecter l'image jaquette locale adjacente (.png/.jpg / cover.png)
+                let local_cover = Self::find_adjacent_cover(path_to_use);
+
                 let clean_title = local_meta
                     .as_ref()
                     .map(|m| m.title.clone())
-                    .unwrap_or_else(|| Self::clean_game_title(file_name));
+                    .unwrap_or_else(|| temp_clean);
 
                 let franchise = local_meta
                     .as_ref()
@@ -197,6 +215,10 @@ impl RomScanner {
                             created_at: now,
                             updated_at: now,
                         };
+
+                        if let Some(parent) = path_to_use.parent() {
+                            let _ = fs::create_dir_all(parent.join("media"));
+                        }
 
                         self.db.insert_game(&new_game)?;
                         stats.games_added += 1;
@@ -305,8 +327,13 @@ impl RomScanner {
         }
 
         if let Some(parent) = rom_path.parent() {
+            let media_dir = parent.join("media");
             for ext in &extensions {
                 for base in &["cover", "folder", "front", "boxart"] {
+                    let cover_in_media = media_dir.join(format!("{}.{}", base, ext));
+                    if cover_in_media.exists() {
+                        return Some(cover_in_media.to_string_lossy().to_string());
+                    }
                     let cover_in_folder = parent.join(format!("{}.{}", base, ext));
                     if cover_in_folder.exists() {
                         return Some(cover_in_folder.to_string_lossy().to_string());
@@ -391,6 +418,10 @@ impl RomScanner {
             rating: game.rating,
             synopsis: game.synopsis.clone(),
             cover_file: Some("cover.png".into()),
+            cover_url: game.cover_url.clone(),
+            backdrop_url: game.backdrop_url.clone(),
+            screenshots: None,
+            video_url: None,
         };
 
         let meta_path = target_game_dir.join("metadata.json");

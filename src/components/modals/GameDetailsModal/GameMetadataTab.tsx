@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Check, Search, Sparkles } from 'lucide-react';
+import { Check, Search, Sparkles, Download, Loader2 } from 'lucide-react';
 import { Game, LocalGameMetadata } from '../../../types';
 
-import { searchOnlineGameMetadata } from '../../../utils/scraper';
+import { searchOnlineGameMetadata, downloadGameMedia } from '../../../utils/scraper';
 
 interface GameMetadataTabProps {
   game: Game;
@@ -19,11 +19,21 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
   const [metaRating, setMetaRating] = useState<string>(game.rating ? game.rating.toString() : '');
   const [metaPlayers, setMetaPlayers] = useState<string>(game.players ? game.players.toString() : '');
   const [metaSynopsis, setMetaSynopsis] = useState(game.synopsis || '');
+  
   const [isSearching, setIsSearching] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  // Media download states
+  const [scrapedMedia, setScrapedMedia] = useState<{ cover?: string; backdrop?: string; screenshots?: string[]; video?: string } | null>(null);
+  const [dlCover, setDlCover] = useState(false);
+  const [dlBackdrop, setDlBackdrop] = useState(false);
+  const [dlScreenshots, setDlScreenshots] = useState(false);
+  const [dlVideo, setDlVideo] = useState(false);
+  const [isDownloadingMedia, setIsDownloadingMedia] = useState(false);
+
   const handleAutoFetch = async () => {
     setIsSearching(true);
+    setScrapedMedia(null);
     try {
       const scraped = await searchOnlineGameMetadata(metaTitle || game.title, game.system_id);
       if (scraped.title) setMetaTitle(scraped.title);
@@ -34,6 +44,19 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
       if (scraped.rating) setMetaRating(scraped.rating.toString());
       if (scraped.players) setMetaPlayers(scraped.players.toString());
       if (scraped.synopsis) setMetaSynopsis(scraped.synopsis);
+
+      if (scraped.cover_url || scraped.backdrop_url || scraped.screenshots?.length || scraped.video_url) {
+        setScrapedMedia({
+          cover: scraped.cover_url,
+          backdrop: scraped.backdrop_url,
+          screenshots: scraped.screenshots,
+          video: scraped.video_url,
+        });
+        setDlCover(!!scraped.cover_url);
+        setDlBackdrop(!!scraped.backdrop_url);
+        setDlScreenshots(!!scraped.screenshots?.length);
+        setDlVideo(!!scraped.video_url);
+      }
     } catch (err) {
       console.warn('Erreur auto scrape:', err);
     } finally {
@@ -41,7 +64,7 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
     }
   };
 
-  const handleSave = async () => {
+  const saveMetadata = async (mediaUrls?: { cover_url?: string; backdrop_url?: string; screenshots?: string[]; video_url?: string }) => {
     const parsedRating = parseFloat(metaRating);
     const parsedPlayers = parseInt(metaPlayers, 10);
 
@@ -56,11 +79,38 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
       rating: isNaN(parsedRating) ? undefined : parsedRating,
       players: isNaN(parsedPlayers) ? undefined : parsedPlayers,
       synopsis: metaSynopsis.trim() ? metaSynopsis.trim() : undefined,
+      cover_url: mediaUrls?.cover_url || game.cover_url,
+      backdrop_url: mediaUrls?.backdrop_url || game.backdrop_url,
+      screenshots: mediaUrls?.screenshots,
+      video_url: mediaUrls?.video_url,
     };
 
     await onSaveMetadata(game.id, metadata);
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2000);
+  };
+
+  const handleSave = async () => {
+    await saveMetadata();
+  };
+
+  const handleDownloadMedia = async () => {
+    if (!scrapedMedia || !game.file_path) return;
+    setIsDownloadingMedia(true);
+    try {
+      const downloaded = await downloadGameMedia(game.file_path, {
+        cover: dlCover ? scrapedMedia.cover : undefined,
+        backdrop: dlBackdrop ? scrapedMedia.backdrop : undefined,
+        screenshots: dlScreenshots ? scrapedMedia.screenshots : undefined,
+        video: dlVideo ? scrapedMedia.video : undefined,
+      });
+      await saveMetadata(downloaded);
+      setScrapedMedia(null); // hide media download panel after successful download
+    } catch (err) {
+      console.error("Erreur lors du téléchargement des médias:", err);
+    } finally {
+      setIsDownloadingMedia(false);
+    }
   };
 
   return (
@@ -73,7 +123,7 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
             Actualiser automatiquement les informations
           </span>
           <span className="text-[11px] text-slate-500">
-            Recherche en ligne le titre officiel, l'année, le développeur, le genre et la description.
+            Recherche en ligne le titre officiel, l'année, le développeur, le genre, la description et les médias.
           </span>
         </div>
 
@@ -83,10 +133,56 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
           disabled={isSearching}
           className="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-rose-500/20 flex items-center gap-1.5 active:scale-95 transition-all shrink-0 disabled:opacity-50"
         >
-          <Search className="w-3.5 h-3.5" />
+          {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
           <span>{isSearching ? 'Recherche...' : 'Rechercher Infos'}</span>
         </button>
       </div>
+
+      {scrapedMedia && (
+        <div className="p-4 rounded-2xl bg-white border border-indigo-100 shadow-sm space-y-3">
+          <h4 className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+            <Download className="w-4 h-4 text-indigo-500" />
+            Médias trouvés
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {scrapedMedia.cover && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={dlCover} onChange={(e) => setDlCover(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span>Télécharger la jaquette (cover)</span>
+              </label>
+            )}
+            {scrapedMedia.backdrop && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={dlBackdrop} onChange={(e) => setDlBackdrop(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span>Télécharger le backdrop</span>
+              </label>
+            )}
+            {scrapedMedia.screenshots && scrapedMedia.screenshots.length > 0 && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={dlScreenshots} onChange={(e) => setDlScreenshots(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span>Télécharger les captures d'écran</span>
+              </label>
+            )}
+            {scrapedMedia.video && (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={dlVideo} onChange={(e) => setDlVideo(e.target.checked)} className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
+                <span>Télécharger la vidéo</span>
+              </label>
+            )}
+          </div>
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={handleDownloadMedia}
+              disabled={isDownloadingMedia || (!dlCover && !dlBackdrop && !dlScreenshots && !dlVideo)}
+              className="w-full px-4 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+            >
+              {isDownloadingMedia ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              <span>{isDownloadingMedia ? 'Téléchargement en cours...' : 'Télécharger les médias sélectionnés'}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed">
         💾 L'enregistrement créera ou mettra à jour directement le fichier{' '}
@@ -238,3 +334,4 @@ export const GameMetadataTab: React.FC<GameMetadataTabProps> = ({ game, onSaveMe
     </div>
   );
 };
+

@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { Game } from '../../../types';
+import { convertFileSrc } from '@tauri-apps/api/core';
 
 interface HeroShowcaseProps {
   game: Game;
@@ -30,6 +31,12 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
   isFocused = false,
 }) => {
   const [selectedScreenshotIdx, setSelectedScreenshotIdx] = useState(0);
+
+  const getImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return convertFileSrc(url);
+  };
 
   const screenshots = game.screenshots && game.screenshots.length > 0
     ? game.screenshots
@@ -63,7 +70,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
       {/* Background Artwork Layer with Smooth Fade to White on the Left */}
       <div className="absolute inset-0 z-0">
         <img
-          src={activeBackdrop}
+          src={getImageUrl(activeBackdrop)}
           alt={game.title}
           className="w-full h-full object-cover object-right md:object-center transition-all duration-700 filter brightness-105"
         />
@@ -209,7 +216,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
                     : 'border-white/80 hover:border-purple-300 opacity-80 hover:opacity-100'
                 }`}
               >
-                <img src={shot} alt="" className="w-full h-full object-cover" />
+                <img src={getImageUrl(shot)} alt="" className="w-full h-full object-cover" />
                 {isSelected && (
                   <div className="absolute inset-0 bg-rose-500/10 pointer-events-none" />
                 )}

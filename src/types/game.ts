@@ -40,7 +40,10 @@ export interface LocalGameMetadata {
   players?: number;
   rating?: number;
   synopsis?: string;
-  cover_file?: string;
+  cover_url?: string;
+  backdrop_url?: string;
+  screenshots?: string[];
+  video_url?: string;
 }
 
 export interface GameConfig {

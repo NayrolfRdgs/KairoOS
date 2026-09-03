@@ -26,6 +26,8 @@ interface GameDetailsModalProps {
   onOpenFranchiseOrganizer: (game: Game) => void;
 }
 
+import { convertFileSrc } from '@tauri-apps/api/core';
+
 export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   game,
   system,
@@ -40,7 +42,14 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'metadata' | 'config'>('info');
 
-  const backdrop = game.backdrop_url || game.cover_url || 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg';
+  const getImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return convertFileSrc(url);
+  };
+
+  const backdropRaw = game.backdrop_url || game.cover_url || 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg';
+  const backdrop = getImageUrl(backdropRaw);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-md animate-fadeIn select-none">

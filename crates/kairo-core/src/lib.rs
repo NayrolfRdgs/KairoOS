@@ -139,15 +139,17 @@ mod tests {
 
         let temp = tempdir().expect("Échec création temp dir");
         let mario_franchise_dir = temp.path().join("Super Mario");
-        fs::create_dir_all(&mario_franchise_dir).expect("Échec mkdir");
+        
+        let smw_dir = mario_franchise_dir.join("Super Mario World");
+        fs::create_dir_all(&smw_dir).expect("Échec mkdir");
 
         // 1. Jeu SNES
-        let rom_snes = mario_franchise_dir.join("Super Mario World.sfc");
+        let rom_snes = smw_dir.join("Super Mario World.sfc");
         let mut f = File::create(&rom_snes).expect("Échec create file");
         f.write_all(b"ROM SNES DUMMY DATA").expect("Échec write");
 
         // 2. Fichier JSON adjacent
-        let meta_snes = mario_franchise_dir.join("Super Mario World.json");
+        let meta_snes = smw_dir.join("metadata.json");
         let json_content = r#"{
             "title": "Super Mario World (Édition Finale)",
             "franchise": "Super Mario",
@@ -160,11 +162,15 @@ mod tests {
         fs::write(&meta_snes, json_content).expect("Échec write JSON");
 
         // 3. Jaquette adjacente PNG
-        let cover_png = mario_franchise_dir.join("Super Mario World.png");
+        let media_dir = smw_dir.join("media");
+        fs::create_dir_all(&media_dir).unwrap();
+        let cover_png = media_dir.join("cover.png");
         fs::write(&cover_png, b"FAKE PNG DATA").expect("Échec write PNG");
 
         // 4. Jeu N64 dans le MÊME dossier de franchise (Multi-Consoles)
-        let rom_n64 = mario_franchise_dir.join("Super Mario 64.z64");
+        let sm64_dir = mario_franchise_dir.join("Super Mario 64");
+        fs::create_dir_all(&sm64_dir).expect("Échec mkdir");
+        let rom_n64 = sm64_dir.join("Super Mario 64.z64");
         let mut f2 = File::create(&rom_n64).expect("Échec create file");
         f2.write_all(b"ROM N64 DUMMY DATA").expect("Échec write");
 

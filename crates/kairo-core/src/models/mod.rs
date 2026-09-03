@@ -73,6 +73,10 @@ pub struct LocalGameMetadata {
     pub rating: Option<f32>,
     pub synopsis: Option<String>,
     pub cover_file: Option<String>,
+    pub cover_url: Option<String>,
+    pub backdrop_url: Option<String>,
+    pub screenshots: Option<Vec<String>>,
+    pub video_url: Option<String>,
 }
 
 /// Configuration spécifique ou personnalisation par jeu
