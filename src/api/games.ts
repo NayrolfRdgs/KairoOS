@@ -73,3 +73,15 @@ export async function addManualGame(params: {
   });
 }
 
+/** Supprime un jeu de la base (ne touche pas les fichiers du disque) */
+export async function deleteGame(gameId: string): Promise<void> {
+  return invokeCommand<void>('delete_game', { gameId });
+}
+
+/**
+ * Supprime de la base tous les jeux dont le fichier ROM est introuvable sur le disque.
+ * Retourne le nombre d'entrées supprimées.
+ */
+export async function purgeMissingGames(): Promise<number> {
+  return invokeCommand<number>('purge_missing_games');
+}

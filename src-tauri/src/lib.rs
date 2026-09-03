@@ -122,6 +122,8 @@ pub fn run() {
             commands::get_remote_config,
             commands::save_remote_config,
             commands::add_manual_game,
+            commands::delete_game,
+            commands::purge_missing_games,
         ])
         .run(tauri::generate_context!())
 

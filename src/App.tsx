@@ -21,6 +21,7 @@ import {
   organizeGameIntoFranchise,
   scanRomsDirectory,
   addManualGame,
+  purgeMissingGames,
 } from './api';
 
 export const App: React.FC = () => {
@@ -85,9 +86,14 @@ export const App: React.FC = () => {
     const initApp = async () => {
       await loadData();
       try {
+        // Nettoyer les entrées orphelines (ROMs supprimées / déplacées)
+        const purged = await purgeMissingGames();
+        if (purged > 0) {
+          console.info(`[App] ${purged} jeu(x) orphelin(s) supprimé(s) de la base.`);
+        }
         const romPath = settings.roms_path || './roms';
         const stats = await scanRomsDirectory(romPath);
-        if (stats.games_added > 0 || stats.games_updated > 0) {
+        if (purged > 0 || stats.games_added > 0 || stats.games_updated > 0) {
           await loadData();
         }
       } catch (err) {

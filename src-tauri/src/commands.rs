@@ -373,5 +373,26 @@ pub fn add_manual_game(
     Ok(game)
 }
 
+/// Supprime un jeu de la base de données (ne supprime PAS les fichiers du disque)
+#[tauri::command]
+pub fn delete_game(game_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.db.delete_game(&game_id).map_err(|e| e.to_string())
+}
 
+/// Supprime de la base de données tous les jeux dont le fichier ROM n'existe plus sur le disque.
+/// Retourne le nombre d'entrées supprimées.
+#[tauri::command]
+pub fn purge_missing_games(state: State<'_, AppState>) -> Result<usize, String> {
+    let games = state.db.get_all_games().map_err(|e| e.to_string())?;
+    let mut removed = 0usize;
 
+    for game in games {
+        if !std::path::Path::new(&game.file_path).exists() {
+            if let Ok(()) = state.db.delete_game(&game.id) {
+                removed += 1;
+            }
+        }
+    }
+
+    Ok(removed)
+}
