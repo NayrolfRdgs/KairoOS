@@ -7,34 +7,67 @@ export default {
   theme: {
     extend: {
       colors: {
+        kairo: {
+          bg: "#f8f7ff",
+          bgLilac: "#f3e8ff",
+          surface: "#ffffff",
+          card: "rgba(255, 255, 255, 0.92)",
+          cardHover: "#ffffff",
+          border: "#ede9fe",
+          borderLight: "#f1f0fb",
+          borderGlow: "rgba(225, 29, 72, 0.4)",
+          magenta: "#e11d48",
+          magentaLight: "#fb7185",
+          magentaBg: "rgba(225, 29, 72, 0.08)",
+          pink: "#ec4899",
+          pinkLight: "#f472b6",
+          purple: "#7c3aed",
+          purpleLight: "#a78bfa",
+          purpleBg: "rgba(124, 58, 237, 0.06)",
+          indigo: "#4f46e5",
+          text: "#0f172a",
+          textHeading: "#1e1b4b",
+          textMuted: "#64748b",
+          textLight: "#94a3b8",
+        },
         retro: {
-          bg: "#f4f6f9",
+          bg: "#f8f7ff",
           sidebar: "#ffffff",
           card: "#ffffff",
           cardHover: "#fafbfc",
-          border: "#e2e6ef",
-          borderStrong: "#cbd3e1",
-          primary: "#ff3366",      // Rose fluo arcade 80s
-          cyan: "#00b4d8",         // Cyan 80s
-          yellow: "#ffaa00",       // Jaune soleil 80s
-          purple: "#7928ca",       // Violet rétro
-          teal: "#00b894",         // Vert menthe arcade
-          text: "#192a56",         // Bleu-nuit très foncé pour contraste parfait
-          textMuted: "#636e72",
-          textLight: "#a4b0be",
+          border: "#ede9fe",
+          borderStrong: "#cbd5e1",
+          primary: "#e11d48",      // Magenta principal
+          magenta: "#e11d48",
+          pink: "#ec4899",
+          purple: "#7c3aed",       // Violet
+          purpleLight: "#f3e8ff",
+          cyan: "#0284c7",
+          yellow: "#f59e0b",
+          green: "#10b981",
+          text: "#0f172a",
+          textHeading: "#1e1b4b",
+          textMuted: "#64748b",
+          textLight: "#94a3b8",
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        arcade: ['Press Start 2P', 'monospace'],
+        sans: ['Outfit', 'Inter', 'system-ui', 'sans-serif'],
+        arcade: ['"Press Start 2P"', 'monospace'],
         display: ['Outfit', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
       },
       boxShadow: {
-        'retro': '0 4px 14px 0 rgba(0, 0, 0, 0.06)',
-        'retro-md': '0 8px 24px -4px rgba(0, 0, 0, 0.08)',
-        'retro-lg': '0 16px 36px -6px rgba(0, 0, 0, 0.12)',
-        'retro-neon': '0 0 20px rgba(255, 51, 102, 0.25)',
-        'retro-cyan': '0 0 20px rgba(0, 180, 216, 0.25)',
+        'kairo-sm': '0 2px 8px -2px rgba(124, 58, 237, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.04)',
+        'kairo-md': '0 8px 24px -4px rgba(124, 58, 237, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04)',
+        'kairo-lg': '0 16px 36px -6px rgba(124, 58, 237, 0.16), 0 6px 16px -2px rgba(0, 0, 0, 0.06)',
+        'kairo-glow': '0 0 25px rgba(225, 29, 72, 0.35), 0 0 10px rgba(124, 58, 237, 0.25)',
+        'kairo-focus': '0 0 0 3px #ffffff, 0 0 0 6px #e11d48, 0 12px 30px rgba(225, 29, 72, 0.3)',
+        'kairo-card-focus': '0 0 0 2px #e11d48, 0 12px 32px rgba(225, 29, 72, 0.25)',
+        'retro': '0 4px 14px 0 rgba(124, 58, 237, 0.08)',
+        'retro-md': '0 8px 24px -4px rgba(124, 58, 237, 0.12)',
+        'retro-lg': '0 16px 36px -6px rgba(124, 58, 237, 0.16)',
+        'retro-neon': '0 0 25px rgba(225, 29, 72, 0.35)',
       }
     },
   },

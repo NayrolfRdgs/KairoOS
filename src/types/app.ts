@@ -1,9 +1,12 @@
 export type AppMode = 'admin' | 'kiosk';
 
+export type GameSelectAction = 'launch' | 'details';
+
 export interface AppSettings {
   fullscreen: boolean;
   always_on_top: boolean;
   kiosk_mode: boolean;
+  game_select_action?: GameSelectAction;
   enabled_franchises: string[];
   custom_franchises: import('./system').CustomFranchise[];
   roms_path?: string;

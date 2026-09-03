@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
-import { X, Sliders, Shield, Eye, Folder, Gamepad2, Check } from 'lucide-react';
-import { AppSettings, CustomFranchise, RemoteConfig } from '../../../types';
+import {
+  X,
+  Sliders,
+  Shield,
+  Gamepad2,
+  Check,
+  Tv,
+  Play,
+  FileText,
+  Maximize,
+  Layers,
+  Wifi,
+} from 'lucide-react';
+import { AppSettings, CustomFranchise, GameSelectAction, RemoteConfig } from '../../../types';
 import { KioskTab } from './KioskTab';
 import { FranchisesTab } from './FranchisesTab';
 import { FoldersTab } from './FoldersTab';
@@ -26,10 +38,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveRemoteConfig,
   onLockKioskNow,
 }) => {
-  const [activeTab, setActiveTab] = useState<'kiosk' | 'franchises' | 'folders'>('kiosk');
+  const [activeTab, setActiveTab] = useState<'gameplay' | 'kiosk' | 'franchises' | 'folders'>('gameplay');
   const [fullscreen, setFullscreen] = useState(settings.fullscreen);
   const [alwaysOnTop, setAlwaysOnTop] = useState(settings.always_on_top);
   const [kioskMode, setKioskMode] = useState(settings.kiosk_mode);
+  const [gameSelectAction, setGameSelectAction] = useState<GameSelectAction>(
+    settings.game_select_action || 'details'
+  );
   const [enabledFranchises, setEnabledFranchises] = useState<string[]>(settings.enabled_franchises || []);
   const [customFranchises, setCustomFranchises] = useState<CustomFranchise[]>(settings.custom_franchises || []);
   const [romsPath, setRomsPath] = useState(settings.roms_path || '');
@@ -41,6 +56,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       fullscreen,
       always_on_top: alwaysOnTop,
       kiosk_mode: kioskMode,
+      game_select_action: gameSelectAction,
       enabled_franchises: enabledFranchises,
       custom_franchises: customFranchises,
       roms_path: romsPath.trim() ? romsPath.trim() : undefined,
@@ -58,86 +74,213 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-retro-text/40 backdrop-blur-sm animate-fadeIn select-none">
-      <div className="relative w-full max-w-3xl max-h-[90vh] bg-white border border-retro-border rounded-3xl shadow-retro-lg overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-md animate-fadeIn select-none">
+      <div className="relative w-full max-w-3xl max-h-[92vh] bg-white border border-purple-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="p-6 border-b border-retro-border bg-gradient-to-r from-retro-primary via-retro-purple to-retro-cyan flex items-center justify-between">
+        <div className="p-5 border-b border-purple-100 bg-gradient-to-r from-purple-50 via-pink-50 to-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white shadow-inner">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-rose-500 flex items-center justify-center text-white shadow-md shadow-pink-500/20">
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black font-display text-white tracking-wide uppercase">
-                Paramètres KaïroOS
+              <h2 className="text-base font-black text-slate-900 font-sans tracking-tight">
+                PARAMÈTRES DE LA BORNE
               </h2>
-              <span className="text-xs text-white/80 font-medium">
-                Mode Borne Arcade, Serveur Distant PWA & Franchises
-              </span>
+              <p className="text-xs text-slate-500">
+                Gameplay, comportement manette, sécurité et affichage
+              </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-full bg-black/20 text-white hover:bg-black/40 transition-all"
+            className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-6 px-6 border-b border-retro-border bg-retro-bg/50">
+        {/* Tab Buttons */}
+        <div className="px-6 border-b border-purple-100 flex items-center gap-2 bg-white shrink-0 overflow-x-auto py-2">
+          <button
+            onClick={() => setActiveTab('gameplay')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+              activeTab === 'gameplay'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+            }`}
+          >
+            <Tv className="w-3.5 h-3.5" />
+            <span>Gameplay & Interface</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('kiosk')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'kiosk'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
             }`}
           >
             <Shield className="w-3.5 h-3.5" />
-            <span>Mode Borne & Distant</span>
+            <span>Mode Salle (Kiosk)</span>
           </button>
 
           <button
             onClick={() => setActiveTab('franchises')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'franchises'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
             }`}
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Franchises Visibles</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>Franchises</span>
           </button>
 
           <button
             onClick={() => setActiveTab('folders')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-2 transition-all ${
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
               activeTab === 'folders'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
+                ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
             }`}
           >
-            <Folder className="w-3.5 h-3.5" />
-            <span>Dossiers & Emplacement</span>
+            <Wifi className="w-3.5 h-3.5" />
+            <span>Dossiers & Réseau</span>
           </button>
-
-          {onOpenGamepadSettings && (
-            <button
-              onClick={() => {
-                onClose();
-                onOpenGamepadSettings();
-              }}
-              className="py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-transparent text-retro-primary hover:text-retro-purple flex items-center gap-2 transition-all ml-auto"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>🎮 Manettes (1-10)</span>
-            </button>
-          )}
         </div>
 
         {/* Tab Content */}
-        <div className="p-6 md:p-8 overflow-y-auto flex-1 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin bg-gradient-to-b from-white to-purple-50/20">
+          {activeTab === 'gameplay' && (
+            <div className="space-y-6">
+              {/* Comportement lors de la sélection d'un jeu */}
+              <div className="p-5 rounded-3xl bg-white border border-purple-100/90 shadow-xs space-y-4">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                    <Gamepad2 className="w-4 h-4 text-rose-500" />
+                    <span>Comportement lors de la sélection d'un jeu</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Définissez l'action exécutée quand l'utilisateur appuie sur A ou clique sur une jaquette.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Option 1: Afficher la fiche du jeu */}
+                  <label
+                    className={`p-4 rounded-2xl border-2 flex items-start gap-3 cursor-pointer transition-all ${
+                      gameSelectAction === 'details'
+                        ? 'border-rose-500 bg-rose-50/40 text-rose-950 shadow-xs'
+                        : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="gameSelectAction"
+                      value="details"
+                      checked={gameSelectAction === 'details'}
+                      onChange={() => setGameSelectAction('details')}
+                      className="mt-1 w-4 h-4 text-rose-600 focus:ring-rose-500"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                        <FileText className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Afficher la fiche du jeu</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Ouvre la page de présentation complète avec screenshots, jaquette, description et commandes.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Option 2: Lancer directement */}
+                  <label
+                    className={`p-4 rounded-2xl border-2 flex items-start gap-3 cursor-pointer transition-all ${
+                      gameSelectAction === 'launch'
+                        ? 'border-rose-500 bg-rose-50/40 text-rose-950 shadow-xs'
+                        : 'border-purple-100 bg-white hover:border-purple-200 text-slate-700'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="gameSelectAction"
+                      value="launch"
+                      checked={gameSelectAction === 'launch'}
+                      onChange={() => setGameSelectAction('launch')}
+                      className="mt-1 w-4 h-4 text-rose-600 focus:ring-rose-500"
+                    />
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                        <Play className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                        <span>Lancer directement</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Lance immédiatement le jeu dans l'émulateur configuré. Idéal pour une expérience arcade directe.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Options d'Affichage Windows */}
+              <div className="p-5 rounded-3xl bg-white border border-purple-100/90 shadow-xs space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                  <Maximize className="w-4 h-4 text-purple-600" />
+                  <span>Affichage & Fenêtre</span>
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <label className="p-4 rounded-2xl border border-purple-100 bg-white flex items-center justify-between cursor-pointer hover:border-purple-200 transition-all">
+                    <div className="text-xs space-y-0.5">
+                      <span className="font-bold text-slate-900 block">Plein Écran (F11)</span>
+                      <span className="text-[11px] text-slate-500">Immerge totalement la borne arcade</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={fullscreen}
+                      onChange={async (e) => {
+                        setFullscreen(e.target.checked);
+                        await onToggleFullscreen();
+                      }}
+                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </label>
+
+                  <label className="p-4 rounded-2xl border border-purple-100 bg-white flex items-center justify-between cursor-pointer hover:border-purple-200 transition-all">
+                    <div className="text-xs space-y-0.5">
+                      <span className="font-bold text-slate-900 block">Toujours au Premier Plan</span>
+                      <span className="text-[11px] text-slate-500">Empêche les autres fenêtres d'apparaître</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={alwaysOnTop}
+                      onChange={(e) => setAlwaysOnTop(e.target.checked)}
+                      className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 cursor-pointer"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {/* Configuration Manettes raccourci */}
+              {onOpenGamepadSettings && (
+                <div className="p-5 rounded-3xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex items-center justify-between gap-4 shadow-xs">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Manettes & Boutons Arcade</h4>
+                    <p className="text-[11px] text-slate-500">Configurez les mappings J1 à J10 et la priorité des manettes.</p>
+                  </div>
+                  <button
+                    onClick={onOpenGamepadSettings}
+                    className="px-4 py-2 rounded-xl bg-white border border-purple-200 text-slate-700 hover:text-rose-600 text-xs font-bold shadow-xs hover:scale-105 transition-all"
+                  >
+                    Ouvrir Mappings
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'kiosk' && (
             <KioskTab
               fullscreen={fullscreen}
@@ -164,35 +307,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
 
           {activeTab === 'folders' && (
-            <FoldersTab romsPath={romsPath} setRomsPath={setRomsPath} />
+            <FoldersTab
+              romsPath={romsPath}
+              setRomsPath={setRomsPath}
+            />
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 sm:p-6 border-t border-retro-border bg-retro-bg/40 flex items-center justify-between">
-          <div>
-            {savedSuccess && (
-              <span className="text-xs font-bold text-emerald-600 animate-fadeIn flex items-center gap-1">
-                <Check className="w-4 h-4" />
-                Paramètres enregistrés et appliqués !
-              </span>
-            )}
-          </div>
+        {/* Footer Actions */}
+        <div className="p-4 border-t border-purple-100 bg-white flex items-center justify-between gap-3 shrink-0">
+          {savedSuccess ? (
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600">
+              <Check className="w-4 h-4" />
+              <span>Paramètres enregistrés avec succès !</span>
+            </div>
+          ) : (
+            <div className="text-[11px] text-slate-400 font-mono">
+              KaïroOS v2.0 • Paramètres
+            </div>
+          )}
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-bold text-retro-textMuted hover:text-retro-text transition-all"
+              className="px-4 py-2 rounded-xl border border-purple-100 hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all"
             >
               Fermer
             </button>
 
             <button
               onClick={handleSaveAll}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-retro-primary to-retro-purple text-white font-bold text-xs uppercase tracking-wider shadow-retro-neon hover:scale-105 active:scale-95 transition-all"
+              className="px-6 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-rose-500/20 active:scale-95 transition-all"
             >
-              <Check className="w-4 h-4" />
-              <span>Enregistrer les Paramètres</span>
+              Enregistrer
             </button>
           </div>
         </div>

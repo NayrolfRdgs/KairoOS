@@ -1,11 +1,20 @@
 import React from 'react';
-import { Gamepad2, Disc, Smartphone, Tv, Box, Flame } from 'lucide-react';
+import {
+  Monitor,
+  Flame,
+  Gamepad2,
+  Box,
+  Smartphone,
+  Disc,
+  ToggleRight,
+  Radio,
+} from 'lucide-react';
 import { System } from '../../../types';
 
 interface SidebarSystemsProps {
   systems: System[];
   selectedCategory: string;
-  onSelectCategory: (cat: string) => void;
+  onSelectCategory: (category: string) => void;
   gamesCountBySystem: Record<string, number>;
 }
 
@@ -15,52 +24,80 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
   onSelectCategory,
   gamesCountBySystem,
 }) => {
-  const getSystemIcon = (iconType: string) => {
-    switch (iconType) {
-      case 'disc':
-        return <Disc className="w-4 h-4" />;
-      case 'smartphone':
-        return <Smartphone className="w-4 h-4" />;
-      case 'box':
-        return <Box className="w-4 h-4" />;
-      case 'monitor':
-        return <Tv className="w-4 h-4" />;
-      case 'joystick':
-        return <Flame className="w-4 h-4 text-retro-primary" />;
+  const getSystemIcon = (id: string) => {
+    switch (id.toLowerCase()) {
+      case 'windows':
+      case 'pc':
+        return Monitor;
+      case 'arcade':
+      case 'mame':
+      case 'fbneo':
+        return Flame;
+      case 'nes':
+      case 'snes':
+        return Gamepad2;
+      case 'n64':
+        return Box;
+      case 'gb':
+      case 'gbc':
+      case 'gba':
+        return Smartphone;
+      case 'switch':
+        return ToggleRight;
+      case 'megadrive':
+      case 'genesis':
+        return Radio;
+      case 'gamecube':
+      case 'wii':
+      case 'dreamcast':
+      case 'ps1':
+      case 'ps2':
+      case 'ps3':
+      case 'ps4':
+      case 'ps5':
+        return Disc;
       default:
-        return <Gamepad2 className="w-4 h-4" />;
+        return Gamepad2;
     }
   };
 
   return (
-    <div>
-      <div className="text-[11px] font-black uppercase tracking-wider text-retro-textLight px-3 mb-2">
-        Consoles & Systèmes
-      </div>
+    <div className="space-y-1">
+      <h3 className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 font-sans mb-2">
+        CONSOLES & SYSTÈMES
+      </h3>
 
-      <div className="space-y-1">
-        {systems.map((sys) => {
-          const count = gamesCountBySystem[sys.id] || 0;
-          const isSelected = selectedCategory === `system:${sys.id}`;
+      <div className="space-y-0.5">
+        {systems.map((system) => {
+          const Icon = getSystemIcon(system.id);
+          const isSelected = selectedCategory === system.id;
+          const count = gamesCountBySystem[system.id] || 0;
 
           return (
             <button
-              key={sys.id}
-              onClick={() => onSelectCategory(`system:${sys.id}`)}
-              className={`w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+              key={system.id}
+              onClick={() => onSelectCategory(system.id)}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 isSelected
-                  ? 'bg-retro-cyan text-white shadow-retro-cyan font-bold scale-[1.02]'
-                  : 'text-retro-text hover:bg-retro-bg'
+                  ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-rose-600 border border-pink-200/80 shadow-xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-purple-50/40'
               }`}
             >
-              <div className="flex items-center gap-2.5 truncate">
-                {getSystemIcon(sys.icon)}
-                <span className="truncate">{sys.name}</span>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${
+                    isSelected ? 'text-rose-500' : 'text-slate-400'
+                  }`}
+                />
+                <span className="truncate">{system.name}</span>
               </div>
+
               {count > 0 && (
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-retro-bg text-retro-textMuted'
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md font-mono ${
+                    isSelected
+                      ? 'bg-rose-500 text-white'
+                      : 'bg-slate-100 text-slate-400'
                   }`}
                 >
                   {count}

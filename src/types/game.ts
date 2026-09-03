@@ -11,6 +11,8 @@ export interface Game {
   cover_url?: string;
   backdrop_url?: string;
   logo_url?: string;
+  screenshots?: string[];
+  featured?: boolean;
   release_date?: string;
   publisher?: string;
   developer?: string;

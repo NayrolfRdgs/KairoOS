@@ -1,10 +1,9 @@
 import React from 'react';
-import { FolderSearch } from 'lucide-react';
 import { CustomFranchise, System, FranchiseCollection, AppMode } from '../../../types';
 import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
-import { SidebarFranchises } from './SidebarFranchises';
 import { SidebarSystems } from './SidebarSystems';
+import { SidebarFooter } from './SidebarFooter';
 
 interface SidebarProps {
   systems: System[];
@@ -29,28 +28,22 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({
   systems,
-  popularFranchises,
-  customFranchises,
-  enabledFranchises,
   selectedCategory,
   onSelectCategory,
   gamesCountBySystem,
-  gamesCountByFranchise,
   totalAllGames,
   totalFavorites,
   totalRecent,
   gamepadConnected,
   gamepadName,
   appMode = 'admin',
-  onOpenScanner,
   onOpenSettings,
   onOpenGamepadSettings,
   onOpenKioskUnlock,
 }) => {
-  const isKiosk = appMode === 'kiosk';
-
   return (
-    <aside className="w-72 bg-retro-sidebar border-r border-retro-border flex flex-col h-full select-none shrink-0 shadow-sm z-20">
+    <aside className="w-72 bg-white/95 backdrop-blur-md border-r border-purple-100/80 flex flex-col h-full select-none shrink-0 shadow-sm z-20">
+      {/* 1. Header avec Branding Arcade */}
       <SidebarHeader
         gamepadConnected={gamepadConnected}
         gamepadName={gamepadName}
@@ -60,22 +53,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onOpenKioskUnlock={onOpenKioskUnlock}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+      {/* 2. Corps Déroulant : Bibliothèque + Consoles */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-6 scrollbar-thin">
         <SidebarNav
           selectedCategory={selectedCategory}
           onSelectCategory={onSelectCategory}
           totalAllGames={totalAllGames}
           totalFavorites={totalFavorites}
           totalRecent={totalRecent}
-        />
-
-        <SidebarFranchises
-          popularFranchises={popularFranchises}
-          customFranchises={customFranchises}
-          enabledFranchises={enabledFranchises}
-          selectedCategory={selectedCategory}
-          onSelectCategory={onSelectCategory}
-          gamesCountByFranchise={gamesCountByFranchise}
         />
 
         <SidebarSystems
@@ -86,17 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      {!isKiosk && (
-        <div className="p-4 border-t border-retro-border bg-retro-bg/40">
-          <button
-            onClick={onOpenScanner}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-retro-primary hover:text-white text-retro-text border border-retro-border hover:border-retro-primary text-xs font-bold shadow-retro hover:shadow-retro-neon transition-all"
-          >
-            <FolderSearch className="w-4 h-4 text-retro-primary group-hover:text-white" />
-            <span>Scanner Dossier de ROMs</span>
-          </button>
-        </div>
-      )}
+      {/* 3. Footer Carte v2.0 */}
+      <SidebarFooter />
     </aside>
   );
 };

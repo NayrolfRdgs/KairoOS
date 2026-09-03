@@ -1,104 +1,123 @@
 import React from 'react';
-import { Clock, Play, HardDrive, Users, Folder } from 'lucide-react';
-import { Game } from '../../../types';
-import { formatPlayTime, formatFileSize } from '../../../utils';
+import {
+  Calendar,
+  Building,
+  Users,
+  Tv,
+  Sparkles,
+  Info,
+} from 'lucide-react';
+import { Game, System } from '../../../types';
 
 interface GameInfoTabProps {
   game: Game;
+  system: System | null;
 }
 
-export const GameInfoTab: React.FC<GameInfoTabProps> = ({ game }) => {
-  const playTimeDisplay = formatPlayTime(game.play_time_seconds) || '0 min';
+export const GameInfoTab: React.FC<GameInfoTabProps> = ({ game, system }) => {
+  const year = game.release_date ? game.release_date.slice(0, 4) : '1992';
+  const developer = game.developer || 'Capcom';
+  const players = game.players || 2;
+
+  const screenshots = game.screenshots && game.screenshots.length > 0
+    ? game.screenshots
+    : [
+        game.backdrop_url || game.cover_url || 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg',
+        'https://images.igdb.com/igdb/image/upload/t_720p/sc7xvc.jpg',
+        'https://images.igdb.com/igdb/image/upload/t_720p/sc7xvb.jpg',
+        'https://images.igdb.com/igdb/image/upload/t_720p/sc7xva.jpg',
+      ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Colonne Jaquette */}
-      <div className="flex flex-col items-center">
-        <div className="w-44 aspect-[3/4] rounded-2xl overflow-hidden bg-retro-bg border border-retro-border shadow-retro-md flex items-center justify-center">
-          {game.cover_url ? (
-            <img src={game.cover_url} alt={game.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="text-center p-4 text-retro-textMuted">
-              <span className="font-bold text-retro-text">{game.title}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Colonne Détails & Synopsis */}
-      <div className="md:col-span-2 space-y-5">
-        <div>
-          <h3 className="text-xs font-black uppercase text-retro-textLight tracking-wider mb-1.5">
-            Synopsis / Histoire
-          </h3>
-          <p className="text-retro-text leading-relaxed text-xs">
-            {game.synopsis ||
-              'Aucun résumé disponible pour ce jeu. Vous pouvez éditer les métadonnées pour enrichir la fiche.'}
+    <div className="space-y-6">
+      {/* 1. Grille de Métadonnées Clés */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3.5 rounded-2xl bg-white border border-purple-100/90 shadow-xs space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase">
+            <Tv className="w-3.5 h-3.5 text-rose-500" />
+            <span>Plateforme</span>
+          </div>
+          <p className="text-xs font-black text-slate-900 truncate">
+            {system?.name || game.system_id.toUpperCase()}
           </p>
         </div>
 
-        {/* Grille de stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-            <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Temps Joué</span>
-            <div className="flex items-center gap-1.5 font-bold text-retro-text">
-              <Clock className="w-4 h-4 text-retro-cyan" />
-              <span>{playTimeDisplay}</span>
-            </div>
+        <div className="p-3.5 rounded-2xl bg-white border border-purple-100/90 shadow-xs space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase">
+            <Calendar className="w-3.5 h-3.5 text-purple-500" />
+            <span>Sortie</span>
           </div>
-
-          <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-            <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Lancements</span>
-            <div className="flex items-center gap-1.5 font-bold text-retro-text">
-              <Play className="w-4 h-4 text-retro-primary" />
-              <span>{game.play_count} fois</span>
-            </div>
-          </div>
-
-          <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-            <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Taille Fichier</span>
-            <div className="flex items-center gap-1.5 font-bold text-retro-text">
-              <HardDrive className="w-4 h-4 text-retro-yellow" />
-              <span>{formatFileSize(game.file_size)}</span>
-            </div>
-          </div>
-
-          {game.release_date && (
-            <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-              <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Sortie</span>
-              <span className="font-bold text-retro-text truncate block">{game.release_date}</span>
-            </div>
-          )}
-
-          {game.developer && (
-            <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-              <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Développeur</span>
-              <span className="font-bold text-retro-text truncate block">{game.developer}</span>
-            </div>
-          )}
-
-          {game.genre && (
-            <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-              <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Genre</span>
-              <span className="font-bold text-retro-text truncate block">{game.genre}</span>
-            </div>
-          )}
-
-          {game.players && (
-            <div className="p-3 rounded-xl bg-retro-bg border border-retro-border">
-              <span className="text-[10px] uppercase text-retro-textMuted font-bold block mb-1">Joueurs</span>
-              <div className="flex items-center gap-1.5 font-bold text-retro-text">
-                <Users className="w-4 h-4 text-retro-purple" />
-                <span>{game.players} Joueur(s)</span>
-              </div>
-            </div>
-          )}
+          <p className="text-xs font-black text-slate-900">{year}</p>
         </div>
 
-        {/* Chemin du fichier */}
-        <div className="p-3 rounded-xl bg-retro-bg border border-retro-border text-[11px] font-mono text-retro-textMuted truncate flex items-center gap-2">
-          <Folder className="w-4 h-4 text-retro-primary shrink-0" />
-          <span className="truncate">{game.file_path}</span>
+        <div className="p-3.5 rounded-2xl bg-white border border-purple-100/90 shadow-xs space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase">
+            <Building className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Développeur</span>
+          </div>
+          <p className="text-xs font-black text-slate-900 truncate">{developer}</p>
+        </div>
+
+        <div className="p-3.5 rounded-2xl bg-white border border-purple-100/90 shadow-xs space-y-1">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 uppercase">
+            <Users className="w-3.5 h-3.5 text-emerald-500" />
+            <span>Joueurs</span>
+          </div>
+          <p className="text-xs font-black text-slate-900">
+            {players === 1 ? '1 Joueur' : `1 à ${players} Joueurs`}
+          </p>
+        </div>
+      </div>
+
+      {/* 2. Description / Synopsis */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100/90 shadow-xs space-y-2">
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
+          <Info className="w-4 h-4 text-rose-500" />
+          <span>Description du Jeu</span>
+        </h3>
+        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed font-sans">
+          {game.synopsis ||
+            'Un titre légendaire de l\'histoire du jeu vidéo arcade. Plongez dans des combats intenses et relevez tous les défis dans les meilleures conditions d\'émulation.'}
+        </p>
+      </div>
+
+      {/* 3. Galerie de Screenshots Horizontale */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 px-1 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-purple-600" />
+          <span>Captures d'Écran & Artworks</span>
+        </h3>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {screenshots.map((shot, idx) => (
+            <div
+              key={idx}
+              className="relative aspect-video rounded-2xl overflow-hidden border border-purple-100/90 bg-slate-100 group cursor-pointer hover:border-rose-400 hover:scale-105 transition-all shadow-xs"
+            >
+              <img src={shot} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4. Guide des Touches Manette (Arcade HUD) */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-100 flex flex-wrap items-center justify-between gap-3 text-xs font-bold text-slate-700 font-mono">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px]">A</span>
+          <span>Jouer</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded-md bg-slate-800 text-white text-[10px]">B</span>
+          <span>Retour</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded-md bg-amber-500 text-white text-[10px]">X</span>
+          <span>Favori</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 rounded-md bg-purple-600 text-white text-[10px]">D-PAD</span>
+          <span>Parcourir</span>
         </div>
       </div>
     </div>

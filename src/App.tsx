@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { FilterBar } from './components/layout/FilterBar';
-import { GameGrid } from './components/games';
+import { ArcadeCatalog } from './components/games';
 import {
   GameDetailsModal,
   SettingsModal,
@@ -82,7 +82,7 @@ export const App: React.FC = () => {
     loadData();
   }, [loadData]);
 
-  // Raccourcis clavier globaux (F11 plein écran, Échap fermeture modales)
+  // Raccourcis clavier globaux (F11 plein écran, Échap fermeture modales, Ctrl+K focus recherche)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'F11') {
@@ -119,6 +119,15 @@ export const App: React.FC = () => {
     } catch {
       setSelectedGameForDetails(game);
       setGameConfigForDetails(null);
+    }
+  };
+
+  // Clic ou sélection sur un jeu (selon préférence configurée)
+  const handleGameCardSelect = (game: Game) => {
+    if (settings.game_select_action === 'launch') {
+      launch(game);
+    } else {
+      handleOpenDetails(game);
     }
   };
 
@@ -181,7 +190,12 @@ export const App: React.FC = () => {
           !isGameRunning &&
           filteredAndSortedGames[focusedIndex]
         ) {
-          launch(filteredAndSortedGames[focusedIndex]);
+          const game = filteredAndSortedGames[focusedIndex];
+          if (settings.game_select_action === 'launch') {
+            launch(game);
+          } else {
+            handleOpenDetails(game);
+          }
         }
       },
       onBack: () => {
@@ -231,6 +245,7 @@ export const App: React.FC = () => {
       franchiseOrganizerGame,
       isGameRunning,
       isKiosk,
+      settings.game_select_action,
       launch,
       toggleFavorite,
       setFocusedIndex,
@@ -252,9 +267,11 @@ export const App: React.FC = () => {
     primaryPlayerIndex
   );
 
+  const focusedGame = filteredAndSortedGames[focusedIndex] || null;
+
   return (
-    <div className="flex h-screen w-screen bg-retro-bg text-retro-text overflow-hidden font-sans retro-grid-bg antialiased select-none">
-      {/* 1. Navigation Latérale (Sidebar) */}
+    <div className="flex h-screen w-screen bg-[#f8f7ff] text-slate-900 overflow-hidden font-sans antialiased select-none">
+      {/* 1. Navigation Latérale Gauche (Sidebar) */}
       <Sidebar
         systems={systems}
         popularFranchises={allFranchises}
@@ -279,8 +296,8 @@ export const App: React.FC = () => {
         onOpenKioskUnlock={() => setKioskUnlockOpen(true)}
       />
 
-      {/* 2. Panneau Principal (Filtres + Grille) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      {/* 2. Panneau Principal (Barre de Recherche + Catalogue Netflix-Arcade) */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-br from-[#f8f7ff] via-white to-purple-50/30">
         <FilterBar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -294,13 +311,14 @@ export const App: React.FC = () => {
         />
 
         <main className="flex-1 flex flex-col overflow-hidden relative">
-          <GameGrid
+          <ArcadeCatalog
             games={filteredAndSortedGames}
-            focusedIndex={focusedIndex}
-            onSelectGame={handleOpenDetails}
+            focusedGameId={focusedGame?.id || null}
+            onSelectGame={handleGameCardSelect}
             onLaunchGame={launch}
             onToggleFavorite={toggleFavorite}
-            onOpenScanner={() => setScannerOpen(true)}
+            onOpenGamepadConfig={() => setGamepadSettingsOpen(true)}
+            selectedCategory={selectedCategory}
             isSearching={Boolean(searchQuery.trim() || selectedGenre)}
           />
         </main>

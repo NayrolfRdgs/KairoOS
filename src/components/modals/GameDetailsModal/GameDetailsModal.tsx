@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { X, Play, Star, FolderPlus, Info, FileJson, Sliders } from 'lucide-react';
+import {
+  X,
+  Play,
+  FolderPlus,
+  Info,
+  FileJson,
+  Sliders,
+  Heart,
+} from 'lucide-react';
 import { Emulator, Game, GameConfig, LocalGameMetadata, System } from '../../../types';
 import { GameInfoTab } from './GameInfoTab';
 import { GameMetadataTab } from './GameMetadataTab';
@@ -32,18 +40,28 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'info' | 'metadata' | 'config'>('info');
 
+  const backdrop = game.backdrop_url || game.cover_url || 'https://images.igdb.com/igdb/image/upload/t_1080p/sc7xvd.jpg';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-retro-text/40 backdrop-blur-sm animate-fadeIn select-none">
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-retro-border rounded-3xl shadow-retro-lg overflow-hidden flex flex-col">
-        {/* Banner Header */}
-        <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-gradient-to-r from-retro-primary via-retro-purple to-retro-cyan p-6 flex flex-col justify-between">
-          <div className="flex items-center justify-between z-10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/40 backdrop-blur-md animate-fadeIn select-none">
+      <div className="relative w-full max-w-4xl max-h-[92vh] bg-white border border-purple-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        {/* 1. Hero Banner Top */}
+        <div className="relative h-48 sm:h-60 w-full overflow-hidden shrink-0">
+          <img
+            src={backdrop}
+            alt={game.title}
+            className="w-full h-full object-cover object-center filter brightness-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-black/30" />
+
+          {/* Top Bar Actions */}
+          <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-black uppercase tracking-widest text-white/90 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md">
-                {system?.name || game.system_id}
+              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[11px] font-black uppercase tracking-wider font-mono border border-white/10 shadow-sm">
+                {system?.name || game.system_id.toUpperCase()}
               </span>
               {game.franchise && (
-                <span className="text-xs font-black uppercase tracking-widest text-white px-3 py-1 rounded-full bg-purple-900/40 backdrop-blur-md border border-white/20">
+                <span className="px-3 py-1 rounded-full bg-rose-500/90 text-white text-[11px] font-black uppercase tracking-wider font-mono shadow-sm">
                   {game.franchise}
                 </span>
               )}
@@ -51,95 +69,111 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-black/20 text-white hover:bg-black/40 transition-all z-20"
+              className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white transition-all shadow-md active:scale-90"
+              title="Fermer (Échap / B)"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <div className="flex items-end justify-between gap-4 z-10">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black font-display text-white tracking-wide drop-shadow-md">
+          {/* Bottom Banner Info */}
+          <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between gap-4 z-10">
+            <div className="space-y-0.5">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tight text-slate-900 leading-tight">
                 {game.title}
               </h1>
+              {game.original_title && (
+                <p className="text-xs sm:text-sm font-black text-rose-600 uppercase tracking-wider">
+                  {game.original_title}
+                </p>
+              )}
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={() => onOpenFranchiseOrganizer(game)}
-                title="Déplacer dans un dossier de franchise"
-                className="p-3 rounded-2xl bg-white/20 hover:bg-white/30 text-white border border-white/30 transition-all shadow-md"
-              >
-                <FolderPlus className="w-5 h-5" />
-              </button>
-
+            {/* Quick Actions (JOUER + FAVORIS) */}
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => onToggleFavorite(game)}
-                className={`p-3 rounded-2xl border transition-all ${
+                title={game.favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                className={`p-3 rounded-2xl border transition-all active:scale-95 ${
                   game.favorite
-                    ? 'bg-amber-400 text-white border-amber-300 shadow-md'
-                    : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
+                    ? 'bg-rose-50 border-rose-300 text-rose-500 shadow-xs'
+                    : 'bg-white border-purple-100 text-slate-400 hover:text-rose-500 hover:border-rose-200'
                 }`}
               >
-                <Star className={`w-5 h-5 ${game.favorite ? 'fill-white' : ''}`} />
+                <Heart className={`w-4 h-4 ${game.favorite ? 'fill-current text-rose-500' : ''}`} />
               </button>
 
               <button
                 onClick={() => onLaunch(game)}
-                className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white hover:bg-retro-bg text-retro-primary font-black text-sm uppercase tracking-wider shadow-lg hover:scale-105 active:scale-95 transition-all"
+                className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-rose-500/30 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
               >
-                <Play className="w-5 h-5 fill-retro-primary ml-0.5" />
-                <span>Lancer le Jeu</span>
+                <Play className="w-4 h-4 fill-white" />
+                <span>LANCER LE JEU</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-6 px-8 border-b border-retro-border bg-retro-bg/50">
-          <button
-            onClick={() => setActiveTab('info')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
-              activeTab === 'info'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
-            }`}
-          >
-            <Info className="w-3.5 h-3.5" />
-            <span>Fiche Jeu</span>
-          </button>
+        {/* 2. Navigation des Onglets */}
+        <div className="px-6 border-b border-purple-100 flex items-center justify-between gap-4 bg-white select-none shrink-0">
+          <div className="flex items-center gap-2 py-2">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'info'
+                  ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+              }`}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>Fiche du Jeu</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('metadata')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'metadata'
+                  ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+              }`}
+            >
+              <FileJson className="w-3.5 h-3.5" />
+              <span>Éditer Métadonnées</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('config')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                activeTab === 'config'
+                  ? 'bg-rose-50 text-rose-600 border border-rose-200 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-purple-50/50'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Émulateur & Shader</span>
+            </button>
+          </div>
 
           <button
-            onClick={() => setActiveTab('metadata')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
-              activeTab === 'metadata'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
-            }`}
+            onClick={() => onOpenFranchiseOrganizer(game)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-purple-100 hover:border-rose-300 text-slate-500 hover:text-rose-600 text-xs font-bold transition-all"
           >
-            <FileJson className="w-3.5 h-3.5" />
-            <span>Métadonnées Locales (.JSON)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`py-3 text-xs font-bold uppercase tracking-wider border-b-2 flex items-center gap-1.5 transition-all ${
-              activeTab === 'config'
-                ? 'border-retro-primary text-retro-primary'
-                : 'border-transparent text-retro-textMuted hover:text-retro-text'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            <span>Émulateur & CLI</span>
+            <FolderPlus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Organiser Franchise</span>
           </button>
         </div>
 
-        {/* Modal Content Area */}
-        <div className="p-6 md:p-8 overflow-y-auto flex-1 text-xs">
-          {activeTab === 'info' && <GameInfoTab game={game} />}
+        {/* 3. Contenu de l'Onglet */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin bg-gradient-to-b from-white to-purple-50/20">
+          {activeTab === 'info' && <GameInfoTab game={game} system={system} />}
+
           {activeTab === 'metadata' && (
-            <GameMetadataTab game={game} onSaveMetadata={onSaveMetadata} />
+            <GameMetadataTab
+              game={game}
+              onSaveMetadata={onSaveMetadata}
+            />
           )}
+
           {activeTab === 'config' && (
             <GameConfigTab
               game={game}

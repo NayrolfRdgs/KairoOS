@@ -27,7 +27,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   filteredCount,
 }) => {
   return (
-    <div className="bg-white border-b border-retro-border px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 select-none shrink-0 shadow-sm">
+    <div className="bg-white/80 backdrop-blur-md border-b border-purple-100/80 px-6 py-3 flex flex-wrap items-center justify-between gap-4 select-none shrink-0 shadow-xs z-10">
       <SearchInput searchQuery={searchQuery} onSearchChange={onSearchChange} />
       <SortSelector
         sortBy={sortBy}
