@@ -151,7 +151,29 @@ impl Launcher {
         emulator: &Emulator,
         config: Option<&GameConfig>,
     ) -> Result<Command, LauncherError> {
-        let rom_path = Path::new(&game.file_path);
+        // Résoudre le chemin de la ROM : absolu, ou relatif à current_dir / exe_dir
+        let rom_path_raw = Path::new(&game.file_path);
+        let rom_path: std::borrow::Cow<Path> = if rom_path_raw.is_absolute() {
+            std::borrow::Cow::Borrowed(rom_path_raw)
+        } else {
+            let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+            let candidate_cwd = current_dir.join(rom_path_raw);
+            if candidate_cwd.exists() {
+                std::borrow::Cow::Owned(candidate_cwd)
+            } else {
+                let exe_dir = std::env::current_exe()
+                    .ok()
+                    .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+                    .unwrap_or_else(|| PathBuf::from("."));
+                let candidate_exe = exe_dir.join(rom_path_raw);
+                if candidate_exe.exists() {
+                    std::borrow::Cow::Owned(candidate_exe)
+                } else {
+                    std::borrow::Cow::Borrowed(rom_path_raw)
+                }
+            }
+        };
+
         if !rom_path.exists() {
             return Err(LauncherError::RomNotFound(game.file_path.clone()));
         }
