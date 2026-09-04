@@ -20,6 +20,8 @@ export interface ThemeFonts {
   size_base: string;
 }
 
+export type ThemeLayoutType = 'sidebar_grid' | 'single_page_categories';
+
 export interface ThemeLayout {
   card_radius: string;
   sidebar_width: string;
@@ -29,6 +31,12 @@ export interface ThemeLayout {
   scanlines?: 'none' | 'light' | 'retro' | 'intense';
   card_shadow?: 'flat' | 'soft' | 'arcade' | 'glow';
   card_scale?: 'none' | 'subtle' | 'dynamic';
+  show_sidebar?: boolean;
+  show_consoles_row?: boolean;
+  show_modes_row?: boolean;
+  show_genres_row?: boolean;
+  show_favorites_row?: boolean;
+  show_all_games_row?: boolean;
 }
 
 export interface ThemeAssets {
@@ -43,6 +51,8 @@ export interface Theme {
   author: string;
   version: string;
   description: string;
+  layout_type?: ThemeLayoutType;
+  custom_css?: string;
   colors: ThemeColors;
   fonts: ThemeFonts;
   layout: ThemeLayout;

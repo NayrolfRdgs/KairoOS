@@ -351,6 +351,18 @@ pub struct ThemeLayout {
     pub card_shadow: Option<String>,
     #[serde(default)]
     pub card_scale: Option<String>,
+    #[serde(default)]
+    pub show_sidebar: Option<bool>,
+    #[serde(default)]
+    pub show_consoles_row: Option<bool>,
+    #[serde(default)]
+    pub show_modes_row: Option<bool>,
+    #[serde(default)]
+    pub show_genres_row: Option<bool>,
+    #[serde(default)]
+    pub show_favorites_row: Option<bool>,
+    #[serde(default)]
+    pub show_all_games_row: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -367,6 +379,10 @@ pub struct Theme {
     pub author: String,
     pub version: String,
     pub description: String,
+    #[serde(default)]
+    pub layout_type: Option<String>,
+    #[serde(default)]
+    pub custom_css: Option<String>,
     pub colors: ThemeColors,
     pub fonts: ThemeFonts,
     pub layout: ThemeLayout,

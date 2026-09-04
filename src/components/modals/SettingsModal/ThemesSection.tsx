@@ -21,6 +21,8 @@ import {
   RefreshCw,
   Copy,
   Layers,
+  Layout,
+  FileCode,
 } from 'lucide-react';
 import { useTheme } from '../../../hooks';
 import { openThemesFolder, downloadCommunityTheme, saveTheme } from '../../../api';
@@ -169,6 +171,8 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
     applyTheme,
     updateThemeColor,
     updateThemeLayout,
+    updateThemeLayoutType,
+    updateThemeCustomCss,
     updateThemeFont,
     updateThemeAsset,
     applyColorPreset,
@@ -1479,6 +1483,271 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Section : Disposition & Structure de la Page (Layout Engine) */}
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="p-5 rounded-3xl border shadow-xs space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layout className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+                <h3
+                  style={{ color: 'var(--text-primary)' }}
+                  className="text-xs font-black uppercase tracking-wider"
+                >
+                  Disposition & Architecture de la Page
+                </h3>
+              </div>
+              <span style={{ color: 'var(--text-muted)' }} className="text-[11px]">
+                Modèle d'affichage global
+              </span>
+            </div>
+
+            {/* Choix du mode d'agencement principal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Option 1: Classic Sidebar + Grid */}
+              <div
+                onClick={() => {
+                  updateThemeLayoutType('sidebar_grid');
+                  updateThemeLayout('show_sidebar', true);
+                }}
+                style={{
+                  backgroundColor:
+                    (activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
+                    currentLayout.show_sidebar !== false
+                      ? 'var(--bg-secondary)'
+                      : 'var(--bg-card)',
+                  borderColor:
+                    (activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
+                    currentLayout.show_sidebar !== false
+                      ? 'var(--accent-primary)'
+                      : 'var(--border-color)',
+                }}
+                className="p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-[1.01] shadow-2xs space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-black text-xs" style={{ color: 'var(--text-primary)' }}>
+                    <Layers className="w-4 h-4 text-rose-500" />
+                    <span>Classique (Menu Latéral + Grille)</span>
+                  </div>
+                  {(activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
+                    currentLayout.show_sidebar !== false && (
+                      <div
+                        style={{ backgroundColor: 'var(--accent-primary)' }}
+                        className="px-1.5 py-0.5 rounded text-[9px] font-black text-white flex items-center gap-0.5"
+                      >
+                        <Check className="w-2.5 h-2.5" />
+                        <span>Actif</span>
+                      </div>
+                    )}
+                </div>
+                <p style={{ color: 'var(--text-muted)' }} className="text-[10px] leading-relaxed">
+                  Barre latérale gauche pour naviguer entre consoles, sagas et favoris, avec grille de jeux centrale.
+                </p>
+              </div>
+
+              {/* Option 2: Single Page Categories */}
+              <div
+                onClick={() => {
+                  updateThemeLayoutType('single_page_categories');
+                  updateThemeLayout('show_sidebar', false);
+                }}
+                style={{
+                  backgroundColor:
+                    activeTheme.layout_type === 'single_page_categories' ||
+                    currentLayout.show_sidebar === false
+                      ? 'var(--bg-secondary)'
+                      : 'var(--bg-card)',
+                  borderColor:
+                    activeTheme.layout_type === 'single_page_categories' ||
+                    currentLayout.show_sidebar === false
+                      ? 'var(--accent-primary)'
+                      : 'var(--border-color)',
+                }}
+                className="p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-[1.01] shadow-2xs space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-black text-xs" style={{ color: 'var(--accent-primary)' }}>
+                    <Tv className="w-4 h-4" />
+                    <span>Hub Plein Écran (Rayonnages par Catégories)</span>
+                  </div>
+                  {(activeTheme.layout_type === 'single_page_categories' ||
+                    currentLayout.show_sidebar === false) && (
+                    <div
+                      style={{ backgroundColor: 'var(--accent-primary)' }}
+                      className="px-1.5 py-0.5 rounded text-[9px] font-black text-white flex items-center gap-0.5"
+                    >
+                      <Check className="w-2.5 h-2.5" />
+                      <span>Actif</span>
+                    </div>
+                  )}
+                </div>
+                <p style={{ color: 'var(--text-muted)' }} className="text-[10px] leading-relaxed">
+                  Page unique plein écran sans barre latérale. Présente des rayonnages horizontaux : Consoles, Modes 2 Joueurs, Sagas, Favoris.
+                </p>
+              </div>
+            </div>
+
+            {/* Toggles des Rayonnages & de la Sidebar */}
+            <div className="space-y-2 pt-2">
+              <h4
+                style={{ color: 'var(--text-muted)' }}
+                className="text-[11px] font-black uppercase tracking-wider"
+              >
+                Rayonnages et sections visibles sur la page
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                {[
+                  {
+                    key: 'show_consoles_row',
+                    label: '🕹️ Rayon Consoles & Systèmes',
+                    desc: 'Grandes tuiles interactives de sélection système',
+                    defaultVal: true,
+                  },
+                  {
+                    key: 'show_favorites_row',
+                    label: '⭐ Rayon Favoris',
+                    desc: 'Carrousel horizontal des jeux favoris',
+                    defaultVal: true,
+                  },
+                  {
+                    key: 'show_modes_row',
+                    label: '👥 Rayon Modes de Jeux',
+                    desc: '2 Joueurs, Combat, Récents',
+                    defaultVal: true,
+                  },
+                  {
+                    key: 'show_genres_row',
+                    label: '🏷️ Rayon Sagas & Franchises',
+                    desc: 'Badges de franchises (Mario, Zelda, Sonic, etc.)',
+                    defaultVal: true,
+                  },
+                  {
+                    key: 'show_all_games_row',
+                    label: '🎮 Rayon Bibliothèque Complète',
+                    desc: 'Ruban horizontal de tous les jeux',
+                    defaultVal: true,
+                  },
+                  {
+                    key: 'show_sidebar',
+                    label: '📂 Barre Latérale Gauche',
+                    desc: 'Afficher la barre latérale de navigation',
+                    defaultVal: activeTheme.layout_type !== 'single_page_categories',
+                  },
+                ].map((row) => {
+                  const isEnabled = currentLayout[row.key as keyof typeof currentLayout] !== undefined
+                    ? Boolean(currentLayout[row.key as keyof typeof currentLayout])
+                    : row.defaultVal;
+
+                  return (
+                    <div
+                      key={row.key}
+                      onClick={() => updateThemeLayout(row.key as any, !isEnabled)}
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderColor: isEnabled ? 'var(--accent-primary)' : 'var(--border-color)',
+                      }}
+                      className="p-3 rounded-2xl border flex items-center justify-between gap-2 cursor-pointer transition-all hover:border-[var(--accent-primary)]/40"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div
+                          style={{ color: 'var(--text-primary)' }}
+                          className="text-xs font-bold truncate"
+                        >
+                          {row.label}
+                        </div>
+                        <div
+                          style={{ color: 'var(--text-muted)' }}
+                          className="text-[10px] truncate"
+                        >
+                          {row.desc}
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          backgroundColor: isEnabled ? 'var(--accent-primary)' : 'var(--bg-card)',
+                          borderColor: isEnabled ? 'var(--accent-primary)' : 'var(--border-color)',
+                        }}
+                        className="w-5 h-5 rounded-lg border flex items-center justify-center shrink-0 transition-colors"
+                      >
+                        {isEnabled && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Section : Code CSS Personnalisé & Surcharges de Style */}
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="p-5 rounded-3xl border shadow-xs space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FileCode className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+                <h3
+                  style={{ color: 'var(--text-primary)' }}
+                  className="text-xs font-black uppercase tracking-wider"
+                >
+                  Code CSS Personnalisé (Injecteur en Temps Réel)
+                </h3>
+              </div>
+              <span style={{ color: 'var(--text-muted)' }} className="text-[11px]">
+                Pour les développeurs & créateurs de thèmes
+              </span>
+            </div>
+
+            <p style={{ color: 'var(--text-muted)' }} className="text-xs leading-relaxed">
+              Injectez vos propres règles CSS pour styliser ou transformer n'importe quelle partie de l'application (ex: <code>.single-page-categories</code>, <code>.game-card</code>, <code>.shelf-row</code>, <code>.console-tile</code>). Les modifications sont appliquées instantanément en direct dans l'interface sans recompiler l'application.
+            </p>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span style={{ color: 'var(--text-secondary)' }} className="text-[11px] font-mono">
+                  Éditeur CSS Live :
+                </span>
+                {activeTheme.custom_css && (
+                  <button
+                    type="button"
+                    onClick={() => updateThemeCustomCss('')}
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      color: 'var(--text-muted)',
+                      borderColor: 'var(--border-color)',
+                    }}
+                    className="px-2 py-0.5 rounded-lg border text-[10px] font-bold hover:text-red-500 transition-colors"
+                  >
+                    Vider le CSS
+                  </button>
+                )}
+              </div>
+
+              <textarea
+                value={activeTheme.custom_css || ''}
+                onChange={(e) => updateThemeCustomCss(e.target.value)}
+                placeholder={`/* Code CSS personnalisé injecté en direct */\n.single-page-categories {\n  /* personnalisation du hub */\n}\n\n.game-card {\n  /* personnalisation des tuiles de jeux */\n}`}
+                rows={7}
+                style={{
+                  backgroundColor: '#0a0a0f',
+                  color: '#4ade80',
+                  borderColor: 'var(--border-color)',
+                }}
+                className="w-full p-3.5 rounded-2xl border font-mono text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] resize-y"
+                spellCheck={false}
+              />
             </div>
           </div>
 

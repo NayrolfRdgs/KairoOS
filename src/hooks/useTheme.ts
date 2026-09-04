@@ -297,6 +297,19 @@ export function useTheme() {
     } else {
       root.style.removeProperty('--theme-bg-image');
     }
+
+    // Injection CSS personnalisé codé par l'utilisateur
+    let styleTag = document.getElementById('kairo-theme-custom-css');
+    if (theme.custom_css && theme.custom_css.trim()) {
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'kairo-theme-custom-css';
+        document.head.appendChild(styleTag);
+      }
+      styleTag.textContent = theme.custom_css;
+    } else if (styleTag) {
+      styleTag.remove();
+    }
   }, []);
 
   // Détecter si les couleurs actuelles correspondent à un preset connu
@@ -432,10 +445,44 @@ export function useTheme() {
 
   // Modification en direct d'un paramètre de disposition / style (card_radius, card_gap, etc.)
   const updateThemeLayout = useCallback(
-    (key: keyof ThemeLayout, value: string) => {
+    (key: keyof ThemeLayout, value: any) => {
       setActiveTheme((prev) => {
         const updatedLayout = { ...prev.layout, [key]: value };
         const updated = { ...prev, layout: updatedLayout };
+        injectThemeVariables(updated);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_THEME_KEY, JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
+    },
+    [injectThemeVariables]
+  );
+
+  // Modification du mode d'agencement global de la page (Sidebar ou Catégories Plein Écran)
+  const updateThemeLayoutType = useCallback(
+    (layoutType: 'sidebar_grid' | 'single_page_categories') => {
+      setActiveTheme((prev) => {
+        const updated = { ...prev, layout_type: layoutType };
+        injectThemeVariables(updated);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_THEME_KEY, JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        return updated;
+      });
+    },
+    [injectThemeVariables]
+  );
+
+  // Modification du code CSS personnalisé injecté
+  const updateThemeCustomCss = useCallback(
+    (customCss: string) => {
+      setActiveTheme((prev) => {
+        const updated = { ...prev, custom_css: customCss };
         injectThemeVariables(updated);
         try {
           localStorage.setItem(LOCAL_STORAGE_THEME_KEY, JSON.stringify(updated));
@@ -591,6 +638,8 @@ export function useTheme() {
     applyTheme,
     updateThemeColor,
     updateThemeLayout,
+    updateThemeLayoutType,
+    updateThemeCustomCss,
     updateThemeFont,
     updateThemeAsset,
     applyColorPreset,

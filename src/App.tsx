@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { GamepadFooterBar } from './components/layout/GamepadFooterBar';
+import { SinglePageCategoriesView } from './components/layout/SinglePageCategoriesView';
 import { ArcadeCatalog } from './components/games';
 import {
   GameDetailsModal,
@@ -410,6 +411,14 @@ export const App: React.FC = () => {
 
   const focusedGame = filteredAndSortedGames[focusedIndex] || null;
 
+  const favoriteGames = useMemo(() => allGames.filter((g) => g.favorite), [allGames]);
+  const twoPlayerGames = useMemo(() => allGames.filter((g) => (g.players || 1) >= 2), [allGames]);
+  const recentGames = useMemo(() => allGames.filter((g) => (g.play_count || 0) > 0 || g.last_played), [allGames]);
+
+  const isSinglePageMode =
+    themeManager.activeTheme.layout_type === 'single_page_categories' ||
+    themeManager.activeTheme.layout?.show_sidebar === false;
+
   const arcadeScaleClass = settings.arcade_ui_scale === 'large'
     ? 'arcade-scale-large'
     : settings.arcade_ui_scale === 'xl'
@@ -424,76 +433,127 @@ export const App: React.FC = () => {
       }}
       className={`flex h-screen w-screen overflow-hidden font-sans antialiased select-none ${arcadeScaleClass}`}
     >
-      {/* 1. Navigation Latérale Gauche (Sidebar) */}
-      <Sidebar
-        systems={systems}
-        popularFranchises={allFranchises}
-        customFranchises={settings.custom_franchises}
-        enabledFranchises={settings.enabled_franchises}
-        selectedCategory={selectedCategory}
-        onSelectCategory={(cat) => {
-          setSelectedCategory(cat);
-          setFocusedIndex(0);
-        }}
-        gamesCountBySystem={gamesCountBySystem}
-        gamesCountByFranchise={gamesCountByFranchise}
-        totalAllGames={allGames.length}
-        totalFavorites={totalFavorites}
-        totalRecent={totalRecent}
-        total2Players={total2Players}
-        totalFightGames={totalFightGames}
-        totalPlatformGames={totalPlatformGames}
-        enabledSystems={settings.enabled_systems}
-        enabledModes={settings.enabled_modes}
-        gamepadConnected={gamepadConnected}
-        gamepadName={gamepadName}
-        appMode={appMode}
-        onOpenScanner={() => setScannerOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenGamepadSettings={() => setGamepadSettingsOpen(true)}
-        onOpenKioskUnlock={() => setKioskUnlockOpen(true)}
-        onOpenAddGame={() => setAddGameOpen(true)}
-      />
-
-      {/* 2. Panneau Principal (Catalogue Plein Écran) */}
-      <div
-        style={{
-          backgroundColor: 'var(--bg-primary)',
-        }}
-        className="flex-1 flex flex-col h-full overflow-hidden"
-      >
-        <main className="flex-1 flex flex-col overflow-hidden relative">
-          <ArcadeCatalog
-            games={filteredAndSortedGames}
+      {isSinglePageMode ? (
+        <div
+          style={{
+            backgroundColor: 'var(--bg-primary)',
+          }}
+          className="flex-1 flex flex-col h-full overflow-hidden"
+        >
+          <SinglePageCategoriesView
+            systems={systems}
+            allGames={allGames}
+            allFranchises={allFranchises}
+            favoriteGames={favoriteGames}
+            twoPlayerGames={twoPlayerGames}
+            recentGames={recentGames}
             focusedGameId={focusedGame?.id || null}
             onSelectGame={handleGameCardSelect}
             onLaunchGame={launch}
             onToggleFavorite={toggleFavorite}
-            onOpenGamepadConfig={() => setGamepadSettingsOpen(true)}
-            selectedCategory={selectedCategory}
-            isSearching={false}
-            categoryTitle={currentCategoryTitle}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenGamepadSettings={() => setGamepadSettingsOpen(true)}
+            onOpenScanner={() => setScannerOpen(true)}
+            onOpenAddGame={() => setAddGameOpen(true)}
+            onOpenKioskUnlock={() => setKioskUnlockOpen(true)}
+            gamepadConnected={gamepadConnected}
+            gamepadName={gamepadName}
+            appMode={appMode}
+            theme={themeManager.activeTheme}
           />
-        </main>
 
-        {/* 2.1 Barre d'Aide Manette (Xbox / PlayStation) */}
-        <GamepadFooterBar
-          buttonStyle={settings.button_prompt_style || 'xbox'}
-          isGameRunning={isGameRunning}
-          isDetailsModalOpen={Boolean(selectedGameForDetails)}
-          isOtherModalOpen={Boolean(
-            scannerOpen ||
-            settingsOpen ||
-            addGameOpen ||
-            gamepadSettingsOpen ||
-            kioskUnlockOpen ||
-            franchiseOrganizerGame
-          )}
-          gameSelectAction={settings.game_select_action || 'details'}
-          isConnected={gamepadConnected}
-          gamepadName={gamepadName}
-        />
-      </div>
+          {/* Barre d'Aide Manette (Xbox / PlayStation) */}
+          <GamepadFooterBar
+            buttonStyle={settings.button_prompt_style || 'xbox'}
+            isGameRunning={isGameRunning}
+            isDetailsModalOpen={Boolean(selectedGameForDetails)}
+            isOtherModalOpen={Boolean(
+              scannerOpen ||
+              settingsOpen ||
+              addGameOpen ||
+              gamepadSettingsOpen ||
+              kioskUnlockOpen ||
+              franchiseOrganizerGame
+            )}
+            gameSelectAction={settings.game_select_action || 'details'}
+            isConnected={gamepadConnected}
+            gamepadName={gamepadName}
+          />
+        </div>
+      ) : (
+        <>
+          {/* 1. Navigation Latérale Gauche (Sidebar) */}
+          <Sidebar
+            systems={systems}
+            popularFranchises={allFranchises}
+            customFranchises={settings.custom_franchises}
+            enabledFranchises={settings.enabled_franchises}
+            selectedCategory={selectedCategory}
+            onSelectCategory={(cat) => {
+              setSelectedCategory(cat);
+              setFocusedIndex(0);
+            }}
+            gamesCountBySystem={gamesCountBySystem}
+            gamesCountByFranchise={gamesCountByFranchise}
+            totalAllGames={allGames.length}
+            totalFavorites={totalFavorites}
+            totalRecent={totalRecent}
+            total2Players={total2Players}
+            totalFightGames={totalFightGames}
+            totalPlatformGames={totalPlatformGames}
+            enabledSystems={settings.enabled_systems}
+            enabledModes={settings.enabled_modes}
+            gamepadConnected={gamepadConnected}
+            gamepadName={gamepadName}
+            appMode={appMode}
+            onOpenScanner={() => setScannerOpen(true)}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenGamepadSettings={() => setGamepadSettingsOpen(true)}
+            onOpenKioskUnlock={() => setKioskUnlockOpen(true)}
+            onOpenAddGame={() => setAddGameOpen(true)}
+          />
+
+          {/* 2. Panneau Principal (Catalogue Plein Écran) */}
+          <div
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+            }}
+            className="flex-1 flex flex-col h-full overflow-hidden"
+          >
+            <main className="flex-1 flex flex-col overflow-hidden relative">
+              <ArcadeCatalog
+                games={filteredAndSortedGames}
+                focusedGameId={focusedGame?.id || null}
+                onSelectGame={handleGameCardSelect}
+                onLaunchGame={launch}
+                onToggleFavorite={toggleFavorite}
+                onOpenGamepadConfig={() => setGamepadSettingsOpen(true)}
+                selectedCategory={selectedCategory}
+                isSearching={false}
+                categoryTitle={currentCategoryTitle}
+              />
+            </main>
+
+            {/* 2.1 Barre d'Aide Manette (Xbox / PlayStation) */}
+            <GamepadFooterBar
+              buttonStyle={settings.button_prompt_style || 'xbox'}
+              isGameRunning={isGameRunning}
+              isDetailsModalOpen={Boolean(selectedGameForDetails)}
+              isOtherModalOpen={Boolean(
+                scannerOpen ||
+                settingsOpen ||
+                addGameOpen ||
+                gamepadSettingsOpen ||
+                kioskUnlockOpen ||
+                franchiseOrganizerGame
+              )}
+              gameSelectAction={settings.game_select_action || 'details'}
+              isConnected={gamepadConnected}
+              gamepadName={gamepadName}
+            />
+          </div>
+        </>
+      )}
 
       {/* 3. Modales & Overlays */}
       {selectedGameForDetails && (
