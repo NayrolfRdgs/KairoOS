@@ -47,74 +47,154 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
   const [isWizardActive, setIsWizardActive] = useState<boolean>(false);
   const [wizardStep, setWizardStep] = useState<number>(0);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [pendingInput, setPendingInput] = useState<string | null>(null);
 
   const currentMapping = mappings[selectedPlayer] || DEFAULT_GAMEPAD_MAPPING(selectedPlayer);
   const currentAssignedIndex = assignedPadIndices[selectedPlayer] ?? selectedPlayer;
   const activeGamepad = connectedPads[currentAssignedIndex] || null;
   const currentRemapSteps = REMAP_STEPS_BY_TYPE[currentMapping.controller_type] || REMAP_STEPS_BY_TYPE.arcade_stick;
 
-  // Verrouillage strict : bloquer la propagation des touches vers l'arrière-plan
+  const currentStep = currentRemapSteps[wizardStep];
+  const pendingInputRef = useRef<string | null>(null);
+  pendingInputRef.current = pendingInput;
+
+  const waitingForReleaseRef = useRef<boolean>(false);
+  const confirmedButton1Ref = useRef<string | null>(null);
+
+  // Valider et enregistrer la touche sélectionnée
+  const handleConfirmStep = useCallback(() => {
+    const inputToSave = pendingInputRef.current;
+    if (!inputToSave || !currentStep) return;
+
+    if (currentStep.key === 'btn_a') {
+      confirmedButton1Ref.current = inputToSave;
+    }
+
+    setMappings((prev) => {
+      const next = [...prev];
+      const target = { ...next[selectedPlayer] };
+      (target as any)[currentStep.key] = inputToSave;
+      if (activeGamepad?.id) {
+        target.device_name = activeGamepad.id;
+      }
+      next[selectedPlayer] = target;
+      return next;
+    });
+
+    setPendingInput(null);
+    waitingForReleaseRef.current = true;
+
+    if (wizardStep + 1 < currentRemapSteps.length) {
+      setWizardStep((s) => s + 1);
+    } else {
+      setIsWizardActive(false);
+      setWizardStep(0);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    }
+  }, [currentStep, wizardStep, currentRemapSteps.length, selectedPlayer, activeGamepad]);
+
+  // Passer la touche sans l'assigner
+  const handleSkipStep = useCallback(() => {
+    setPendingInput(null);
+    waitingForReleaseRef.current = true;
+    if (wizardStep + 1 < currentRemapSteps.length) {
+      setWizardStep((s) => s + 1);
+    } else {
+      setIsWizardActive(false);
+      setWizardStep(0);
+    }
+  }, [wizardStep, currentRemapSteps.length]);
+
+  // Gestion du clavier dans la modale et l'assistant
   useEffect(() => {
     const handleModalKeyDown = (e: KeyboardEvent) => {
       e.stopPropagation();
-      if (e.key === 'Escape' && !isWizardActive) {
-        onClose();
+      if (isWizardActive) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (pendingInputRef.current) {
+            handleConfirmStep();
+          }
+        } else if (e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          handleSkipStep();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setIsWizardActive(false);
+          setPendingInput(null);
+        }
+      } else {
+        if (e.key === 'Escape') {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleModalKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', handleModalKeyDown, { capture: true });
-  }, [isWizardActive, onClose]);
-
-  const lastPressedRef = useRef<number | null>(null);
+  }, [isWizardActive, handleConfirmStep, handleSkipStep, onClose]);
 
   const handleWizardInput = useCallback(
-    (pad: Gamepad, pressed: Set<number>, axisX: number, axisY: number) => {
-      const currentStep = currentRemapSteps[wizardStep];
+    (_pad: Gamepad, pressed: Set<number>, axisX: number, axisY: number) => {
       if (!currentStep) return;
 
-      let detectedInput: string | null = null;
+      const isNeutral =
+        pressed.size === 0 &&
+        Math.abs(axisX) < 0.35 &&
+        Math.abs(axisY) < 0.35;
 
-      // Détection des boutons
+      // Attendre que tout soit relâché avant d'accepter une nouvelle entrée
+      if (waitingForReleaseRef.current) {
+        if (isNeutral) {
+          waitingForReleaseRef.current = false;
+        }
+        return;
+      }
+
+      // Bouton 1 de validation (soit celui configuré au début, soit celui existant, soit "0")
+      const currentBtn1 = confirmedButton1Ref.current || currentMapping.btn_a || '0';
+
+      // 1. Boutons physiques
       for (const btnIndex of pressed) {
-        if (lastPressedRef.current !== btnIndex) {
-          detectedInput = btnIndex.toString();
-          lastPressedRef.current = btnIndex;
-          break;
+        const btnStr = btnIndex.toString();
+
+        if (pendingInputRef.current !== null) {
+          // Étape 1 (btn_a) : réappuyer sur la même touche valide le bouton 1 !
+          if (currentStep.key === 'btn_a' && pendingInputRef.current === btnStr) {
+            handleConfirmStep();
+            return;
+          }
+          // Étapes suivantes : appuyer sur Bouton 1 valide la sélection !
+          if (currentStep.key !== 'btn_a' && btnStr === currentBtn1) {
+            handleConfirmStep();
+            return;
+          }
+          // Changer la touche candidate si on appuie sur un autre bouton
+          if (pendingInputRef.current !== btnStr && btnStr !== currentBtn1) {
+            setPendingInput(btnStr);
+            return;
+          }
+        } else {
+          setPendingInput(btnStr);
+          return;
         }
       }
 
-      // Détection des axes pour les directions
-      if (!detectedInput) {
-        if (currentStep.key === 'btn_up' && axisY < -0.5) detectedInput = 'h0up';
-        if (currentStep.key === 'btn_down' && axisY > 0.5) detectedInput = 'h0down';
-        if (currentStep.key === 'btn_left' && axisX < -0.5) detectedInput = 'h0left';
-        if (currentStep.key === 'btn_right' && axisX > 0.5) detectedInput = 'h0right';
-      }
+      // 2. Détection directionnelle du Joystick
+      const isDirectionStep = ['btn_up', 'btn_down', 'btn_left', 'btn_right'].includes(currentStep.key);
+      if (isDirectionStep) {
+        let dirDetected: string | null = null;
+        if (currentStep.key === 'btn_up' && axisY < -0.55) dirDetected = 'h0up';
+        if (currentStep.key === 'btn_down' && axisY > 0.55) dirDetected = 'h0down';
+        if (currentStep.key === 'btn_left' && axisX < -0.55) dirDetected = 'h0left';
+        if (currentStep.key === 'btn_right' && axisX > 0.55) dirDetected = 'h0right';
 
-      if (detectedInput) {
-        setMappings((prev) => {
-          const next = [...prev];
-          const target = { ...next[selectedPlayer] };
-          (target as any)[currentStep.key] = detectedInput;
-          target.device_name = pad.id || target.device_name;
-          next[selectedPlayer] = target;
-          return next;
-        });
-
-        setTimeout(() => {
-          if (wizardStep + 1 < currentRemapSteps.length) {
-            setWizardStep((s) => s + 1);
-            lastPressedRef.current = null;
-          } else {
-            setIsWizardActive(false);
-            setWizardStep(0);
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 3000);
-          }
-        }, 300);
+        if (dirDetected && pendingInputRef.current !== dirDetected) {
+          setPendingInput(dirDetected);
+        }
       }
     },
-    [wizardStep, selectedPlayer, currentRemapSteps]
+    [currentStep, currentMapping.btn_a, handleConfirmStep]
   );
 
   // Polling des manettes physiques
@@ -340,14 +420,13 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
               currentStep={currentRemapSteps[wizardStep]}
               wizardStep={wizardStep}
               totalSteps={currentRemapSteps.length}
-              onSkipStep={() => {
-                if (wizardStep + 1 < currentRemapSteps.length) {
-                  setWizardStep((s) => s + 1);
-                } else {
-                  setIsWizardActive(false);
-                }
+              pendingInput={pendingInput}
+              onConfirmStep={handleConfirmStep}
+              onSkipStep={handleSkipStep}
+              onCancel={() => {
+                setIsWizardActive(false);
+                setPendingInput(null);
               }}
-              onCancel={() => setIsWizardActive(false)}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
