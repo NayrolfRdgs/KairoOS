@@ -60,6 +60,7 @@ mod tests {
         let db = Database::open_in_memory().expect("Échec DB");
         let p1 = GamepadMapping {
             player_index: 0,
+            physical_joypad_index: Some(0),
             device_name: "DragonRise Generic USB Joystick P1".into(),
             device_id: "pad_0".into(),
             controller_type: "arcade_stick".into(),
@@ -82,6 +83,7 @@ mod tests {
         };
         let p2 = GamepadMapping {
             player_index: 1,
+            physical_joypad_index: Some(1),
             device_name: "DragonRise Generic USB Joystick P2".into(),
             device_id: "pad_1".into(),
             controller_type: "arcade_stick".into(),

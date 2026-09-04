@@ -581,24 +581,40 @@ impl Database {
             "input_joypad_driver = \"dinput\"".into(),
         ];
 
-        // Global hotkey from Player 1
+        // Global hotkey: COIN (Select) est la touche d'activation, START est la touche pour quitter !
+        // Combo Universel Borne d'Arcade : Maintenir COIN + appuyer sur START = QUITTER
         let p1_opt = mappings.iter().find(|m| m.player_index == 0);
-        let hotkey_btn = p1_opt
-            .and_then(|m| m.btn_hotkey.as_ref().or(m.btn_select.as_ref()))
+        let coin_btn = p1_opt
+            .and_then(|m| m.btn_select.as_ref())
             .cloned()
-            .unwrap_or_else(|| "8".to_string());
+            .unwrap_or_else(|| "1".to_string());
         let exit_btn = p1_opt
             .and_then(|m| m.btn_start.as_ref())
             .cloned()
+            .unwrap_or_else(|| "2".to_string());
+        let menu_btn = p1_opt
+            .and_then(|m| m.btn_x.as_ref().or(m.btn_hotkey.as_ref()))
+            .cloned()
             .unwrap_or_else(|| "9".to_string());
 
-        retro_lines.push(format!("input_enable_hotkey_btn = \"{}\"", hotkey_btn));
+        retro_lines.push(format!("input_enable_hotkey_btn = \"{}\"", coin_btn));
         retro_lines.push(format!("input_exit_emulator_btn = \"{}\"", exit_btn));
+        retro_lines.push(format!("input_menu_toggle_btn = \"{}\"", menu_btn));
+        retro_lines.push("input_menu_toggle_gamepad_combo = \"5\"".into()); // Maintenir START 2 secondes
+        retro_lines.push("all_users_control_menu = \"true\"".into());
         retro_lines.push("input_exit_emulator = \"escape\"".into());
 
         for m in mappings {
             let p = m.player_index + 1; // 1 à 10
-            let joy_idx = m.player_index; // 0 pour P1, 1 pour P2
+
+            // Résolution précise de l'index USB matériel (évite l'inversion J1 et J2)
+            let joy_idx = m.physical_joypad_index.unwrap_or_else(|| {
+                if let Some(stripped) = m.device_id.strip_prefix("pad_hw_") {
+                    stripped.parse::<usize>().unwrap_or(m.player_index)
+                } else {
+                    m.player_index
+                }
+            });
 
             // DISSOCIATION ABSOLUE DES MANETTES : Index physique unique par joueur !
             retro_lines.push(format!("input_player{}_joypad_index = \"{}\"", p, joy_idx));
@@ -678,6 +694,10 @@ impl Database {
                             !trimmed.starts_with("input_player")
                                 && !trimmed.starts_with("input_enable_hotkey_btn")
                                 && !trimmed.starts_with("input_exit_emulator_btn")
+                                && !trimmed.starts_with("input_menu_toggle_btn")
+                                && !trimmed.starts_with("input_menu_toggle_gamepad_combo")
+                                && !trimmed.starts_with("all_users_control_menu")
+                                && !trimmed.starts_with("input_exit_emulator")
                                 && !trimmed.starts_with("input_autodetect_enable")
                                 && !trimmed.starts_with("input_joypad_driver")
                                 && !trimmed.starts_with("# KaïroOS Arcade Station")

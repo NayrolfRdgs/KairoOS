@@ -2,6 +2,7 @@ import { ControllerType, GamepadMapping, RemapStep } from '../types';
 
 export const DEFAULT_GAMEPAD_MAPPING = (playerIndex: number): GamepadMapping => ({
   player_index: playerIndex,
+  physical_joypad_index: playerIndex,
   device_name: `Contrôleur Joueur ${playerIndex + 1}`,
   device_id: `pad_${playerIndex}`,
   controller_type: 'arcade_stick',
@@ -27,13 +28,12 @@ export const REMAP_STEPS_BY_TYPE: Record<ControllerType, RemapStep[]> = {
   arcade_stick: [
     { key: 'btn_a', label: 'BOUTON 1 (A / Valider)', icon: '🔴', desc: 'Bouton 1 de votre borne arcade' },
     { key: 'btn_b', label: 'BOUTON 2 (B / Retour)', icon: '🔵', desc: 'Bouton 2 de votre borne arcade' },
-    { key: 'btn_x', label: 'BOUTON 3 (X)', icon: '🟡', desc: 'Bouton 3 de votre borne arcade' },
+    { key: 'btn_x', label: 'BOUTON 3 (X / Menu)', icon: '🟡', desc: 'Bouton 3 (Menu avec Coin)' },
     { key: 'btn_y', label: 'BOUTON 4 (Y)', icon: '🟢', desc: 'Bouton 4 de votre borne arcade' },
     { key: 'btn_l1', label: 'BOUTON 5 (L1)', icon: '🟣', desc: 'Bouton 5 de votre borne arcade' },
     { key: 'btn_r1', label: 'BOUTON 6 (R1)', icon: '🟠', desc: 'Bouton 6 de votre borne arcade' },
-    { key: 'btn_select', label: 'COIN / CRÉDIT 🪙', icon: '🪙', desc: 'Bouton Insérer une Pièce / Crédit Arcade' },
-    { key: 'btn_start', label: 'START 🕹️ (1P Start)', icon: '🚀', desc: 'Bouton Lancer Partie Joueur' },
-    { key: 'btn_hotkey', label: 'HOTKEY MENU / QUITTER', icon: '⚙️', desc: 'Bouton pour quitter le jeu vers KaïroOS' },
+    { key: 'btn_select', label: 'COIN / CRÉDIT 🪙', icon: '🪙', desc: 'Insérer Pièce (Maintenir avec Start pour Quitter)' },
+    { key: 'btn_start', label: 'START 🕹️ (Lancer)', icon: '🚀', desc: 'Lancer Partie (Appuyer avec Coin pour Quitter)' },
     { key: 'btn_up', label: 'JOYSTICK HAUT', icon: '⬆️', desc: 'Poussez le joystick vers le haut' },
     { key: 'btn_down', label: 'JOYSTICK BAS', icon: '⬇️', desc: 'Poussez le joystick vers le bas' },
     { key: 'btn_left', label: 'JOYSTICK GAUCHE', icon: '⬅️', desc: 'Poussez le joystick vers la gauche' },

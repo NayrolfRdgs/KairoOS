@@ -116,6 +116,8 @@ pub struct GamepadMapping {
     pub btn_select: Option<String>,   // Select / Coin / Crédit 🪙
     pub btn_start: Option<String>,    // Start / 1P Start 🕹️
     pub btn_hotkey: Option<String>,   // Quitter / Menu Hotkey
+    #[serde(default)]
+    pub physical_joypad_index: Option<usize>, // Index matériel USB DirectInput (Port 0, 1...)
     pub deadzone: f32,
 }
 
@@ -123,6 +125,7 @@ impl Default for GamepadMapping {
     fn default() -> Self {
         Self {
             player_index: 0,
+            physical_joypad_index: Some(0),
             device_name: "Arcade Stick / Gamepad 1".into(),
             device_id: "default_pad_0".into(),
             controller_type: "arcade_stick".into(),

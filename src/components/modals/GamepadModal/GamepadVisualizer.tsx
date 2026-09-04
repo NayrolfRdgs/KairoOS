@@ -246,58 +246,48 @@ export const GamepadVisualizer: React.FC<GamepadVisualizerProps> = ({
               </div>
             </div>
 
-            {/* Boutons Système Start & Coin & Hotkey */}
-            <div className="flex items-center justify-center gap-3 pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onSelectKeyToEdit('btn_select')}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  editingKey === 'btn_select'
-                    ? 'bg-amber-500 text-white border-white ring-2 ring-amber-400 animate-pulse'
-                    : isKeyActive(currentMapping.btn_select)
-                    ? 'bg-amber-500 text-white border-white shadow-md shadow-amber-500/50 scale-105'
-                    : 'bg-black/60 text-white/70 border-white/20 hover:border-amber-400'
-                }`}
-              >
-                <span>🪙 COIN</span>
-                <span className="text-[9px] font-mono opacity-80">
-                  ({formatShortSignal(currentMapping.btn_select)})
-                </span>
-              </button>
+            {/* Boutons Système Start & Coin */}
+            <div className="pt-2 border-t border-white/10 flex flex-col items-center gap-2">
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onSelectKeyToEdit('btn_select')}
+                  className={`px-3.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    editingKey === 'btn_select'
+                      ? 'bg-amber-500 text-white border-white ring-2 ring-amber-400 animate-pulse'
+                      : isKeyActive(currentMapping.btn_select)
+                      ? 'bg-amber-500 text-white border-white shadow-md shadow-amber-500/50 scale-105'
+                      : 'bg-black/60 text-white/70 border-white/20 hover:border-amber-400'
+                  }`}
+                >
+                  <span>🪙 COIN</span>
+                  <span className="text-[9px] font-mono opacity-80">
+                    ({formatShortSignal(currentMapping.btn_select)})
+                  </span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => onSelectKeyToEdit('btn_start')}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  editingKey === 'btn_start'
-                    ? 'bg-amber-500 text-white border-white ring-2 ring-amber-400 animate-pulse'
-                    : isKeyActive(currentMapping.btn_start)
-                    ? 'bg-emerald-500 text-white border-white shadow-md shadow-emerald-500/50 scale-105'
-                    : 'bg-black/60 text-white/70 border-white/20 hover:border-emerald-400'
-                }`}
-              >
-                <span>🕹️ 1P START</span>
-                <span className="text-[9px] font-mono opacity-80">
-                  ({formatShortSignal(currentMapping.btn_start)})
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onSelectKeyToEdit('btn_start')}
+                  className={`px-3.5 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    editingKey === 'btn_start'
+                      ? 'bg-amber-500 text-white border-white ring-2 ring-amber-400 animate-pulse'
+                      : isKeyActive(currentMapping.btn_start)
+                      ? 'bg-emerald-500 text-white border-white shadow-md shadow-emerald-500/50 scale-105'
+                      : 'bg-black/60 text-white/70 border-white/20 hover:border-emerald-400'
+                  }`}
+                >
+                  <span>🕹️ START</span>
+                  <span className="text-[9px] font-mono opacity-80">
+                    ({formatShortSignal(currentMapping.btn_start)})
+                  </span>
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => onSelectKeyToEdit('btn_hotkey')}
-                className={`px-3 py-1.5 rounded-xl border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  editingKey === 'btn_hotkey'
-                    ? 'bg-amber-500 text-white border-white ring-2 ring-amber-400 animate-pulse'
-                    : isKeyActive(currentMapping.btn_hotkey)
-                    ? 'bg-rose-500 text-white border-white shadow-md shadow-rose-500/50 scale-105'
-                    : 'bg-black/60 text-white/70 border-white/20 hover:border-rose-400'
-                }`}
-              >
-                <span>⚙️ MENU</span>
-                <span className="text-[9px] font-mono opacity-80">
-                  ({formatShortSignal(currentMapping.btn_hotkey)})
-                </span>
-              </button>
+              <div className="text-[10px] text-slate-400 flex items-center gap-1 text-center font-medium">
+                <span className="text-amber-400 font-bold">💡 Raccourci Arcade :</span>
+                <span>Maintenir <b className="text-white">COIN + START</b> = Quitter le jeu</span>
+              </div>
             </div>
           </div>
         )}

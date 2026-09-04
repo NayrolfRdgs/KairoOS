@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Gamepad2, CheckCircle2, Save } from 'lucide-react';
+import { X, Gamepad2, CheckCircle2, Save, RefreshCw } from 'lucide-react';
 import { ControllerType, GamepadMapping } from '../../../types';
 import { DEFAULT_GAMEPAD_MAPPING, REMAP_STEPS_BY_TYPE } from '../../../constants';
 import { PlayerSelector } from './PlayerSelector';
@@ -45,12 +45,27 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         }
         return list;
       });
+      setAssignedPadIndices((prevIndices) => {
+        const rec = { ...prevIndices };
+        for (let i = 0; i < 10; i++) {
+          const found = initialMappings.find((m) => m.player_index === i);
+          if (found?.physical_joypad_index !== undefined) {
+            rec[i] = found.physical_joypad_index;
+          }
+        }
+        return rec;
+      });
     }
   }, [initialMappings]);
 
   const [connectedPads, setConnectedPads] = useState<Gamepad[]>([]);
-  const [assignedPadIndices, setAssignedPadIndices] = useState<Record<number, number>>({
-    0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
+  const [assignedPadIndices, setAssignedPadIndices] = useState<Record<number, number>>(() => {
+    const rec: Record<number, number> = {};
+    for (let i = 0; i < 10; i++) {
+      const found = initialMappings.find((m) => m.player_index === i);
+      rec[i] = found?.physical_joypad_index ?? i;
+    }
+    return rec;
   });
 
   const [activeButtons, setActiveButtons] = useState<Set<number>>(new Set());
@@ -317,17 +332,63 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
       [selectedPlayer]: padIdx,
     }));
     const pad = connectedPads.find((p) => p.index === padIdx) || connectedPads[padIdx];
-    if (pad) {
-      setMappings((prev) => {
-        const next = [...prev];
-        next[selectedPlayer] = {
-          ...next[selectedPlayer],
-          device_name: pad.id,
-          device_id: `pad_hw_${pad.index}`,
-        };
-        return next;
-      });
-    }
+    setMappings((prev) => {
+      const next = [...prev];
+      next[selectedPlayer] = {
+        ...next[selectedPlayer],
+        physical_joypad_index: padIdx,
+        device_name: pad ? pad.id : next[selectedPlayer].device_name,
+        device_id: `pad_hw_${padIdx}`,
+      };
+      if (onSaveMappings) {
+        onSaveMappings(next);
+      }
+      return next;
+    });
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
+
+  // Intervertir en 1 clic Joueur 1 et Joueur 2
+  const handleSwapP1P2 = () => {
+    const p1CurrentPad = assignedPadIndices[0] ?? (mappings[0]?.physical_joypad_index ?? 0);
+    const p2CurrentPad = assignedPadIndices[1] ?? (mappings[1]?.physical_joypad_index ?? 1);
+
+    const newP1Pad = p2CurrentPad;
+    const newP2Pad = p1CurrentPad;
+
+    setAssignedPadIndices((indices) => ({
+      ...indices,
+      0: newP1Pad,
+      1: newP2Pad,
+    }));
+
+    const pad1 = connectedPads.find((p) => p.index === newP1Pad) || connectedPads[newP1Pad];
+    const pad2 = connectedPads.find((p) => p.index === newP2Pad) || connectedPads[newP2Pad];
+
+    setMappings((prev) => {
+      const next = [...prev];
+      next[0] = {
+        ...next[0],
+        physical_joypad_index: newP1Pad,
+        device_id: `pad_hw_${newP1Pad}`,
+        device_name: pad1 ? pad1.id : next[0].device_name,
+      };
+      next[1] = {
+        ...next[1],
+        physical_joypad_index: newP2Pad,
+        device_id: `pad_hw_${newP2Pad}`,
+        device_name: pad2 ? pad2.id : next[1].device_name,
+      };
+
+      if (onSaveMappings) {
+        onSaveMappings(next);
+      }
+      return next;
+    });
+
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2500);
   };
 
   const handleSetPrimary = (playerIdx: number) => {
@@ -515,6 +576,20 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
                         </option>
                       ))}
                     </select>
+
+                    <button
+                      type="button"
+                      onClick={handleSwapP1P2}
+                      title="Intervertir immédiatement les manettes physiques Joueur 1 et Joueur 2"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-100 hover:bg-purple-200 active:scale-95 text-purple-900 text-xs font-bold border border-purple-300 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      <RefreshCw size={13} className="text-purple-700" />
+                      <span>Inverser J1 ↔ J2</span>
+                    </button>
+                  </div>
+                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200/80 text-[11px] text-amber-900 leading-snug">
+                    🕹️ <strong>Raccourcis Borne d'Arcade :</strong> Pour <strong>quitter un jeu</strong>, maintenez <strong>COIN + START</strong>.
+                    Pour le <strong>menu en jeu (J1)</strong> : maintenez <strong>START pendant 2 secondes</strong> ou faites <strong>COIN + Bouton 3</strong>.
                   </div>
                   {connectedPads.length === 1 && (
                     <p className="text-[11px] text-amber-600 font-medium">

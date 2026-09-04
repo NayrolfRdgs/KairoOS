@@ -20,6 +20,7 @@ export interface GamepadMapping {
   btn_select?: string; // Coin / Crédit 🪙
   btn_start?: string;  // Start 🕹️
   btn_hotkey?: string; // Quitter / Hotkey
+  physical_joypad_index?: number; // Port USB matériel (0, 1...)
   deadzone: number;
 }
 
