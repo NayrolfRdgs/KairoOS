@@ -577,7 +577,8 @@ impl Database {
     fn sync_gamepads_to_retroarch(&self, mappings: &[crate::models::GamepadMapping]) {
         let mut retro_lines = vec![
             "# KaïroOS Arcade Station — Gamepad Mappings (Auto-Generated)".to_string(),
-            "input_autodetect_enable = \"true\"".into(),
+            "input_autodetect_enable = \"false\"".into(),
+            "input_joypad_driver = \"dinput\"".into(),
         ];
 
         // Global hotkey from Player 1
@@ -677,6 +678,8 @@ impl Database {
                             !trimmed.starts_with("input_player")
                                 && !trimmed.starts_with("input_enable_hotkey_btn")
                                 && !trimmed.starts_with("input_exit_emulator_btn")
+                                && !trimmed.starts_with("input_autodetect_enable")
+                                && !trimmed.starts_with("input_joypad_driver")
                                 && !trimmed.starts_with("# KaïroOS Arcade Station")
                         })
                         .map(|l| l.to_string())

@@ -2,12 +2,18 @@
   "fullscreen": true,
   "always_on_top": false,
   "kiosk_mode": false,
-  "enabled_franchises": [],
+  "enabled_franchises": [
+    "zelda"
+  ],
   "custom_franchises": [],
   "roms_path": "./roms",
   "theme": "cyber-purple",
-  "enabled_systems": [],
-  "enabled_modes": [],
+  "enabled_systems": [
+    "n64"
+  ],
+  "enabled_modes": [
+    "2-players"
+  ],
   "default_sort": "recent",
   "auto_kiosk": false,
   "game_select_action": "details",

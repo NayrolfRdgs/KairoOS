@@ -319,25 +319,21 @@ impl Launcher {
         let app_settings = self.db.get_app_settings().unwrap_or_default();
         let is_retroarch = emulator.id.to_lowercase() == "retroarch";
 
-        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-        let exe_dir = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-            .unwrap_or_else(|| PathBuf::from("."));
-
         if is_retroarch {
             // Configuration manettes prioritaire (dissociation P1/P2 & boutons d'arcade)
-            let append_candidates = [
-                PathBuf::from("emulators/RetroArch/kairo_gamepads.cfg"),
-                PathBuf::from("emulators/retroarch/kairo_gamepads.cfg"),
-                PathBuf::from("dist-portable/emulators/RetroArch/kairo_gamepads.cfg"),
-                exe_dir.join("emulators/RetroArch/kairo_gamepads.cfg"),
-                current_dir.join("emulators/RetroArch/kairo_gamepads.cfg"),
-            ];
-            for append_path in &append_candidates {
-                if append_path.exists() {
-                    cmd.arg(format!("--appendconfig={}", append_path.display()));
-                    break;
+            if let Some(emu_dir) = clean_exe_path.parent() {
+                let local_cfg = emu_dir.join("kairo_gamepads.cfg");
+                if local_cfg.exists() {
+                    let s = local_cfg
+                        .canonicalize()
+                        .map(|c| c.to_string_lossy().to_string())
+                        .unwrap_or_else(|_| local_cfg.to_string_lossy().to_string());
+                    let clean = s.strip_prefix(r"\\?\").unwrap_or(&s);
+                    cmd.arg(format!("--appendconfig={}", clean));
+                } else if let Ok(abs_cfg) = std::fs::canonicalize("emulators/RetroArch/kairo_gamepads.cfg") {
+                    let s = abs_cfg.to_string_lossy().to_string();
+                    let clean = s.strip_prefix(r"\\?\").unwrap_or(&s);
+                    cmd.arg(format!("--appendconfig={}", clean));
                 }
             }
 

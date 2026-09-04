@@ -330,9 +330,33 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
     setMappings((prev) => {
       const next = [...prev];
       next[selectedPlayer] = DEFAULT_GAMEPAD_MAPPING(selectedPlayer);
+      if (onSaveMappings) {
+        onSaveMappings(next);
+      }
       return next;
     });
   };
+
+  const handleUpdateKey = useCallback(
+    (key: string, value: string) => {
+      setMappings((prev) => {
+        const next = [...prev];
+        const target = { ...next[selectedPlayer] };
+        (target as any)[key] = value;
+        if (activeGamepad?.id) {
+          target.device_name = activeGamepad.id;
+        }
+        next[selectedPlayer] = target;
+        if (onSaveMappings) {
+          onSaveMappings(next);
+        }
+        return next;
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    },
+    [selectedPlayer, activeGamepad, onSaveMappings]
+  );
 
   return (
     <div
@@ -490,6 +514,9 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
                 currentMapping={currentMapping}
                 remapSteps={currentRemapSteps}
                 selectedPlayer={selectedPlayer}
+                activeButtons={activeButtons}
+                activeAxes={activeAxes}
+                onUpdateKey={handleUpdateKey}
                 onResetPlayer={handleResetCurrent}
               />
             </div>
