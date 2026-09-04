@@ -55,14 +55,7 @@ pub fn run() {
             let db = Database::open(&db_path).expect("Impossible d'initialiser la base SQLite KaïroOS");
             let launcher = Launcher::new(db.clone());
 
-            // Initialiser le mode application (kiosk / admin) et s'assurer que le dossier roms par défaut en dev est dans APPDATA
-            let mut settings = db.get_app_settings().unwrap_or_default();
-            if !is_portable && (settings.roms_path.is_none() || settings.roms_path.as_deref() == Some("./roms")) {
-                let default_roms = app_data_dir.join("roms");
-                let _ = fs::create_dir_all(&default_roms);
-                settings.roms_path = Some(default_roms.to_string_lossy().to_string());
-                let _ = db.save_app_settings(&settings);
-            }
+            let settings = db.get_app_settings().unwrap_or_default();
             let initial_mode = match cli_mode {
                 Some(m) => m,
                 None => {

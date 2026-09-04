@@ -37,10 +37,18 @@ impl Default for RemoteConfig {
 
 impl RemoteConfig {
     pub fn load() -> Self {
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let base_dir = if current_dir.ends_with("src-tauri") {
+            current_dir.parent().unwrap_or(&current_dir).to_path_buf()
+        } else {
+            current_dir
+        };
+
         for path in &[
-            Path::new("config/remote.json"),
-            Path::new("../config/remote.json"),
-            Path::new("dist-portable/config/remote.json"),
+            base_dir.join("config/remote.json"),
+            PathBuf::from("config/remote.json"),
+            PathBuf::from("../config/remote.json"),
+            PathBuf::from("dist-portable/config/remote.json"),
         ] {
             if path.exists() {
                 if let Ok(content) = std::fs::read_to_string(path) {
@@ -56,14 +64,21 @@ impl RemoteConfig {
     }
 
     pub fn save(cfg: &RemoteConfig) -> std::io::Result<()> {
-        let dir = Path::new("config");
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let base_dir = if current_dir.ends_with("src-tauri") {
+            current_dir.parent().unwrap_or(&current_dir).to_path_buf()
+        } else {
+            current_dir
+        };
+
+        let dir = base_dir.join("config");
         if !dir.exists() {
-            let _ = std::fs::create_dir_all(dir);
+            let _ = std::fs::create_dir_all(&dir);
         }
         let json = serde_json::to_string_pretty(cfg)?;
         std::fs::write(dir.join("remote.json"), &json)?;
 
-        let portable_dir = Path::new("dist-portable/config");
+        let portable_dir = base_dir.join("dist-portable/config");
         if portable_dir.exists() {
             let _ = std::fs::write(portable_dir.join("remote.json"), &json);
         }
