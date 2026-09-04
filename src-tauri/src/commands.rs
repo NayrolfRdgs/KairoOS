@@ -547,6 +547,48 @@ pub fn save_theme(mut theme: kairo_core::Theme, state: State<'_, AppState>) -> R
     Ok(theme)
 }
 
+/// Crée un nouveau thème personnalisé dans le dossier themes/
+#[tauri::command]
+pub fn create_theme(id: String, name: String, _state: State<'_, AppState>) -> Result<kairo_core::Theme, String> {
+    let clean_id = id.trim().to_lowercase().replace(' ', "-");
+    if clean_id.is_empty() {
+        return Err("Identifiant de thème invalide".into());
+    }
+    let themes_dir = resolve_themes_dir();
+    let theme_dir = themes_dir.join(&clean_id);
+    if theme_dir.exists() {
+        return Err(format!("Le thème '{}' existe déjà", clean_id));
+    }
+    let _ = std::fs::create_dir_all(&theme_dir);
+
+    let mut theme = kairo_core::Theme::default();
+    theme.id = clean_id;
+    theme.name = if name.trim().is_empty() { "Nouveau Thème".into() } else { name };
+    theme.author = "Utilisateur".into();
+    theme.version = "1.0.0".into();
+    theme.description = "Thème personnalisé créé dans KaïroOS".into();
+
+    let theme_json = theme_dir.join("theme.json");
+    let json_content = serde_json::to_string_pretty(&theme).map_err(|e| e.to_string())?;
+    std::fs::write(&theme_json, json_content).map_err(|e| e.to_string())?;
+
+    Ok(theme)
+}
+
+/// Supprime un thème personnalisé du disque
+#[tauri::command]
+pub fn delete_theme(id: String, _state: State<'_, AppState>) -> Result<(), String> {
+    if id == "kairo-default" {
+        return Err("Le thème officiel par défaut ne peut pas être supprimé".into());
+    }
+    let themes_dir = resolve_themes_dir();
+    let theme_dir = themes_dir.join(&id);
+    if theme_dir.exists() {
+        std::fs::remove_dir_all(&theme_dir).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// Ouvre le dossier `themes/` dans l'explorateur Windows
 #[tauri::command]
 pub fn open_themes_folder() -> Result<(), String> {

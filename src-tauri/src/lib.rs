@@ -122,6 +122,8 @@ pub fn run() {
             commands::get_theme,
             commands::set_theme,
             commands::save_theme,
+            commands::create_theme,
+            commands::delete_theme,
             commands::open_themes_folder,
             commands::open_logs_folder,
             commands::test_emulator_exe,

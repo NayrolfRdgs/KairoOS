@@ -1,0 +1,42 @@
+{
+  "id": "arcade-80s",
+  "name": "Arcade 80s (Sunset Vintage)",
+  "author": "KaïroOS Team",
+  "version": "1.0.0",
+  "description": "Chaleur rétro des salles d'arcade des années 80 aux teintes ambrées et orangées",
+  "colors": {
+    "bg_primary": "#18110b",
+    "bg_secondary": "#251a11",
+    "bg_card": "#352518",
+    "sidebar_bg": "#1e140d",
+    "accent_primary": "#f97316",
+    "accent_secondary": "#eab308",
+    "text_primary": "#fffbeb",
+    "text_secondary": "#fde68a",
+    "text_muted": "#d97706",
+    "border": "#4a331f",
+    "success": "#10b981",
+    "warning": "#f59e0b",
+    "danger": "#ef4444"
+  },
+  "fonts": {
+    "primary": "Press Start 2P, monospace",
+    "arcade": "Press Start 2P, monospace",
+    "size_base": "13px"
+  },
+  "layout": {
+    "card_radius": "8px",
+    "sidebar_width": "270px",
+    "card_gap": "16px",
+    "card_aspect": "poster",
+    "card_glow": "subtle",
+    "scanlines": "retro",
+    "card_shadow": "arcade",
+    "card_scale": "dynamic"
+  },
+  "assets": {
+    "background_image": null,
+    "logo_override": null,
+    "startup_sound": null
+  }
+}

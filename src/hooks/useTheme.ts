@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Theme, ThemeColors, ThemeLayout, ThemeFonts, ThemeAssets } from '../types';
-import { getThemes, setTheme as apiSetTheme, saveTheme as apiSaveTheme } from '../api';
+import {
+  getThemes,
+  setTheme as apiSetTheme,
+  saveTheme as apiSaveTheme,
+  createTheme as apiCreateTheme,
+  deleteTheme as apiDeleteTheme,
+} from '../api';
 
 export interface ColorPreset {
   id: string;
@@ -547,6 +553,31 @@ export function useTheme() {
     }
   }, [injectThemeVariables]);
 
+  const createNewTheme = useCallback(async (id: string, name: string): Promise<Theme> => {
+    try {
+      const created = await apiCreateTheme(id, name);
+      await reloadThemes();
+      await applyTheme(created.id);
+      return created;
+    } catch (err) {
+      console.error('[useTheme] Erreur création thème:', err);
+      throw err;
+    }
+  }, [reloadThemes, applyTheme]);
+
+  const removeTheme = useCallback(async (id: string): Promise<void> => {
+    try {
+      await apiDeleteTheme(id);
+      await reloadThemes();
+      if (activeTheme.id === id) {
+        await applyTheme('kairo-default');
+      }
+    } catch (err) {
+      console.error('[useTheme] Erreur suppression thème:', err);
+      throw err;
+    }
+  }, [reloadThemes, activeTheme.id, applyTheme]);
+
   return {
     themes,
     activeTheme,
@@ -565,5 +596,7 @@ export function useTheme() {
     applyColorPreset,
     saveCurrentTheme,
     resetThemeToDefault,
+    createNewTheme,
+    removeTheme,
   };
 }

@@ -17,6 +17,14 @@ export async function saveTheme(theme: Theme): Promise<Theme> {
   return invokeCommand<Theme>('save_theme', { theme });
 }
 
+export async function createTheme(id: string, name: string): Promise<Theme> {
+  return invokeCommand<Theme>('create_theme', { id, name });
+}
+
+export async function deleteTheme(id: string): Promise<void> {
+  return invokeCommand<void>('delete_theme', { id });
+}
+
 export async function openThemesFolder(): Promise<void> {
   return invokeCommand<void>('open_themes_folder');
 }
