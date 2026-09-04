@@ -319,7 +319,28 @@ impl Launcher {
         let app_settings = self.db.get_app_settings().unwrap_or_default();
         let is_retroarch = emulator.id.to_lowercase() == "retroarch";
 
+        let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
+            .unwrap_or_else(|| PathBuf::from("."));
+
         if is_retroarch {
+            // Configuration manettes prioritaire (dissociation P1/P2 & boutons d'arcade)
+            let append_candidates = [
+                PathBuf::from("emulators/RetroArch/kairo_gamepads.cfg"),
+                PathBuf::from("emulators/retroarch/kairo_gamepads.cfg"),
+                PathBuf::from("dist-portable/emulators/RetroArch/kairo_gamepads.cfg"),
+                exe_dir.join("emulators/RetroArch/kairo_gamepads.cfg"),
+                current_dir.join("emulators/RetroArch/kairo_gamepads.cfg"),
+            ];
+            for append_path in &append_candidates {
+                if append_path.exists() {
+                    cmd.arg(format!("--appendconfig={}", append_path.display()));
+                    break;
+                }
+            }
+
             // Shaders
             let chosen_shader = config
                 .and_then(|c| c.shader.clone())

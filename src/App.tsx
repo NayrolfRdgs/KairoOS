@@ -406,7 +406,8 @@ export const App: React.FC = () => {
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(
     gamepadActions,
     !gamepadSettingsOpen,
-    primaryPlayerIndex
+    primaryPlayerIndex,
+    gamepadMappings[primaryPlayerIndex]
   );
 
   const focusedGame = filteredAndSortedGames[focusedIndex] || null;

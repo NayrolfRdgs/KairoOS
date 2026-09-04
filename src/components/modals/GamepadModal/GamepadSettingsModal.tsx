@@ -34,6 +34,20 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
     return list;
   });
 
+  // Synchronisation dynamique si initialMappings arrive de manière asynchrone
+  useEffect(() => {
+    if (initialMappings && initialMappings.length > 0) {
+      setMappings((prev) => {
+        const list: GamepadMapping[] = [];
+        for (let i = 0; i < 10; i++) {
+          const found = initialMappings.find((m) => m.player_index === i);
+          list.push(found || prev[i] || DEFAULT_GAMEPAD_MAPPING(i));
+        }
+        return list;
+      });
+    }
+  }, [initialMappings]);
+
   const [connectedPads, setConnectedPads] = useState<Gamepad[]>([]);
   const [assignedPadIndices, setAssignedPadIndices] = useState<Record<number, number>>({
     0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9,
@@ -51,7 +65,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
 
   const currentMapping = mappings[selectedPlayer] || DEFAULT_GAMEPAD_MAPPING(selectedPlayer);
   const currentAssignedIndex = assignedPadIndices[selectedPlayer] ?? selectedPlayer;
-  const activeGamepad = connectedPads[currentAssignedIndex] || null;
+  const activeGamepad = connectedPads.find((p) => p.index === currentAssignedIndex) || connectedPads[selectedPlayer] || null;
   const currentRemapSteps = REMAP_STEPS_BY_TYPE[currentMapping.controller_type] || REMAP_STEPS_BY_TYPE.arcade_stick;
 
   const currentStep = currentRemapSteps[wizardStep];
@@ -60,6 +74,16 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
 
   const waitingForReleaseRef = useRef<boolean>(false);
   const confirmedButton1Ref = useRef<string | null>(null);
+
+  // Changement propre de joueur (dissociation totale P1/P2 et réinitialisation de l'assistant)
+  const handleSelectPlayer = useCallback((idx: number) => {
+    setSelectedPlayer(idx);
+    setIsWizardActive(false);
+    setWizardStep(0);
+    setPendingInput(null);
+    confirmedButton1Ref.current = null;
+    waitingForReleaseRef.current = false;
+  }, []);
 
   // Valider et enregistrer la touche sélectionnée
   const handleConfirmStep = useCallback(() => {
@@ -70,16 +94,14 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
       confirmedButton1Ref.current = inputToSave;
     }
 
-    setMappings((prev) => {
-      const next = [...prev];
-      const target = { ...next[selectedPlayer] };
-      (target as any)[currentStep.key] = inputToSave;
-      if (activeGamepad?.id) {
-        target.device_name = activeGamepad.id;
-      }
-      next[selectedPlayer] = target;
-      return next;
-    });
+    const nextMappings = [...mappings];
+    const target = { ...nextMappings[selectedPlayer] };
+    (target as any)[currentStep.key] = inputToSave;
+    if (activeGamepad?.id) {
+      target.device_name = activeGamepad.id;
+    }
+    nextMappings[selectedPlayer] = target;
+    setMappings(nextMappings);
 
     setPendingInput(null);
     waitingForReleaseRef.current = true;
@@ -90,9 +112,13 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
       setIsWizardActive(false);
       setWizardStep(0);
       setSaveSuccess(true);
+      // Sauvegarde automatique immédiate en base, config JSON et fichiers RetroArch !
+      if (onSaveMappings) {
+        onSaveMappings(nextMappings);
+      }
       setTimeout(() => setSaveSuccess(false), 3000);
     }
-  }, [currentStep, wizardStep, currentRemapSteps.length, selectedPlayer, activeGamepad]);
+  }, [currentStep, wizardStep, currentRemapSteps.length, selectedPlayer, activeGamepad, mappings, onSaveMappings]);
 
   // Passer la touche sans l'assigner
   const handleSkipStep = useCallback(() => {
@@ -103,8 +129,13 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
     } else {
       setIsWizardActive(false);
       setWizardStep(0);
+      setSaveSuccess(true);
+      if (onSaveMappings) {
+        onSaveMappings(mappings);
+      }
+      setTimeout(() => setSaveSuccess(false), 3000);
     }
-  }, [wizardStep, currentRemapSteps.length]);
+  }, [wizardStep, currentRemapSteps.length, mappings, onSaveMappings]);
 
   // Gestion du clavier dans la modale et l'assistant
   useEffect(() => {
@@ -123,6 +154,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
           e.preventDefault();
           setIsWizardActive(false);
           setPendingInput(null);
+          waitingForReleaseRef.current = false;
         }
       } else {
         if (e.key === 'Escape') {
@@ -151,46 +183,56 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         return;
       }
 
-      // Bouton 1 de validation (soit celui configuré au début, soit celui existant, soit "0")
-      const currentBtn1 = confirmedButton1Ref.current || currentMapping.btn_a || '0';
+      // 1. Si pendingInput est null (aucune touche en attente de confirmation)
+      if (pendingInputRef.current === null) {
+        // Détecter un bouton
+        for (const btnIndex of pressed) {
+          const btnStr = btnIndex.toString();
+          setPendingInput(btnStr);
+          waitingForReleaseRef.current = true; // DOIT relâcher avant de pouvoir confirmer !
+          return;
+        }
 
-      // 1. Boutons physiques
-      for (const btnIndex of pressed) {
-        const btnStr = btnIndex.toString();
+        // Détecter un axe de joystick
+        const isDirectionStep = ['btn_up', 'btn_down', 'btn_left', 'btn_right'].includes(currentStep.key);
+        if (isDirectionStep) {
+          let dirDetected: string | null = null;
+          if (currentStep.key === 'btn_up' && axisY < -0.55) dirDetected = 'h0up';
+          if (currentStep.key === 'btn_down' && axisY > 0.55) dirDetected = 'h0down';
+          if (currentStep.key === 'btn_left' && axisX < -0.55) dirDetected = 'h0left';
+          if (currentStep.key === 'btn_right' && axisX > 0.55) dirDetected = 'h0right';
 
-        if (pendingInputRef.current !== null) {
+          if (dirDetected) {
+            setPendingInput(dirDetected);
+            waitingForReleaseRef.current = true; // DOIT ramener le stick au repos !
+            return;
+          }
+        }
+      } else {
+        // 2. pendingInput est déjà en attente (affiché en vert)
+        const currentBtn1 = confirmedButton1Ref.current || currentMapping.btn_a;
+
+        for (const btnIndex of pressed) {
+          const btnStr = btnIndex.toString();
+
           // Étape 1 (btn_a) : réappuyer sur la même touche valide le bouton 1 !
           if (currentStep.key === 'btn_a' && pendingInputRef.current === btnStr) {
             handleConfirmStep();
             return;
           }
+
           // Étapes suivantes : appuyer sur Bouton 1 valide la sélection !
-          if (currentStep.key !== 'btn_a' && btnStr === currentBtn1) {
+          if (currentStep.key !== 'btn_a' && currentBtn1 && btnStr === currentBtn1) {
             handleConfirmStep();
             return;
           }
-          // Changer la touche candidate si on appuie sur un autre bouton
-          if (pendingInputRef.current !== btnStr && btnStr !== currentBtn1) {
+
+          // Si l'utilisateur appuie sur un AUTRE bouton que Bouton 1 : on remplace le choix
+          if (pendingInputRef.current !== btnStr && (!currentBtn1 || btnStr !== currentBtn1)) {
             setPendingInput(btnStr);
+            waitingForReleaseRef.current = true;
             return;
           }
-        } else {
-          setPendingInput(btnStr);
-          return;
-        }
-      }
-
-      // 2. Détection directionnelle du Joystick
-      const isDirectionStep = ['btn_up', 'btn_down', 'btn_left', 'btn_right'].includes(currentStep.key);
-      if (isDirectionStep) {
-        let dirDetected: string | null = null;
-        if (currentStep.key === 'btn_up' && axisY < -0.55) dirDetected = 'h0up';
-        if (currentStep.key === 'btn_down' && axisY > 0.55) dirDetected = 'h0down';
-        if (currentStep.key === 'btn_left' && axisX < -0.55) dirDetected = 'h0left';
-        if (currentStep.key === 'btn_right' && axisX > 0.55) dirDetected = 'h0right';
-
-        if (dirDetected && pendingInputRef.current !== dirDetected) {
-          setPendingInput(dirDetected);
         }
       }
     },
@@ -207,7 +249,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         : [];
       setConnectedPads(raw);
 
-      const targetPad = raw[currentAssignedIndex];
+      const targetPad = raw.find((p) => p.index === currentAssignedIndex) || raw[selectedPlayer] || raw[0] || null;
       if (targetPad) {
         const pressed = new Set<number>();
         targetPad.buttons.forEach((btn, idx) => {
@@ -254,7 +296,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
       ...prev,
       [selectedPlayer]: padIdx,
     }));
-    const pad = connectedPads[padIdx];
+    const pad = connectedPads.find((p) => p.index === padIdx) || connectedPads[padIdx];
     if (pad) {
       setMappings((prev) => {
         const next = [...prev];
@@ -329,10 +371,7 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         {/* Sélecteur de Joueur J1 à J10 */}
         <PlayerSelector
           selectedPlayer={selectedPlayer}
-          onSelectPlayer={(idx) => {
-            setSelectedPlayer(idx);
-            setIsWizardActive(false);
-          }}
+          onSelectPlayer={handleSelectPlayer}
           primaryPlayer={primaryPlayer}
           connectedPads={connectedPads}
           assignedPadIndices={assignedPadIndices}
@@ -359,18 +398,25 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
               </div>
 
               {connectedPads.length > 0 ? (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={currentAssignedIndex}
-                    onChange={(e) => handleAssignPad(Number(e.target.value))}
-                    className="flex-1 px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-rose-400 shadow-2xs"
-                  >
-                    {connectedPads.map((pad, idx) => (
-                      <option key={idx} value={idx}>
-                        🎮 Manette #{idx + 1} : {pad.id} ({pad.buttons.length} boutons, {pad.axes.length} axes)
-                      </option>
-                    ))}
-                  </select>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={currentAssignedIndex}
+                      onChange={(e) => handleAssignPad(Number(e.target.value))}
+                      className="flex-1 px-3 py-2 rounded-xl bg-white border border-purple-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-rose-400 shadow-2xs"
+                    >
+                      {connectedPads.map((pad) => (
+                        <option key={pad.index} value={pad.index}>
+                          🎮 Manette #{pad.index + 1} (Port #{pad.index}) : {pad.id} ({pad.buttons.length} boutons, {pad.axes.length} axes)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {connectedPads.length === 1 && (
+                    <p className="text-[11px] text-amber-600 font-medium">
+                      💡 Une seule manette est actuellement active. Appuyez sur un bouton du Joueur 2 pour réveiller le second contrôleur USB.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <div className="p-2.5 rounded-xl bg-purple-50/50 border border-dashed border-purple-200 text-xs text-slate-500">

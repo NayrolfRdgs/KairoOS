@@ -528,16 +528,22 @@ impl Database {
         )?;
         drop(conn);
 
-        // 2. Écrire le fichier config/gamepads.json formaté
-        let config_dir = Path::new("config");
-        if !config_dir.exists() {
-            let _ = std::fs::create_dir_all(config_dir);
-        }
+        // 2. Écrire le fichier config/gamepads.json formaté dans tous les emplacements possibles
         if let Ok(pretty_json) = serde_json::to_string_pretty(mappings) {
-            let _ = std::fs::write(config_dir.join("gamepads.json"), pretty_json);
+            for dir in &[
+                Path::new("config"),
+                Path::new("../config"),
+                Path::new("src-tauri/config"),
+                Path::new("dist-portable/config"),
+            ] {
+                if !dir.exists() {
+                    let _ = std::fs::create_dir_all(dir);
+                }
+                let _ = std::fs::write(dir.join("gamepads.json"), &pretty_json);
+            }
         }
 
-        // 3. Injecter la configuration directement dans les fichiers retroarch.cfg
+        // 3. Injecter la configuration directement dans les fichiers retroarch.cfg et kairo_gamepads.cfg
         self.sync_gamepads_to_retroarch(mappings);
 
         Ok(())
@@ -545,44 +551,115 @@ impl Database {
 
     fn sync_gamepads_to_retroarch(&self, mappings: &[crate::models::GamepadMapping]) {
         let mut retro_lines = vec![
-            "# KaïroOS Arcade Station — RetroArch Config & Gamepad Auto-Mapping".to_string(),
-            "video_fullscreen = \"true\"".into(),
-            "video_windowed_fullscreen = \"true\"".into(),
-            "pause_nonactive = \"false\"".into(),
-            "video_vsync = \"true\"".into(),
-            "notification_show_when_menu_is_alive = \"false\"".into(),
-            "video_font_enable = \"false\"".into(),
+            "# KaïroOS Arcade Station — Gamepad Mappings (Auto-Generated)".to_string(),
             "input_autodetect_enable = \"true\"".into(),
-            "input_enable_hotkey_btn = \"8\"".into(),
-            "input_exit_emulator_btn = \"9\"".into(),
-            "input_exit_emulator = \"escape\"".into(),
         ];
+
+        // Global hotkey from Player 1
+        let p1_opt = mappings.iter().find(|m| m.player_index == 0);
+        let hotkey_btn = p1_opt
+            .and_then(|m| m.btn_hotkey.as_ref().or(m.btn_select.as_ref()))
+            .cloned()
+            .unwrap_or_else(|| "8".to_string());
+        let exit_btn = p1_opt
+            .and_then(|m| m.btn_start.as_ref())
+            .cloned()
+            .unwrap_or_else(|| "9".to_string());
+
+        retro_lines.push(format!("input_enable_hotkey_btn = \"{}\"", hotkey_btn));
+        retro_lines.push(format!("input_exit_emulator_btn = \"{}\"", exit_btn));
+        retro_lines.push("input_exit_emulator = \"escape\"".into());
 
         for m in mappings {
             let p = m.player_index + 1; // 1 à 10
-            if let Some(ref v) = m.btn_b { retro_lines.push(format!("input_player{}_b_btn = \"{}\"", p, v)); }
+            let joy_idx = m.player_index; // 0 pour P1, 1 pour P2
+
+            // DISSOCIATION ABSOLUE DES MANETTES : Index physique unique par joueur !
+            retro_lines.push(format!("input_player{}_joypad_index = \"{}\"", p, joy_idx));
+            retro_lines.push(format!("input_player{}_analog_dpad_mode = \"1\"", p));
+
             if let Some(ref v) = m.btn_a { retro_lines.push(format!("input_player{}_a_btn = \"{}\"", p, v)); }
-            if let Some(ref v) = m.btn_y { retro_lines.push(format!("input_player{}_y_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_b { retro_lines.push(format!("input_player{}_b_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_x { retro_lines.push(format!("input_player{}_x_btn = \"{}\"", p, v)); }
+            if let Some(ref v) = m.btn_y { retro_lines.push(format!("input_player{}_y_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_start { retro_lines.push(format!("input_player{}_start_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_select { retro_lines.push(format!("input_player{}_select_btn = \"{}\"", p, v)); }
-            if let Some(ref v) = m.btn_up { retro_lines.push(format!("input_player{}_up_btn = \"{}\"", p, v)); }
-            if let Some(ref v) = m.btn_down { retro_lines.push(format!("input_player{}_down_btn = \"{}\"", p, v)); }
-            if let Some(ref v) = m.btn_left { retro_lines.push(format!("input_player{}_left_btn = \"{}\"", p, v)); }
-            if let Some(ref v) = m.btn_right { retro_lines.push(format!("input_player{}_right_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_l1 { retro_lines.push(format!("input_player{}_l_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_r1 { retro_lines.push(format!("input_player{}_r_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_l2 { retro_lines.push(format!("input_player{}_l2_btn = \"{}\"", p, v)); }
             if let Some(ref v) = m.btn_r2 { retro_lines.push(format!("input_player{}_r2_btn = \"{}\"", p, v)); }
+
+            // Chapeau D-Pad ET Axes analogiques universels pour Arcade Sticks (DragonRise / Zero Delay)
+            if let Some(ref v) = m.btn_up {
+                retro_lines.push(format!("input_player{}_up_btn = \"{}\"", p, v));
+            } else {
+                retro_lines.push(format!("input_player{}_up_btn = \"h0up\"", p));
+            }
+            if let Some(ref v) = m.btn_down {
+                retro_lines.push(format!("input_player{}_down_btn = \"{}\"", p, v));
+            } else {
+                retro_lines.push(format!("input_player{}_down_btn = \"h0down\"", p));
+            }
+            if let Some(ref v) = m.btn_left {
+                retro_lines.push(format!("input_player{}_left_btn = \"{}\"", p, v));
+            } else {
+                retro_lines.push(format!("input_player{}_left_btn = \"h0left\"", p));
+            }
+            if let Some(ref v) = m.btn_right {
+                retro_lines.push(format!("input_player{}_right_btn = \"{}\"", p, v));
+            } else {
+                retro_lines.push(format!("input_player{}_right_btn = \"h0right\"", p));
+            }
+
+            retro_lines.push(format!("input_player{}_up_axis = \"-1\"", p));
+            retro_lines.push(format!("input_player{}_down_axis = \"+1\"", p));
+            retro_lines.push(format!("input_player{}_left_axis = \"-0\"", p));
+            retro_lines.push(format!("input_player{}_right_axis = \"+0\"", p));
+            retro_lines.push(format!("input_player{}_l_x_plus_axis = \"+0\"", p));
+            retro_lines.push(format!("input_player{}_l_x_minus_axis = \"-0\"", p));
+            retro_lines.push(format!("input_player{}_l_y_plus_axis = \"+1\"", p));
+            retro_lines.push(format!("input_player{}_l_y_minus_axis = \"-1\"", p));
         }
 
         let full_cfg = retro_lines.join("\n");
+
+        // 1. Écrire le fichier dédié kairo_gamepads.cfg (chargé prioritairement avec --appendconfig)
+        for append_path in &[
+            Path::new("emulators/RetroArch/kairo_gamepads.cfg"),
+            Path::new("dist-portable/emulators/RetroArch/kairo_gamepads.cfg"),
+        ] {
+            if let Some(parent) = append_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(append_path, &full_cfg);
+        }
+
+        // 2. Fusionner proprement dans retroarch.cfg sans écraser les autres options
         for cfg_path in &[
             Path::new("emulators/RetroArch/retroarch.cfg"),
             Path::new("dist-portable/emulators/RetroArch/retroarch.cfg"),
         ] {
             if let Some(parent) = cfg_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
+            }
+            if cfg_path.exists() {
+                if let Ok(existing_content) = std::fs::read_to_string(cfg_path) {
+                    let mut preserved_lines: Vec<String> = existing_content
+                        .lines()
+                        .filter(|line| {
+                            let trimmed = line.trim();
+                            !trimmed.starts_with("input_player")
+                                && !trimmed.starts_with("input_enable_hotkey_btn")
+                                && !trimmed.starts_with("input_exit_emulator_btn")
+                                && !trimmed.starts_with("# KaïroOS Arcade Station")
+                        })
+                        .map(|l| l.to_string())
+                        .collect();
+                    preserved_lines.extend(retro_lines.clone());
+                    let merged = preserved_lines.join("\n");
+                    let _ = std::fs::write(cfg_path, merged);
+                    continue;
+                }
             }
             let _ = std::fs::write(cfg_path, &full_cfg);
         }

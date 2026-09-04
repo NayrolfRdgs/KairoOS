@@ -56,6 +56,61 @@ mod tests {
     }
 
     #[test]
+    fn test_gamepad_mappings_persistence_and_sync() {
+        let db = Database::open_in_memory().expect("Échec DB");
+        let p1 = GamepadMapping {
+            player_index: 0,
+            device_name: "DragonRise Generic USB Joystick P1".into(),
+            device_id: "pad_0".into(),
+            controller_type: "arcade_stick".into(),
+            btn_a: Some("0".into()),
+            btn_b: Some("1".into()),
+            btn_x: Some("2".into()),
+            btn_y: Some("3".into()),
+            btn_l1: Some("4".into()),
+            btn_r1: Some("5".into()),
+            btn_l2: None,
+            btn_r2: None,
+            btn_select: Some("8".into()),
+            btn_start: Some("9".into()),
+            btn_hotkey: Some("8".into()),
+            btn_up: Some("h0up".into()),
+            btn_down: Some("h0down".into()),
+            btn_left: Some("h0left".into()),
+            btn_right: Some("h0right".into()),
+            deadzone: 0.15,
+        };
+        let p2 = GamepadMapping {
+            player_index: 1,
+            device_name: "DragonRise Generic USB Joystick P2".into(),
+            device_id: "pad_1".into(),
+            controller_type: "arcade_stick".into(),
+            btn_a: Some("0".into()),
+            btn_b: Some("1".into()),
+            btn_x: Some("2".into()),
+            btn_y: Some("3".into()),
+            btn_l1: Some("4".into()),
+            btn_r1: Some("5".into()),
+            btn_l2: None,
+            btn_r2: None,
+            btn_select: Some("8".into()),
+            btn_start: Some("9".into()),
+            btn_hotkey: Some("8".into()),
+            btn_up: Some("h0up".into()),
+            btn_down: Some("h0down".into()),
+            btn_left: Some("h0left".into()),
+            btn_right: Some("h0right".into()),
+            deadzone: 0.15,
+        };
+
+        db.save_gamepad_mappings(&[p1.clone(), p2.clone()]).expect("Sauvegarde gamepad");
+        let loaded = db.get_gamepad_mappings().expect("Chargement gamepad");
+        assert_eq!(loaded.len(), 2);
+        assert_eq!(loaded[0].player_index, 0);
+        assert_eq!(loaded[1].player_index, 1);
+    }
+
+    #[test]
     fn test_game_crud_and_sessions() {
         let db = Database::open_in_memory().expect("Échec DB");
         let now = chrono::Utc::now();

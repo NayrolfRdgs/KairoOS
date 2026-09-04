@@ -4,7 +4,7 @@ export const DEFAULT_GAMEPAD_MAPPING = (playerIndex: number): GamepadMapping => 
   player_index: playerIndex,
   device_name: `Contrôleur Joueur ${playerIndex + 1}`,
   device_id: `pad_${playerIndex}`,
-  controller_type: playerIndex === 0 ? 'arcade_stick' : 'standard',
+  controller_type: 'arcade_stick',
   btn_up: 'up',
   btn_down: 'down',
   btn_left: 'left',
