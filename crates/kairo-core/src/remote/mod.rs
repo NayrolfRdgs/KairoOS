@@ -348,6 +348,10 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
                 .route("/api/kiosk/lock", post(lock_kiosk))
                 .route("/api/kiosk/unlock", post(unlock_kiosk))
                 .route("/api/media/cover", get(get_cover_image))
+                // Endpoints thèmes — lecture et modification à distance depuis l'admin réseau
+                .route("/api/themes", get(remote_get_themes))
+                .route("/api/themes/active", get(remote_get_active_theme).post(remote_set_active_theme))
+                .route("/api/themes/:id", get(remote_get_theme).post(remote_save_theme).delete(remote_delete_theme))
                 .with_state(state.clone());
 
             let app = if pwa_dir.exists() {
@@ -871,6 +875,201 @@ async fn get_gamepad_mappings(
                 error: Some(e.to_string()),
             }),
         ),
+    }
+}
+
+// ==================== HANDLERS THÈMES ====================
+
+/// Retourne le chemin du dossier themes/ (même logique que dans commands.rs)
+fn resolve_themes_dir_remote() -> PathBuf {
+    let cur = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
+    if cur.ends_with("src-tauri") {
+        if let Some(parent) = cur.parent() {
+            let p = parent.join("themes");
+            if p.exists() { return p; }
+        }
+    }
+    let p_parent = cur.join("..").join("themes");
+    if p_parent.exists() { return p_parent; }
+    let p1 = cur.join("themes");
+    if p1.exists() { return p1; }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let p2 = parent.join("themes");
+            if p2.exists() { return p2; }
+            if let Some(grand) = parent.parent() {
+                let p3 = grand.join("themes");
+                if p3.exists() { return p3; }
+            }
+        }
+    }
+    p1
+}
+
+fn load_all_themes_from_disk(db: &crate::db::Database) -> Vec<crate::models::Theme> {
+    let themes_dir = resolve_themes_dir_remote();
+    let active_id = db.get_app_settings()
+        .map(|s| s.theme)
+        .unwrap_or_else(|_| "kairo-default".into());
+    let mut themes = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&themes_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let json_path = entry.path().join("theme.json");
+                if json_path.exists() {
+                    if let Ok(content) = std::fs::read_to_string(&json_path) {
+                        if let Ok(mut theme) = serde_json::from_str::<crate::models::Theme>(&content) {
+                            let preview = entry.path().join("preview.png");
+                            if preview.exists() {
+                                theme.preview_url = Some(preview.to_string_lossy().to_string());
+                            }
+                            theme.is_active = theme.id == active_id;
+                            themes.push(theme);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if themes.is_empty() {
+        let mut def = crate::models::Theme::default();
+        def.id = "kairo-default".into();
+        def.name = "Kaïro OS".into();
+        def.is_active = true;
+        themes.push(def);
+    }
+    themes
+}
+
+/// GET /api/themes — liste tous les thèmes installés
+async fn remote_get_themes(State(state): State<RemoteServerState>) -> impl IntoResponse {
+    let themes = load_all_themes_from_disk(&state.db);
+    Json(ApiResponse { success: true, data: Some(themes), error: None })
+}
+
+/// GET /api/themes/active — retourne le thème actuellement actif
+async fn remote_get_active_theme(State(state): State<RemoteServerState>) -> impl IntoResponse {
+    let themes = load_all_themes_from_disk(&state.db);
+    let active = themes.into_iter().find(|t| t.is_active);
+    match active {
+        Some(t) => (StatusCode::OK, Json(ApiResponse { success: true, data: Some(t), error: None })),
+        None => (StatusCode::NOT_FOUND, Json(ApiResponse { success: false, data: None, error: Some("Aucun thème actif".into()) })),
+    }
+}
+
+#[derive(Deserialize)]
+struct SetActiveThemeRequest {
+    id: String,
+}
+
+/// POST /api/themes/active — change le thème actif
+async fn remote_set_active_theme(
+    headers: HeaderMap,
+    State(state): State<RemoteServerState>,
+    Json(req): Json<SetActiveThemeRequest>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse { success: false, data: None, error: Some("Code PIN requis".into()) }));
+    }
+    let themes_dir = resolve_themes_dir_remote();
+    let json_path = themes_dir.join(&req.id).join("theme.json");
+    if !json_path.exists() {
+        return (StatusCode::NOT_FOUND, Json(ApiResponse { success: false, data: None, error: Some(format!("Thème '{}' introuvable", req.id)) }));
+    }
+    match state.db.get_app_settings() {
+        Ok(mut settings) => {
+            settings.theme = req.id.clone();
+            let _ = state.db.save_app_settings(&settings);
+            let content = std::fs::read_to_string(&json_path).unwrap_or_default();
+            let mut theme: crate::models::Theme = serde_json::from_str(&content).unwrap_or_default();
+            theme.is_active = true;
+            (StatusCode::OK, Json(ApiResponse { success: true, data: Some(theme), error: None }))
+        },
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) })),
+    }
+}
+
+/// GET /api/themes/:id — retourne les données d'un thème spécifique
+async fn remote_get_theme(
+    AxumPath(id): AxumPath<String>,
+    State(state): State<RemoteServerState>,
+) -> impl IntoResponse {
+    let themes_dir = resolve_themes_dir_remote();
+    let json_path = themes_dir.join(&id).join("theme.json");
+    if !json_path.exists() {
+        return (StatusCode::NOT_FOUND, Json(ApiResponse { success: false, data: None, error: Some(format!("Thème '{}' introuvable", id)) }));
+    }
+    match std::fs::read_to_string(&json_path) {
+        Ok(content) => match serde_json::from_str::<crate::models::Theme>(&content) {
+            Ok(mut theme) => {
+                let active_id = state.db.get_app_settings().map(|s| s.theme).unwrap_or_default();
+                theme.is_active = theme.id == active_id;
+                (StatusCode::OK, Json(ApiResponse { success: true, data: Some(theme), error: None }))
+            },
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) })),
+        },
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) })),
+    }
+}
+
+/// POST /api/themes/:id — sauvegarde les modifications d'un thème (couleurs, layout, css…)
+async fn remote_save_theme(
+    AxumPath(id): AxumPath<String>,
+    headers: HeaderMap,
+    State(state): State<RemoteServerState>,
+    Json(mut theme): Json<crate::models::Theme>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse { success: false, data: None, error: Some("Code PIN requis".into()) }));
+    }
+    // Forcer l'ID depuis l'URL pour éviter les incohérences
+    theme.id = id.clone();
+    let themes_dir = resolve_themes_dir_remote();
+    let theme_dir = themes_dir.join(&id);
+    let _ = std::fs::create_dir_all(&theme_dir);
+    let json_path = theme_dir.join("theme.json");
+    match serde_json::to_string_pretty(&theme) {
+        Ok(json) => match std::fs::write(&json_path, &json) {
+            Ok(_) => {
+                // Si le thème sauvegardé devient actif
+                if theme.is_active {
+                    if let Ok(mut settings) = state.db.get_app_settings() {
+                        settings.theme = id;
+                        let _ = state.db.save_app_settings(&settings);
+                    }
+                }
+                (StatusCode::OK, Json(ApiResponse { success: true, data: Some(theme), error: None }))
+            },
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) })),
+        },
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse { success: false, data: None, error: Some(e.to_string()) })),
+    }
+}
+
+/// DELETE /api/themes/:id — supprime un thème du dossier themes/
+async fn remote_delete_theme(
+    AxumPath(id): AxumPath<String>,
+    headers: HeaderMap,
+    State(_state): State<RemoteServerState>,
+) -> impl IntoResponse {
+    let config = RemoteConfig::load();
+    if !verify_pin(&headers, &config.pin) {
+        return (StatusCode::UNAUTHORIZED, Json(ApiResponse::<String> { success: false, data: None, error: Some("Code PIN requis".into()) }));
+    }
+    if id == "kairo-default" {
+        return (StatusCode::FORBIDDEN, Json(ApiResponse::<String> { success: false, data: None, error: Some("Le thème par défaut ne peut pas être supprimé".into()) }));
+    }
+    let themes_dir = resolve_themes_dir_remote();
+    let theme_dir = themes_dir.join(&id);
+    if theme_dir.exists() {
+        match std::fs::remove_dir_all(&theme_dir) {
+            Ok(_) => (StatusCode::OK, Json(ApiResponse::<String> { success: true, data: Some(format!("Thème '{}' supprimé", id)), error: None })),
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<String> { success: false, data: None, error: Some(e.to_string()) })),
+        }
+    } else {
+        (StatusCode::NOT_FOUND, Json(ApiResponse::<String> { success: false, data: None, error: Some(format!("Thème '{}' introuvable", id)) }))
     }
 }
 

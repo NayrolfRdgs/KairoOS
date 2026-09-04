@@ -1,0 +1,42 @@
+{
+  "id": "deep-navy",
+  "name": "Océan Profond (Midnight Navy)",
+  "author": "KaïroOS Team",
+  "version": "1.0.0",
+  "description": "Élégance bleu marine profond avec accents cyan électrique, ambiance gaming haut de gamme",
+  "colors": {
+    "bg_primary": "#0a1128",
+    "bg_secondary": "#101d42",
+    "bg_card": "#1c2d5a",
+    "sidebar_bg": "#0d1736",
+    "accent_primary": "#00b4d8",
+    "accent_secondary": "#5bc0be",
+    "text_primary": "#f0f8ff",
+    "text_secondary": "#90e0ef",
+    "text_muted": "#0077b6",
+    "border": "#283e75",
+    "success": "#10b981",
+    "warning": "#f59e0b",
+    "danger": "#ef4444"
+  },
+  "fonts": {
+    "primary": "Outfit, Inter, system-ui, sans-serif",
+    "arcade": "Press Start 2P, monospace",
+    "size_base": "14px"
+  },
+  "layout": {
+    "card_radius": "16px",
+    "sidebar_width": "280px",
+    "card_gap": "16px",
+    "card_aspect": "poster",
+    "card_glow": "subtle",
+    "scanlines": "none",
+    "card_shadow": "soft",
+    "card_scale": "dynamic"
+  },
+  "assets": {
+    "background_image": null,
+    "logo_override": null,
+    "startup_sound": null
+  }
+}
