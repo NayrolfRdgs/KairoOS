@@ -76,20 +76,39 @@ export const ArcadeCatalog: React.FC<ArcadeCatalogProps> = ({
       )}
 
       {/* 2. En-tête de catégorie */}
-      <div className="flex items-center justify-between pt-2 pb-2 border-b border-purple-100/60">
+      <div
+        style={{ borderColor: 'var(--border-color)' }}
+        className="flex items-center justify-between pt-2 pb-2 border-b"
+      >
         <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-xs animate-pulse" />
-          <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 font-mono">
+          <span
+            style={{ backgroundColor: 'var(--accent-primary)' }}
+            className="w-2.5 h-2.5 rounded-full shadow-xs animate-pulse"
+          />
+          <h2
+            style={{ color: 'var(--text-primary)' }}
+            className="text-xs font-black uppercase tracking-wider font-mono"
+          >
             {categoryTitle || 'CATALOGUE DE JEUX'}
           </h2>
         </div>
-        <span className="text-[11px] font-mono font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100">
+        <span
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            color: 'var(--accent-primary)',
+            borderColor: 'var(--border-color)',
+          }}
+          className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full border"
+        >
           {games.length} {games.length > 1 ? 'JEUX' : 'JEU'}
         </span>
       </div>
 
       {/* 3. Grille des jeux au format 3:4 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 sm:gap-5 justify-items-center">
+      <div
+        style={{ gap: 'var(--card-gap, 16px)' }}
+        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 justify-items-center"
+      >
         {games.map((game) => (
           <GameCard
             key={game.id}

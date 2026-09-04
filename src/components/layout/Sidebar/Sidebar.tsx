@@ -1,6 +1,5 @@
 import React from 'react';
 import { CustomFranchise, System, FranchiseCollection, AppMode } from '../../../types';
-import { SidebarHeader } from './SidebarHeader';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSystems } from './SidebarSystems';
 import { SidebarFooter } from './SidebarFooter';
@@ -54,19 +53,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAddGame,
 }) => {
   return (
-    <aside className="w-72 bg-white/95 backdrop-blur-md border-r border-purple-100/80 flex flex-col h-full select-none shrink-0 shadow-sm z-20">
-      {/* 1. Header avec Branding Arcade */}
-      <SidebarHeader
-        gamepadConnected={gamepadConnected}
-        gamepadName={gamepadName}
-        appMode={appMode}
-        onOpenSettings={onOpenSettings}
-        onOpenGamepadSettings={onOpenGamepadSettings}
-        onOpenKioskUnlock={onOpenKioskUnlock}
-        onOpenAddGame={onOpenAddGame}
-      />
-
-      {/* 2. Corps Déroulant : Bibliothèque + Consoles */}
+    <aside
+      style={{
+        backgroundColor: 'var(--sidebar-bg)',
+        borderColor: 'var(--border-color)',
+        color: 'var(--text-primary)',
+        width: 'var(--sidebar-width, 288px)',
+      }}
+      className="backdrop-blur-md border-r flex flex-col h-full select-none shrink-0 shadow-sm z-20"
+    >
+      {/* 1. Corps Déroulant : Bibliothèque + Consoles (Directement en haut) */}
       <div className="flex-1 overflow-y-auto p-3 space-y-6 scrollbar-thin">
         <SidebarNav
           selectedCategory={selectedCategory}
@@ -89,8 +85,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       </div>
 
-      {/* 3. Footer Carte v2.0 */}
-      <SidebarFooter />
+      {/* 2. Footer Déplacé en Bas avec Logo, Statut et Boutons Paramètres */}
+      <SidebarFooter
+        gamepadConnected={gamepadConnected}
+        gamepadName={gamepadName}
+        appMode={appMode}
+        onOpenSettings={onOpenSettings}
+        onOpenGamepadSettings={onOpenGamepadSettings}
+        onOpenKioskUnlock={onOpenKioskUnlock}
+        onOpenAddGame={onOpenAddGame}
+      />
     </aside>
   );
 };

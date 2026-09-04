@@ -53,10 +53,13 @@ export const GameCard: React.FC<GameCardProps> = ({
     >
       {/* 3:4 Vertical Portrait Arcade Container */}
       <div
-        className={`relative w-full aspect-[3/4] rounded-2xl overflow-hidden border bg-white transition-all duration-300 shadow-sm ${
-          isFocused
-            ? 'border-rose-500 ring-4 ring-rose-500/40 shadow-kairo-glow'
-            : 'border-purple-100/90 group-hover:border-purple-300'
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          borderColor: isFocused ? 'var(--accent-primary)' : 'var(--border-color)',
+          borderRadius: 'var(--card-radius, 16px)',
+        }}
+        className={`relative w-full aspect-[3/4] overflow-hidden border transition-all duration-300 shadow-sm ${
+          isFocused ? 'ring-4 shadow-kairo-glow' : 'hover:border-purple-300'
         }`}
       >
         {/* Cover Image or White Placeholder with Exclamation */}
@@ -69,11 +72,17 @@ export const GameCard: React.FC<GameCardProps> = ({
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center bg-white border-2 border-dashed border-rose-200/80 text-slate-400 select-none">
+          <div
+            style={{ backgroundColor: 'var(--bg-card)' }}
+            className="w-full h-full flex flex-col items-center justify-center p-4 text-center border-2 border-dashed border-rose-200/80 text-slate-400 select-none"
+          >
             <div className="w-12 h-12 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-500 mb-2.5 shadow-2xs animate-pulse">
               <AlertCircle className="w-6 h-6 stroke-[2.5]" />
             </div>
-            <span className="text-xs font-black uppercase text-slate-800 line-clamp-2 px-1 font-sans">
+            <span
+              style={{ color: 'var(--text-primary)' }}
+              className="text-xs font-black uppercase line-clamp-2 px-1 font-sans"
+            >
               {game.title}
             </span>
             <span className="text-[10px] font-mono text-rose-500 mt-1 font-bold uppercase tracking-wider">
@@ -89,7 +98,10 @@ export const GameCard: React.FC<GameCardProps> = ({
               {year}
             </span>
             {game.players && game.players >= 2 && (
-              <span className="px-1.5 py-0.5 rounded-md bg-purple-600/90 backdrop-blur-md text-white text-[9px] font-mono font-black border border-white/10 shadow-xs">
+              <span
+                style={{ backgroundColor: 'var(--accent-primary)' }}
+                className="px-1.5 py-0.5 rounded-md backdrop-blur-md text-white text-[9px] font-mono font-black border border-white/10 shadow-xs"
+              >
                 {game.players}P
               </span>
             )}
@@ -105,7 +117,10 @@ export const GameCard: React.FC<GameCardProps> = ({
         {/* Favorite overlay button */}
         {game.favorite && (
           <div className="absolute bottom-2.5 right-2.5 z-10">
-            <div className="p-1 rounded-full bg-rose-500 text-white shadow-xs">
+            <div
+              style={{ backgroundColor: 'var(--accent-primary)' }}
+              className="p-1 rounded-full text-white shadow-xs"
+            >
               <Heart className="w-3 h-3 fill-current" />
             </div>
           </div>
@@ -123,7 +138,8 @@ export const GameCard: React.FC<GameCardProps> = ({
               e.stopPropagation();
               onLaunch(game);
             }}
-            className="flex-1 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
+            style={{ backgroundColor: 'var(--accent-primary)' }}
+            className="flex-1 py-2 rounded-xl text-white font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all"
           >
             <Play className="w-3.5 h-3.5 fill-white" />
             <span>JOUER</span>
@@ -145,10 +161,16 @@ export const GameCard: React.FC<GameCardProps> = ({
 
       {/* Card Info Below Cover */}
       <div className="pt-2 px-0.5 space-y-1 min-w-0">
-        <h3 className="font-extrabold text-xs text-slate-900 truncate font-sans tracking-tight">
+        <h3
+          style={{ color: 'var(--text-primary)' }}
+          className="font-extrabold text-xs truncate font-sans tracking-tight"
+        >
           {game.title}
         </h3>
-        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-sans truncate">
+        <div
+          style={{ color: 'var(--text-secondary)' }}
+          className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider font-sans truncate"
+        >
           <ConsoleLogo systemId={game.system_id} size="sm" className="w-3.5 h-3.5 shrink-0" />
           <span className="truncate">{game.system_id.toUpperCase()}</span>
         </div>

@@ -414,7 +414,13 @@ export const App: React.FC = () => {
     : 'arcade-scale-normal';
 
   return (
-    <div className={`flex h-screen w-screen bg-[#f8f7ff] text-slate-900 overflow-hidden font-sans antialiased select-none ${arcadeScaleClass}`}>
+    <div
+      style={{
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
+      }}
+      className={`flex h-screen w-screen overflow-hidden font-sans antialiased select-none ${arcadeScaleClass}`}
+    >
       {/* 1. Navigation Latérale Gauche (Sidebar) */}
       <Sidebar
         systems={systems}
@@ -447,7 +453,12 @@ export const App: React.FC = () => {
       />
 
       {/* 2. Panneau Principal (Catalogue Plein Écran) */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-gradient-to-br from-[#f8f7ff] via-white to-purple-50/20">
+      <div
+        style={{
+          backgroundColor: 'var(--bg-primary)',
+        }}
+        className="flex-1 flex flex-col h-full overflow-hidden"
+      >
         <main className="flex-1 flex flex-col overflow-hidden relative">
           <ArcadeCatalog
             games={filteredAndSortedGames}

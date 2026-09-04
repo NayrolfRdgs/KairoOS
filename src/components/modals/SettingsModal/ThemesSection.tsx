@@ -69,28 +69,8 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({ themeManager }) =>
       setCommunityThemes(loadedThemes.filter(Boolean));
     } catch (err: any) {
       console.warn('[ThemesSection] Impossible de joindre le store communautaire:', err);
-      setCommunityError('Impossible de joindre le store GitHub (Mode hors-ligne ou dépôt en cours d\'initialisation).');
-      // Afficher une sélection fictive/curatée en fallback
-      setCommunityThemes([
-        {
-          id: 'synthwave-84',
-          name: 'Synthwave 84',
-          author: 'NeonRider',
-          version: '1.2.0',
-          description: 'Ambiance coucher de soleil néon violet et orange rétro arcade.',
-          preview_url: null,
-          is_mock: true,
-        },
-        {
-          id: 'gameboy-pocket',
-          name: 'GameBoy Monochrome',
-          author: 'PixelNostalgia',
-          version: '1.0.1',
-          description: 'Palette verdâtre authentique inspirée de la première console portable.',
-          preview_url: null,
-          is_mock: true,
-        }
-      ]);
+      setCommunityError('Aucun thème distant disponible ou store GitHub inaccessible.');
+      setCommunityThemes([]);
     } finally {
       setLoadingCommunity(false);
     }
@@ -315,6 +295,16 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({ themeManager }) =>
           {communityError && (
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium">
               {communityError}
+            </div>
+          )}
+
+          {communityThemes.length === 0 && !loadingCommunity && (
+            <div className="p-8 text-center rounded-2xl border border-dashed border-purple-100 bg-purple-50/20 space-y-2">
+              <Palette className="w-8 h-8 text-purple-400 mx-auto" />
+              <p className="text-xs font-bold text-slate-700">Aucun thème communautaire supplémentaire disponible actuellement.</p>
+              <p className="text-[11px] text-slate-400">
+                Vous pouvez créer votre propre thème et le soumettre par Pull Request sur le dépôt GitHub KaïroOS-themes !
+              </p>
             </div>
           )}
 

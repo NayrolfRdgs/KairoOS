@@ -9,5 +9,18 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     host: true,
+    watch: {
+      ignored: [
+        '**/config/**',
+        '**/themes/**',
+        '**/*.db',
+        '**/*.db-journal',
+        '**/logs/**',
+        '**/roms/**',
+        '**/emulators/**',
+        '**/dist-portable/**',
+        '**/src-tauri/target/**',
+      ],
+    },
   },
 });

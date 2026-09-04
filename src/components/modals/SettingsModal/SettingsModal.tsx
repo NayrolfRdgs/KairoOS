@@ -70,25 +70,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [localSettings, setLocalSettings] = useState<AppSettings>(initialSettings);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSettingsRef = useRef<AppSettings>(initialSettings);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Hook du gestionnaire de thèmes
   const themeManager = useTheme();
 
-  // Sauvegarde temps réel immédiate
+  // Sauvegarde temps réel avec debounce 300ms pour éviter tout redémarrage
   const updateSetting = useCallback(
-    async (key: keyof AppSettings, val: any) => {
+    (key: keyof AppSettings, val: any) => {
       setLocalSettings((prev) => {
         const updated = { ...prev, [key]: val };
+        pendingSettingsRef.current = updated;
 
-        // Déclencher la persistance
-        onSave(updated).catch((err) => {
-          console.error('[SettingsModal] Erreur de sauvegarde en temps réel:', err);
-        });
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = setTimeout(() => {
+          onSave(pendingSettingsRef.current).catch((err) => {
+            console.error('[SettingsModal] Erreur sauvegarde temps réel:', err);
+          });
+        }, 300);
 
         return updated;
       });
 
-      // Feedback visuel "Enregistré"
       setSavedSuccess(true);
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(() => setSavedSuccess(false), 1500);
@@ -158,18 +162,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-5xl h-[88vh] bg-white border border-purple-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+      <div
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          borderColor: 'var(--border-color)',
+          color: 'var(--text-primary)',
+        }}
+        className="relative w-full max-w-5xl h-[88vh] border rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+      >
         {/* Header Bar */}
-        <div className="px-6 py-4 border-b border-purple-100 flex items-center justify-between bg-white shrink-0">
+        <div
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderColor: 'var(--border-color)',
+          }}
+          className="px-6 py-4 border-b flex items-center justify-between shrink-0"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
+            <div
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-color)',
+                color: 'var(--accent-primary)',
+              }}
+              className="w-10 h-10 rounded-2xl flex items-center justify-center border shadow-2xs"
+            >
               <SettingsIcon className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-slate-900 font-sans tracking-tight">
+              <h2
+                style={{ color: 'var(--text-primary)' }}
+                className="text-base font-black font-sans tracking-tight"
+              >
                 PARAMÈTRES DE LA BORNE
               </h2>
-              <p className="text-xs text-slate-400">
+              <p
+                style={{ color: 'var(--text-muted)' }}
+                className="text-xs"
+              >
                 Configuration générale, thèmes, émulation et manettes
               </p>
             </div>
@@ -185,7 +215,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-all"
+              className="p-2 rounded-full hover:bg-black/10 text-slate-400 hover:text-slate-800 transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -195,17 +225,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Two Columns Layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* Internal Sidebar */}
-          <div className="w-64 border-r border-purple-100 bg-purple-50/20 p-3 flex flex-col gap-1 overflow-y-auto shrink-0">
+          <div
+            style={{
+              backgroundColor: 'var(--sidebar-bg)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="w-64 border-r p-3 flex flex-col gap-1 overflow-y-auto shrink-0"
+          >
             {sectionsList.map((item) => {
               const isActive = activeSection === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveSection(item.id)}
+                  style={{
+                    backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
+                    color: isActive ? '#ffffff' : 'var(--text-primary)',
+                  }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
-                    isActive
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-purple-50/70'
+                    isActive ? 'shadow-sm' : 'hover:bg-black/5'
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -217,13 +255,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               );
             })}
 
-            <div className="mt-auto pt-3 border-t border-purple-100 text-[10px] text-slate-400 text-center font-mono">
+            <div
+              style={{
+                color: 'var(--text-muted)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="mt-auto pt-3 border-t text-[10px] text-center font-mono"
+            >
               D-Pad ↕ naviguer • (B) fermer
             </div>
           </div>
 
           {/* Section Main View */}
-          <div className="flex-1 overflow-y-auto p-6 scrollbar-thin bg-gradient-to-b from-white to-purple-50/10">
+          <div
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+            }}
+            className="flex-1 overflow-y-auto p-6 scrollbar-thin"
+          >
             {activeSection === 'themes' && <ThemesSection themeManager={themeManager} />}
 
             {activeSection === 'display' && (
@@ -301,14 +350,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-purple-100 bg-white flex items-center justify-between gap-3 shrink-0">
-          <div className="text-[11px] text-slate-400 font-mono">
+        <div
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderColor: 'var(--border-color)',
+          }}
+          className="p-4 border-t flex items-center justify-between gap-3 shrink-0"
+        >
+          <div
+            style={{ color: 'var(--text-muted)' }}
+            className="text-[11px] font-mono"
+          >
             KaïroOS v2.0 • Paramètres & Thèmes • Sauvegarde temps réel
           </div>
 
           <button
             onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-black uppercase tracking-wider shadow-md shadow-purple-500/20 active:scale-95 transition-all"
+            style={{
+              backgroundColor: 'var(--accent-primary)',
+            }}
+            className="px-6 py-2 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-md active:scale-95 transition-all"
           >
             Fermer
           </button>

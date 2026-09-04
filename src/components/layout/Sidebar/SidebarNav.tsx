@@ -80,7 +80,10 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     <div className="space-y-4">
       {/* 1. Bibliothèque */}
       <div className="space-y-1">
-        <h3 className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 font-sans mb-1">
+        <h3
+          style={{ color: 'var(--text-muted)' }}
+          className="px-3 text-[11px] font-black uppercase tracking-wider font-sans mb-1"
+        >
           BIBLIOTHÈQUE
         </h3>
 
@@ -93,27 +96,30 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               <button
                 key={item.id}
                 onClick={() => onSelectCategory(item.id)}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-pink-50 to-purple-50 text-rose-600 border border-pink-200/80 shadow-xs scale-[1.02]'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-purple-50/50'
+                style={{
+                  backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                  color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                  borderColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                }}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all border ${
+                  isSelected ? 'shadow-sm scale-[1.02]' : 'hover:bg-black/5'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
-                    className={`w-4 h-4 ${
-                      isSelected ? 'text-rose-500' : item.iconColor || 'text-slate-400'
-                    }`}
+                    className="w-4 h-4"
+                    style={{ color: isSelected ? '#ffffff' : undefined }}
                   />
                   <span>{item.label}</span>
                 </div>
 
                 <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono ${
-                    isSelected
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-slate-100 text-slate-400'
-                  }`}
+                  style={{
+                    backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'var(--bg-card)',
+                    color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                    borderColor: 'var(--border-color)',
+                  }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full font-mono border"
                 >
                   {item.count}
                 </span>
@@ -123,10 +129,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         </div>
       </div>
 
-      {/* 2. Collections & Filtres Intelligents (Désactivables dans les paramètres) */}
+      {/* 2. Collections & Filtres Intelligents */}
       {visibleModes.length > 0 && (
         <div className="space-y-1">
-          <h3 className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 font-sans mb-1">
+          <h3
+            style={{ color: 'var(--text-muted)' }}
+            className="px-3 text-[11px] font-black uppercase tracking-wider font-sans mb-1"
+          >
             MODES & GENRES
           </h3>
 
@@ -139,27 +148,30 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onSelectCategory(item.id)}
-                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-2xl text-xs font-bold transition-all ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border border-purple-200 shadow-xs scale-[1.02]'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-purple-50/40'
+                  style={{
+                    backgroundColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--text-primary)',
+                    borderColor: isSelected ? 'var(--accent-primary)' : 'transparent',
+                  }}
+                  className={`w-full flex items-center justify-between px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
+                    isSelected ? 'shadow-sm scale-[1.02]' : 'hover:bg-black/5'
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon
-                      className={`w-4 h-4 ${
-                        isSelected ? 'text-purple-600' : item.iconColor || 'text-slate-400'
-                      }`}
+                      className="w-4 h-4"
+                      style={{ color: isSelected ? '#ffffff' : undefined }}
                     />
                     <span>{item.label}</span>
                   </div>
 
                   <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full font-mono ${
-                      isSelected
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-slate-100 text-slate-400'
-                    }`}
+                    style={{
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.25)' : 'var(--bg-card)',
+                      color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                      borderColor: 'var(--border-color)',
+                    }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full font-mono border"
                   >
                     {item.count}
                   </span>

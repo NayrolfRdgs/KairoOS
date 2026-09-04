@@ -79,10 +79,13 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
 
   return (
     <div
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        borderColor: isFocused ? 'var(--accent-primary)' : 'var(--border-color)',
+        color: 'var(--text-primary)',
+      }}
       className={`relative w-full rounded-3xl overflow-hidden border transition-all duration-300 select-none ${
-        isFocused
-          ? 'ring-4 ring-rose-500/40 border-rose-400 shadow-kairo-glow scale-[1.003]'
-          : 'border-purple-100/90 bg-white/90 shadow-sm'
+        isFocused ? 'ring-4 shadow-kairo-glow scale-[1.003]' : 'shadow-sm'
       }`}
     >
       {/* Background Artwork Layer with Smooth Fade to White on the Left */}
@@ -97,8 +100,18 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
           <div className="w-full h-full bg-gradient-to-br from-purple-50 via-pink-50/40 to-white" />
         )}
         {/* Soft Multi-Stop Gradient Overlays for High Contrast Typography */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/40 w-full md:w-3/4 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-transparent to-transparent z-10" />
+        <div
+          style={{
+            background: 'linear-gradient(to right, var(--bg-card) 0%, var(--bg-card) 55%, transparent 100%)',
+          }}
+          className="absolute inset-0 w-full md:w-3/4 z-10 opacity-95"
+        />
+        <div
+          style={{
+            background: 'linear-gradient(to top, var(--bg-card) 0%, transparent 100%)',
+          }}
+          className="absolute inset-0 z-10 opacity-70"
+        />
       </div>
 
       {/* Navigation Arrows (Prev / Next) for Carousel */}
@@ -106,14 +119,16 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
         <>
           <button
             onClick={handlePrev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-purple-100/80 shadow-md flex items-center justify-center text-slate-600 hover:text-rose-600 transition-all active:scale-90"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full border shadow-md flex items-center justify-center transition-all active:scale-90"
             title="Jeu précédent (LB)"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full bg-white/80 hover:bg-white border border-purple-100/80 shadow-md flex items-center justify-center text-slate-600 hover:text-rose-600 transition-all active:scale-90"
+            style={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-9 h-9 rounded-full border shadow-md flex items-center justify-center transition-all active:scale-90"
             title="Jeu suivant (RB)"
           >
             <ChevronRight className="w-5 h-5" />
@@ -135,11 +150,11 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
 
           {/* Title & Subtitle */}
           <div className="space-y-0.5 min-w-0">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tight text-slate-900 leading-tight break-words">
+            <h1 style={{ color: 'var(--text-primary)' }} className="text-2xl sm:text-3xl md:text-4xl font-black font-sans tracking-tight leading-tight break-words">
               {game.title}
             </h1>
             {originalTitle && (
-              <p className="text-xs sm:text-sm font-black text-rose-600 tracking-widest uppercase">
+              <p style={{ color: 'var(--accent-primary)' }} className="text-xs sm:text-sm font-black tracking-widest uppercase">
                 {originalTitle}
               </p>
             )}
@@ -181,7 +196,7 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
           </div>
 
           {/* Synopsis */}
-          <p className="text-xs sm:text-sm text-slate-600 line-clamp-2 leading-relaxed font-sans max-w-lg">
+          <p style={{ color: 'var(--text-secondary)' }} className="text-xs sm:text-sm line-clamp-2 leading-relaxed font-sans max-w-lg">
             {game.synopsis ||
               'Découvrez ce titre d\'exception optimisé pour votre borne d\'arcade KaïroOS.'}
           </p>
@@ -207,7 +222,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
             {/* Big Magenta CTA: JOUER */}
             <button
               onClick={() => onLaunch(game)}
-              className="px-8 py-3 rounded-2xl bg-gradient-to-r from-rose-500 via-pink-600 to-rose-600 hover:from-rose-600 hover:to-pink-700 text-white font-black font-sans text-xs uppercase tracking-wider shadow-lg shadow-rose-500/30 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+              style={{ backgroundColor: 'var(--accent-primary)' }}
+              className="px-8 py-3 rounded-2xl text-white font-black font-sans text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
             >
               <Play className="w-4 h-4 fill-white" />
               <span>JOUER</span>
@@ -230,7 +246,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
             <button
               onClick={() => onOpenDetails(game)}
               title="Voir la fiche détaillée du jeu"
-              className="p-3 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50 text-slate-500 hover:text-slate-800 shadow-xs transition-all active:scale-95"
+              style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                className="p-3 rounded-2xl border hover:scale-105 shadow-xs transition-all active:scale-95"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -240,7 +257,8 @@ export const HeroShowcase: React.FC<HeroShowcaseProps> = ({
               <button
                 onClick={onOpenGamepadConfig}
                 title="Configurer les boutons arcade pour ce jeu"
-                className="p-3 rounded-2xl border border-purple-100 bg-white hover:bg-purple-50 text-slate-500 hover:text-slate-800 shadow-xs transition-all active:scale-95"
+                style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                className="p-3 rounded-2xl border hover:scale-105 shadow-xs transition-all active:scale-95"
               >
                 <Sliders className="w-4 h-4" />
               </button>
