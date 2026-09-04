@@ -7,7 +7,7 @@
   ],
   "custom_franchises": [],
   "roms_path": "./roms",
-  "theme": "arcade-light",
+  "theme": "neon-dark",
   "enabled_systems": [
     "n64"
   ],

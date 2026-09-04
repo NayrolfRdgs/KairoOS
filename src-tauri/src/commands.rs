@@ -445,7 +445,7 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
     let mut themes = Vec::new();
     let active_theme_id = state.db.get_app_settings()
         .map(|s| s.theme)
-        .unwrap_or_else(|_| "arcade-light".into());
+        .unwrap_or_else(|_| "kairo-default".into());
 
     if let Ok(entries) = std::fs::read_dir(&themes_dir) {
         for entry in entries.flatten() {
@@ -458,7 +458,8 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
                             if preview_file.exists() {
                                 theme.preview_url = Some(preview_file.to_string_lossy().to_string());
                             }
-                            theme.is_active = theme.id == active_theme_id;
+                            theme.is_active = theme.id == active_theme_id
+                                || (active_theme_id == "arcade-light" && theme.id == "kairo-default");
                             themes.push(theme);
                         }
                     }
@@ -469,8 +470,8 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
 
     if themes.is_empty() {
         let mut def = kairo_core::Theme::default();
-        def.id = "arcade-light".into();
-        def.name = "Arcade Light 80s".into();
+        def.id = "kairo-default".into();
+        def.name = "Kaïro OS".into();
         def.is_active = true;
         themes.push(def);
     }
@@ -482,10 +483,16 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
 #[tauri::command]
 pub fn get_theme(id: String) -> Result<kairo_core::Theme, String> {
     let themes_dir = resolve_themes_dir();
-    let theme_dir = themes_dir.join(&id);
-    let theme_json = theme_dir.join("theme.json");
+    let mut theme_dir = themes_dir.join(&id);
+    let mut theme_json = theme_dir.join("theme.json");
     if !theme_json.exists() {
-        return Err(format!("Thème '{}' introuvable", id));
+        let fallback_dir = themes_dir.join("kairo-default");
+        if fallback_dir.join("theme.json").exists() {
+            theme_dir = fallback_dir;
+            theme_json = theme_dir.join("theme.json");
+        } else {
+            return Err(format!("Thème '{}' introuvable", id));
+        }
     }
     let content = std::fs::read_to_string(&theme_json).map_err(|e| e.to_string())?;
     let mut theme: kairo_core::Theme = serde_json::from_str(&content).map_err(|e| e.to_string())?;
@@ -508,6 +515,35 @@ pub fn set_theme(id: String, state: State<'_, AppState>) -> Result<kairo_core::T
     if let Ok(json_str) = serde_json::to_string_pretty(&settings) {
         let _ = std::fs::write(config_path, json_str);
     }
+    Ok(theme)
+}
+
+/// Sauvegarde les modifications complètes d'un thème (couleurs, disposition, polices)
+#[tauri::command]
+pub fn save_theme(mut theme: kairo_core::Theme, state: State<'_, AppState>) -> Result<kairo_core::Theme, String> {
+    let themes_dir = resolve_themes_dir();
+    let theme_dir = themes_dir.join(&theme.id);
+    let _ = std::fs::create_dir_all(&theme_dir);
+    let theme_json = theme_dir.join("theme.json");
+
+    theme.is_active = true;
+    let json_content = serde_json::to_string_pretty(&theme).map_err(|e| e.to_string())?;
+    std::fs::write(&theme_json, json_content).map_err(|e| e.to_string())?;
+
+    let preview_file = theme_dir.join("preview.png");
+    if preview_file.exists() {
+        theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+    }
+
+    let mut settings = state.db.get_app_settings().map_err(|e| e.to_string())?;
+    settings.theme = theme.id.clone();
+    let _ = state.db.save_app_settings(&settings);
+
+    let config_path = std::path::PathBuf::from("config/settings.json");
+    if let Ok(json_str) = serde_json::to_string_pretty(&settings) {
+        let _ = std::fs::write(config_path, json_str);
+    }
+
     Ok(theme)
 }
 

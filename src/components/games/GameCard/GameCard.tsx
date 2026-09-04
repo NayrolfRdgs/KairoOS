@@ -47,18 +47,22 @@ export const GameCard: React.FC<GameCardProps> = ({
       ref={cardRef}
       data-game-id={game.id}
       onClick={() => onSelect(game)}
+      style={{
+        transform: isFocused ? 'scale(var(--card-focus-scale, 1.05))' : undefined,
+      }}
       className={`group relative flex flex-col shrink-0 w-44 sm:w-48 md:w-52 select-none cursor-pointer transition-all duration-200 ${
-        isFocused ? 'scale-105 z-20' : 'hover:scale-[1.02] z-10'
+        isFocused ? 'z-20' : 'hover:scale-[1.02] z-10'
       }`}
     >
-      {/* 3:4 Vertical Portrait Arcade Container */}
+      {/* Container Adaptatif (Portrait 3:4, Carré 1:1, ou Paysage 16:9) */}
       <div
         style={{
           backgroundColor: 'var(--bg-card)',
           borderColor: isFocused ? 'var(--accent-primary)' : 'var(--border-color)',
           borderRadius: 'var(--card-radius, 16px)',
+          aspectRatio: 'var(--card-aspect, 3/4)',
         }}
-        className={`relative w-full aspect-[3/4] overflow-hidden border transition-all duration-300 shadow-sm ${
+        className={`relative w-full overflow-hidden border transition-all duration-300 shadow-sm ${
           isFocused ? 'ring-4 shadow-kairo-glow' : 'hover:border-purple-300'
         }`}
       >

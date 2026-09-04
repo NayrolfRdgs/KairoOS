@@ -13,6 +13,10 @@ export async function setTheme(id: string): Promise<Theme> {
   return invokeCommand<Theme>('set_theme', { id });
 }
 
+export async function saveTheme(theme: Theme): Promise<Theme> {
+  return invokeCommand<Theme>('save_theme', { theme });
+}
+
 export async function openThemesFolder(): Promise<void> {
   return invokeCommand<void>('open_themes_folder');
 }

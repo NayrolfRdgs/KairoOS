@@ -24,6 +24,11 @@ export interface ThemeLayout {
   card_radius: string;
   sidebar_width: string;
   card_gap: string;
+  card_aspect?: 'poster' | 'square' | 'landscape';
+  card_glow?: 'none' | 'subtle' | 'neon';
+  scanlines?: 'none' | 'light' | 'retro' | 'intense';
+  card_shadow?: 'flat' | 'soft' | 'arcade' | 'glow';
+  card_scale?: 'none' | 'subtle' | 'dynamic';
 }
 
 export interface ThemeAssets {

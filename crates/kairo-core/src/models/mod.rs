@@ -341,6 +341,16 @@ pub struct ThemeLayout {
     pub card_radius: String,
     pub sidebar_width: String,
     pub card_gap: String,
+    #[serde(default)]
+    pub card_aspect: Option<String>,
+    #[serde(default)]
+    pub card_glow: Option<String>,
+    #[serde(default)]
+    pub scanlines: Option<String>,
+    #[serde(default)]
+    pub card_shadow: Option<String>,
+    #[serde(default)]
+    pub card_scale: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]

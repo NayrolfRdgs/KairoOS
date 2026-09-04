@@ -1,9 +1,9 @@
 {
-  "id": "neon-dark",
-  "name": "Kaïro Sombre (OLED)",
+  "id": "kairo-default",
+  "name": "Kaïro OS",
   "author": "KaïroOS Team",
   "version": "1.0.0",
-  "description": "Thème sombre profond idéal pour bornes d\\'arcade et écrans OLED",
+  "description": "Thème officiel unifié et hautement personnalisable de KaïroOS",
   "colors": {
     "bg_primary": "#0b0f19",
     "bg_secondary": "#111827",
@@ -20,7 +20,7 @@
     "danger": "#ef4444"
   },
   "fonts": {
-    "primary": "Outfit, Inter, sans-serif",
+    "primary": "Outfit, Inter, system-ui, sans-serif",
     "arcade": "Press Start 2P, monospace",
     "size_base": "14px"
   },

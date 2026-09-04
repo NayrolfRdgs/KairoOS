@@ -20,26 +20,46 @@ export const DisplaySection: React.FC<DisplaySectionProps> = ({
   return (
     <div className="space-y-6">
       {/* 1. Thème Actif */}
-      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs flex items-center justify-between">
+      <div
+        style={{
+          backgroundColor: 'var(--bg-card)',
+          borderColor: 'var(--border-color)',
+        }}
+        className="p-5 rounded-3xl border shadow-xs flex items-center justify-between"
+      >
         <div className="flex items-center gap-3.5">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner border border-black/10"
-            style={{ backgroundColor: activeTheme.colors?.bg_primary || '#f5f0e8' }}
+            style={{ backgroundColor: activeTheme.colors?.bg_primary || '#0b0f19' }}
           >
-            <Sparkles className="w-6 h-6" style={{ color: activeTheme.colors?.accent_primary || '#e63950' }} />
+            <Sparkles className="w-6 h-6" style={{ color: activeTheme.colors?.accent_primary || '#f43f5e' }} />
           </div>
           <div>
-            <div className="text-[10px] font-black uppercase tracking-wider text-purple-600">Thème Actif</div>
-            <h3 className="text-sm font-black text-slate-900">{activeTheme.name}</h3>
-            <p className="text-xs text-slate-400">Par {activeTheme.author} • v{activeTheme.version}</p>
+            <div
+              style={{ color: 'var(--accent-primary)' }}
+              className="text-[10px] font-black uppercase tracking-wider"
+            >
+              Thème Actif
+            </div>
+            <h3 style={{ color: 'var(--text-primary)' }} className="text-sm font-black">
+              {activeTheme.name}
+            </h3>
+            <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+              Par {activeTheme.author} • v{activeTheme.version}
+            </p>
           </div>
         </div>
 
         <button
           onClick={onNavigateToThemes}
-          className="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all border border-purple-200"
+          style={{
+            backgroundColor: 'var(--bg-secondary)',
+            borderColor: 'var(--border-color)',
+            color: 'var(--text-primary)',
+          }}
+          className="px-4 py-2 rounded-xl text-xs font-bold transition-all border hover:border-[var(--accent-primary)]/40 hover:opacity-90"
         >
-          Changer de thème
+          Personnaliser le style & couleurs
         </button>
       </div>
 
