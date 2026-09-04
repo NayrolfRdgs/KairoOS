@@ -75,12 +75,27 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
   const waitingForReleaseRef = useRef<boolean>(false);
   const confirmedButton1Ref = useRef<string | null>(null);
 
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const editingKeyWaitingReleaseRef = useRef<boolean>(false);
+
+  const handleSelectKeyToEdit = useCallback((key: string | null) => {
+    if (key) {
+      const isNeutral =
+        activeButtons.size === 0 &&
+        Math.abs(activeAxes.x) < 0.4 &&
+        Math.abs(activeAxes.y) < 0.4;
+      editingKeyWaitingReleaseRef.current = !isNeutral;
+    }
+    setEditingKey(key);
+  }, [activeButtons, activeAxes]);
+
   // Changement propre de joueur (dissociation totale P1/P2 et réinitialisation de l'assistant)
   const handleSelectPlayer = useCallback((idx: number) => {
     setSelectedPlayer(idx);
     setIsWizardActive(false);
     setWizardStep(0);
     setPendingInput(null);
+    setEditingKey(null);
     confirmedButton1Ref.current = null;
     waitingForReleaseRef.current = false;
   }, []);
@@ -158,13 +173,18 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
         }
       } else {
         if (e.key === 'Escape') {
-          onClose();
+          if (editingKey) {
+            e.preventDefault();
+            setEditingKey(null);
+          } else {
+            onClose();
+          }
         }
       }
     };
     window.addEventListener('keydown', handleModalKeyDown, { capture: true });
     return () => window.removeEventListener('keydown', handleModalKeyDown, { capture: true });
-  }, [isWizardActive, handleConfirmStep, handleSkipStep, onClose]);
+  }, [isWizardActive, editingKey, handleConfirmStep, handleSkipStep, onClose]);
 
   const handleWizardInput = useCallback(
     (_pad: Gamepad, pressed: Set<number>, axisX: number, axisY: number) => {
@@ -358,6 +378,66 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
     [selectedPlayer, activeGamepad, onSaveMappings]
   );
 
+  // Capture automatique du bouton pressé ou du joystick pour la touche sélectionnée
+  useEffect(() => {
+    if (!editingKey || isWizardActive) return;
+
+    const isNeutral =
+      activeButtons.size === 0 &&
+      Math.abs(activeAxes.x) < 0.4 &&
+      Math.abs(activeAxes.y) < 0.4;
+
+    if (editingKeyWaitingReleaseRef.current) {
+      if (isNeutral) {
+        editingKeyWaitingReleaseRef.current = false;
+      }
+      return;
+    }
+
+    if (activeButtons.size > 0) {
+      const btn = Array.from(activeButtons)[0];
+      handleUpdateKey(editingKey, btn.toString());
+      setEditingKey(null);
+      return;
+    }
+
+    const isDirection =
+      editingKey.includes('up') ||
+      editingKey.includes('down') ||
+      editingKey.includes('left') ||
+      editingKey.includes('right');
+
+    if (isDirection) {
+      if (editingKey.includes('up') && activeAxes.y < -0.55) {
+        handleUpdateKey(editingKey, 'h0up');
+        setEditingKey(null);
+      } else if (editingKey.includes('down') && activeAxes.y > 0.55) {
+        handleUpdateKey(editingKey, 'h0down');
+        setEditingKey(null);
+      } else if (editingKey.includes('left') && activeAxes.x < -0.55) {
+        handleUpdateKey(editingKey, 'h0left');
+        setEditingKey(null);
+      } else if (editingKey.includes('right') && activeAxes.x > 0.55) {
+        handleUpdateKey(editingKey, 'h0right');
+        setEditingKey(null);
+      }
+    } else {
+      if (activeAxes.y < -0.6) {
+        handleUpdateKey(editingKey, 'h0up');
+        setEditingKey(null);
+      } else if (activeAxes.y > 0.6) {
+        handleUpdateKey(editingKey, 'h0down');
+        setEditingKey(null);
+      } else if (activeAxes.x < -0.6) {
+        handleUpdateKey(editingKey, 'h0left');
+        setEditingKey(null);
+      } else if (activeAxes.x > 0.6) {
+        handleUpdateKey(editingKey, 'h0right');
+        setEditingKey(null);
+      }
+    }
+  }, [editingKey, isWizardActive, activeButtons, activeAxes, handleUpdateKey]);
+
   return (
     <div
       onClick={(e) => e.stopPropagation()}
@@ -502,11 +582,16 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <GamepadVisualizer
                 controllerType={currentMapping.controller_type}
+                currentMapping={currentMapping}
                 activeButtons={activeButtons}
                 activeAxes={activeAxes}
+                editingKey={editingKey}
+                onSelectKeyToEdit={handleSelectKeyToEdit}
+                onUpdateKey={handleUpdateKey}
                 onStartWizard={() => {
                   setIsWizardActive(true);
                   setWizardStep(0);
+                  setEditingKey(null);
                 }}
               />
 
@@ -516,6 +601,8 @@ export const GamepadSettingsModal: React.FC<GamepadSettingsModalProps> = ({
                 selectedPlayer={selectedPlayer}
                 activeButtons={activeButtons}
                 activeAxes={activeAxes}
+                editingKey={editingKey}
+                onSelectKeyToEdit={handleSelectKeyToEdit}
                 onUpdateKey={handleUpdateKey}
                 onResetPlayer={handleResetCurrent}
               />

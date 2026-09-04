@@ -8,6 +8,8 @@ interface MappingTableProps {
   selectedPlayer: number;
   activeButtons: Set<number>;
   activeAxes: { x: number; y: number; rx: number; ry: number };
+  editingKey: string | null;
+  onSelectKeyToEdit: (key: string | null) => void;
   onUpdateKey: (key: string, value: string) => void;
   onResetPlayer: () => void;
 }
@@ -42,10 +44,11 @@ export const MappingTable: React.FC<MappingTableProps> = ({
   selectedPlayer,
   activeButtons,
   activeAxes,
+  editingKey,
+  onSelectKeyToEdit,
   onUpdateKey,
   onResetPlayer,
 }) => {
-  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'action' | 'direction' | 'system'>('all');
   const waitingReleaseRef = useRef<boolean>(false);
 
@@ -73,7 +76,7 @@ export const MappingTable: React.FC<MappingTableProps> = ({
       Math.abs(activeAxes.y) > 0.4;
 
     waitingReleaseRef.current = isSomethingActive;
-    setEditingKey(key);
+    onSelectKeyToEdit(key);
   };
 
   // Écoute des appuis physiques de boutons ou directions quand editingKey est actif
@@ -96,7 +99,7 @@ export const MappingTable: React.FC<MappingTableProps> = ({
     if (activeButtons.size > 0) {
       const pressedBtn = Array.from(activeButtons)[0];
       onUpdateKey(editingKey, pressedBtn.toString());
-      setEditingKey(null);
+      onSelectKeyToEdit(null);
       return;
     }
 
@@ -110,43 +113,43 @@ export const MappingTable: React.FC<MappingTableProps> = ({
     if (isDirection) {
       if (editingKey.includes('up') && activeAxes.y < -0.55) {
         onUpdateKey(editingKey, 'h0up');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (editingKey.includes('down') && activeAxes.y > 0.55) {
         onUpdateKey(editingKey, 'h0down');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (editingKey.includes('left') && activeAxes.x < -0.55) {
         onUpdateKey(editingKey, 'h0left');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (editingKey.includes('right') && activeAxes.x > 0.55) {
         onUpdateKey(editingKey, 'h0right');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
     } else {
       if (activeAxes.y < -0.6) {
         onUpdateKey(editingKey, 'h0up');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (activeAxes.y > 0.6) {
         onUpdateKey(editingKey, 'h0down');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (activeAxes.x < -0.6) {
         onUpdateKey(editingKey, 'h0left');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
       if (activeAxes.x > 0.6) {
         onUpdateKey(editingKey, 'h0right');
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
         return;
       }
     }
@@ -156,7 +159,7 @@ export const MappingTable: React.FC<MappingTableProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && editingKey) {
-        setEditingKey(null);
+        onSelectKeyToEdit(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -247,7 +250,7 @@ export const MappingTable: React.FC<MappingTableProps> = ({
               </span>
             </div>
             <button
-              onClick={() => setEditingKey(null)}
+              onClick={() => onSelectKeyToEdit(null)}
               className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold flex items-center gap-1"
             >
               <X className="w-3 h-3" />
