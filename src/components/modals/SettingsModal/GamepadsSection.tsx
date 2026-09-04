@@ -96,6 +96,86 @@ export const GamepadsSection: React.FC<GamepadsSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 3. Style des boutons d'aide UI */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <Gamepad2 className="w-4 h-4 text-purple-600" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+            Style des Boutons d'Aide à l'Écran
+          </h3>
+        </div>
+
+        <p className="text-xs text-slate-500">
+          Choisissez l'apparence des touches affichées dans la barre d'aide inférieure et dans l'interface de navigation.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div
+            onClick={() => updateSetting('button_prompt_style', 'xbox')}
+            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+              (settings.button_prompt_style || 'xbox') === 'xbox'
+                ? 'border-emerald-500 bg-emerald-50/20 shadow-xs'
+                : 'border-purple-100 hover:border-purple-200 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black text-slate-900">Disposition Xbox</span>
+              {(settings.button_prompt_style || 'xbox') === 'xbox' && (
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Actif
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                A
+              </span>
+              <span className="w-7 h-7 rounded-full bg-rose-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                B
+              </span>
+              <span className="w-7 h-7 rounded-full bg-blue-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                X
+              </span>
+              <span className="w-7 h-7 rounded-full bg-amber-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                Y
+              </span>
+            </div>
+          </div>
+
+          <div
+            onClick={() => updateSetting('button_prompt_style', 'playstation')}
+            className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+              settings.button_prompt_style === 'playstation'
+                ? 'border-blue-500 bg-blue-50/20 shadow-xs'
+                : 'border-purple-100 hover:border-purple-200 bg-white'
+            }`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black text-slate-900">Disposition PlayStation</span>
+              {settings.button_prompt_style === 'playstation' && (
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                  Actif
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                ✕
+              </span>
+              <span className="w-7 h-7 rounded-full bg-rose-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                ○
+              </span>
+              <span className="w-7 h-7 rounded-full bg-pink-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                □
+              </span>
+              <span className="w-7 h-7 rounded-full bg-emerald-500 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                △
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

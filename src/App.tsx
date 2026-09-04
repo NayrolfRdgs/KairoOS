@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
+import { GamepadFooterBar } from './components/layout/GamepadFooterBar';
 import { ArcadeCatalog } from './components/games';
 import {
   GameDetailsModal,
@@ -472,6 +473,24 @@ export const App: React.FC = () => {
             categoryTitle={currentCategoryTitle}
           />
         </main>
+
+        {/* 2.1 Barre d'Aide Manette (Xbox / PlayStation) */}
+        <GamepadFooterBar
+          buttonStyle={settings.button_prompt_style || 'xbox'}
+          isGameRunning={isGameRunning}
+          isDetailsModalOpen={Boolean(selectedGameForDetails)}
+          isOtherModalOpen={Boolean(
+            scannerOpen ||
+            settingsOpen ||
+            addGameOpen ||
+            gamepadSettingsOpen ||
+            kioskUnlockOpen ||
+            franchiseOrganizerGame
+          )}
+          gameSelectAction={settings.game_select_action || 'details'}
+          isConnected={gamepadConnected}
+          gamepadName={gamepadName}
+        />
       </div>
 
       {/* 3. Modales & Overlays */}

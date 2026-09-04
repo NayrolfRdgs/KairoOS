@@ -205,27 +205,35 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({ themeManager }) =>
                   </p>
 
                   {/* Color Palette Strip */}
-                  <div className="flex items-center gap-1 mb-3">
-                    <span
-                      className="w-4 h-4 rounded-full border border-black/10 shadow-2xs"
-                      style={{ backgroundColor: t.colors?.bg_primary }}
-                      title="Fond principal"
-                    />
-                    <span
-                      className="w-4 h-4 rounded-full border border-black/10 shadow-2xs"
-                      style={{ backgroundColor: t.colors?.sidebar_bg }}
-                      title="Sidebar"
-                    />
-                    <span
-                      className="w-4 h-4 rounded-full border border-black/10 shadow-2xs"
-                      style={{ backgroundColor: t.colors?.accent_primary }}
-                      title="Accent principal"
-                    />
-                    <span
-                      className="w-4 h-4 rounded-full border border-black/10 shadow-2xs"
-                      style={{ backgroundColor: t.colors?.accent_secondary }}
-                      title="Accent secondaire"
-                    />
+                  <div className="flex items-center justify-between mb-3.5 px-1 py-1 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400">Palette :</span>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-2xs transition-transform hover:scale-110"
+                        style={{ backgroundColor: t.colors?.bg_primary }}
+                        title={`Fond principal: ${t.colors?.bg_primary}`}
+                      />
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-2xs transition-transform hover:scale-110"
+                        style={{ backgroundColor: t.colors?.bg_card }}
+                        title={`Cartes: ${t.colors?.bg_card}`}
+                      />
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-2xs transition-transform hover:scale-110"
+                        style={{ backgroundColor: t.colors?.sidebar_bg }}
+                        title={`Sidebar: ${t.colors?.sidebar_bg}`}
+                      />
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-2xs transition-transform hover:scale-110"
+                        style={{ backgroundColor: t.colors?.accent_primary }}
+                        title={`Accent principal: ${t.colors?.accent_primary}`}
+                      />
+                      <span
+                        className="w-5 h-5 rounded-full border border-black/15 shadow-2xs transition-transform hover:scale-110"
+                        style={{ backgroundColor: t.colors?.accent_secondary }}
+                        title={`Accent secondaire: ${t.colors?.accent_secondary}`}
+                      />
+                    </div>
                   </div>
 
                   {/* Actions */}

@@ -461,4 +461,5 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   auto_scrape_after_scan: false,
   remote_autostart: true,
   debug_logs: false,
+  button_prompt_style: 'xbox',
 };

@@ -3,23 +3,23 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #f5f0e8;
-  --bg-secondary: #ede8dc;
+  --bg-primary: #f8f7ff;
+  --bg-secondary: #f3e8ff;
   --bg-card: #ffffff;
-  --sidebar-bg: #e8e0d0;
-  --accent-primary: #e63950;
-  --accent-secondary: #f5a623;
-  --text-primary: #1a1a2e;
-  --text-secondary: #666666;
-  --text-muted: #999999;
-  --border-color: #d0c8b8;
-  --color-success: #28a745;
-  --color-warning: #ffc107;
-  --color-danger: #dc3545;
-  --font-primary: 'Inter', system-ui, sans-serif;
+  --sidebar-bg: #ffffff;
+  --accent-primary: #e11d48;
+  --accent-secondary: #7c3aed;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --border-color: #ede9fe;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-primary: 'Outfit', 'Inter', system-ui, sans-serif;
   --font-arcade: 'Press Start 2P', monospace;
-  --card-radius: 12px;
-  --sidebar-width: 260px;
+  --card-radius: 16px;
+  --sidebar-width: 288px;
   --card-gap: 16px;
 }
 

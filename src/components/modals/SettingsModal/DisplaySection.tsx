@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Globe, Sparkles, Maximize2 } from 'lucide-react';
+import { Monitor, Globe, Sparkles, Maximize2, MousePointerClick } from 'lucide-react';
 import { AppSettings, Theme } from '../../../types';
 
 interface DisplaySectionProps {
@@ -123,7 +123,55 @@ export const DisplaySection: React.FC<DisplaySectionProps> = ({
         </div>
       </div>
 
-      {/* 3. Langues */}
+      {/* 3. Interaction & Sélection de Jeux */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <MousePointerClick className="w-4 h-4 text-purple-600" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+            Navigation & Interaction
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Action au clic / touche A / ✕ sur un jeu
+            </label>
+            <select
+              value={settings.game_select_action || 'details'}
+              onChange={(e) => updateSetting('game_select_action', e.target.value)}
+              className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-100 bg-purple-50/20"
+            >
+              <option value="details">Ouvrir la fiche du jeu (Page complète, médias, stats)</option>
+              <option value="launch">Lancer directement le jeu (Mode Arcade Rapide)</option>
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">
+              {settings.game_select_action === 'launch'
+                ? "⚡ Le jeu se lance immédiatement. La touche Y (ou △) reste disponible pour voir la fiche."
+                : "📄 Affiche la page de détails avec jaquette haute définition, historique et réglages."}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">
+              Style des invites manette (Barre d'aide)
+            </label>
+            <select
+              value={settings.button_prompt_style || 'xbox'}
+              onChange={(e) => updateSetting('button_prompt_style', e.target.value)}
+              className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-100 bg-purple-50/20"
+            >
+              <option value="xbox">Style Xbox (A, B, X, Y)</option>
+              <option value="playstation">Style PlayStation (✕, ○, □, △)</option>
+            </select>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Adapte les icônes d'aide affichées en bas d'écran selon votre manette.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Langues */}
       <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs space-y-4">
         <div className="flex items-center gap-2">
           <Globe className="w-4 h-4 text-purple-600" />

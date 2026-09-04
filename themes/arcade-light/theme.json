@@ -1,32 +1,32 @@
 {
   "id": "arcade-light",
-  "name": "Arcade Light 80s",
+  "name": "Kaïro Clair (Original)",
   "author": "KaïroOS Team",
   "version": "1.0.0",
-  "description": "Thème clair rétro années 80",
+  "description": "Thème clair épuré original avec blanc pur et accents framboise & violet",
   "colors": {
-    "bg_primary": "#f5f0e8",
-    "bg_secondary": "#ede8dc",
+    "bg_primary": "#f8f7ff",
+    "bg_secondary": "#f3e8ff",
     "bg_card": "#ffffff",
-    "sidebar_bg": "#e8e0d0",
-    "accent_primary": "#e63950",
-    "accent_secondary": "#f5a623",
-    "text_primary": "#1a1a2e",
-    "text_secondary": "#666666",
-    "text_muted": "#999999",
-    "border": "#d0c8b8",
-    "success": "#28a745",
-    "warning": "#ffc107",
-    "danger": "#dc3545"
+    "sidebar_bg": "#ffffff",
+    "accent_primary": "#e11d48",
+    "accent_secondary": "#7c3aed",
+    "text_primary": "#0f172a",
+    "text_secondary": "#475569",
+    "text_muted": "#94a3b8",
+    "border": "#ede9fe",
+    "success": "#10b981",
+    "warning": "#f59e0b",
+    "danger": "#ef4444"
   },
   "fonts": {
-    "primary": "Inter",
-    "arcade": "Press Start 2P",
+    "primary": "Outfit, Inter, sans-serif",
+    "arcade": "Press Start 2P, monospace",
     "size_base": "14px"
   },
   "layout": {
-    "card_radius": "12px",
-    "sidebar_width": "260px",
+    "card_radius": "16px",
+    "sidebar_width": "280px",
     "card_gap": "16px"
   },
   "assets": {

@@ -244,6 +244,8 @@ pub struct AppSettings {
     pub extra_cli_args: Option<String>,
     #[serde(default)]
     pub debug_logs: Option<bool>,
+    #[serde(default)]
+    pub button_prompt_style: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -301,6 +303,7 @@ impl Default for AppSettings {
             remote_autostart: Some(true),
             extra_cli_args: None,
             debug_logs: Some(false),
+            button_prompt_style: Some("xbox".into()),
         }
     }
 }

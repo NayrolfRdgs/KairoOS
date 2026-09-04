@@ -139,6 +139,18 @@ export const LibrarySection: React.FC<LibrarySectionProps> = ({
           </label>
 
           <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Action au clic / touche A / ✕ sur un jeu</label>
+            <select
+              value={settings.game_select_action || 'details'}
+              onChange={(e) => updateSetting('game_select_action', e.target.value)}
+              className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-100 bg-purple-50/20"
+            >
+              <option value="details">Ouvrir la fiche détaillée du jeu</option>
+              <option value="launch">Lancer directement (Arcade Rapide)</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">Vue par défaut</label>
             <select
               value={settings.default_view || 'grid'}

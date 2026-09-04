@@ -50,6 +50,7 @@ export interface AppSettings {
   remote_autostart?: boolean;
   extra_cli_args?: string;
   debug_logs?: boolean;
+  button_prompt_style?: 'xbox' | 'playstation';
 }
 
 export interface RemoteConfig {

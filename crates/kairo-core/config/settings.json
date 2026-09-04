@@ -50,5 +50,6 @@
   "auto_scrape_after_scan": null,
   "remote_autostart": null,
   "extra_cli_args": null,
-  "debug_logs": null
+  "debug_logs": null,
+  "button_prompt_style": null
 }
