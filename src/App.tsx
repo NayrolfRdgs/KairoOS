@@ -509,6 +509,7 @@ export const App: React.FC = () => {
         <SettingsModal
           settings={settings}
           systems={systems}
+          emulators={emulators}
           onClose={() => setSettingsOpen(false)}
           onSave={saveSettings}
           onToggleFullscreen={toggleFullscreen}

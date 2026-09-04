@@ -32,6 +32,24 @@ export interface AppSettings {
   scraping_delay_seconds?: number;
   screenscraper_ssid?: string;
   screenscraper_sspassword?: string;
+  // Jalon 5 - Thèmes et Paramètres Enrichis
+  hide_mouse_cursor?: boolean;
+  ui_resolution?: 'auto' | '720p' | '1080p' | '4k';
+  ui_language?: 'fr' | 'en';
+  cores_dir?: string;
+  startup_sound_enabled?: boolean;
+  ui_navigation_player?: number;
+  stick_sensitivity?: number;
+  navigation_repeat_rate_ms?: number;
+  auto_scan_on_startup?: boolean;
+  default_view?: 'grid' | 'list';
+  show_games_without_cover?: boolean;
+  recent_games_limit?: number;
+  media_download_types?: string[];
+  auto_scrape_after_scan?: boolean;
+  remote_autostart?: boolean;
+  extra_cli_args?: string;
+  debug_logs?: boolean;
 }
 
 export interface RemoteConfig {

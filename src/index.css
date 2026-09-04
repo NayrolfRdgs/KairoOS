@@ -2,13 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg-primary: #f5f0e8;
+  --bg-secondary: #ede8dc;
+  --bg-card: #ffffff;
+  --sidebar-bg: #e8e0d0;
+  --accent-primary: #e63950;
+  --accent-secondary: #f5a623;
+  --text-primary: #1a1a2e;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  --border-color: #d0c8b8;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-danger: #dc3545;
+  --font-primary: 'Inter', system-ui, sans-serif;
+  --font-arcade: 'Press Start 2P', monospace;
+  --card-radius: 12px;
+  --sidebar-width: 260px;
+  --card-gap: 16px;
+}
+
 @layer base {
   body {
-    background-color: #f4f6f9;
-    color: #192a56;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     user-select: auto;
     cursor: default;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-primary);
+    background-image: var(--theme-bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 

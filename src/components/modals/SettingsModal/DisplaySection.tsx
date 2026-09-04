@@ -1,0 +1,164 @@
+import React from 'react';
+import { Monitor, Globe, Sparkles, Maximize2 } from 'lucide-react';
+import { AppSettings, Theme } from '../../../types';
+
+interface DisplaySectionProps {
+  settings: AppSettings;
+  updateSetting: (key: keyof AppSettings, val: any) => void;
+  onNavigateToThemes: () => void;
+  activeTheme: Theme;
+  onToggleFullscreen?: () => Promise<boolean | void>;
+}
+
+export const DisplaySection: React.FC<DisplaySectionProps> = ({
+  settings,
+  updateSetting,
+  onNavigateToThemes,
+  activeTheme,
+  onToggleFullscreen,
+}) => {
+  return (
+    <div className="space-y-6">
+      {/* 1. Thème Actif */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs flex items-center justify-between">
+        <div className="flex items-center gap-3.5">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner border border-black/10"
+            style={{ backgroundColor: activeTheme.colors?.bg_primary || '#f5f0e8' }}
+          >
+            <Sparkles className="w-6 h-6" style={{ color: activeTheme.colors?.accent_primary || '#e63950' }} />
+          </div>
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-wider text-purple-600">Thème Actif</div>
+            <h3 className="text-sm font-black text-slate-900">{activeTheme.name}</h3>
+            <p className="text-xs text-slate-400">Par {activeTheme.author} • v{activeTheme.version}</p>
+          </div>
+        </div>
+
+        <button
+          onClick={onNavigateToThemes}
+          className="px-4 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all border border-purple-200"
+        >
+          Changer de thème
+        </button>
+      </div>
+
+      {/* 2. Fenêtrage & Écran */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <Monitor className="w-4 h-4 text-purple-600" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+            Comportement de la Fenêtre & Curseur
+          </h3>
+        </div>
+
+        <div className="flex items-center justify-between p-3.5 rounded-2xl bg-purple-50/30 border border-purple-100 mb-3">
+          <div>
+            <div className="text-xs font-black text-slate-800">Mode Plein Écran Actuel</div>
+            <div className="text-[11px] text-slate-400">Basculer immédiatement la fenêtre de KaïroOS</div>
+          </div>
+          {onToggleFullscreen && (
+            <button
+              onClick={() => onToggleFullscreen()}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-purple-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-purple-600" />
+              <span>Basculer</span>
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="flex items-center justify-between p-3.5 rounded-2xl border border-purple-100 hover:bg-purple-50/20 cursor-pointer transition-colors">
+            <div>
+              <div className="text-xs font-black text-slate-800">Plein écran au démarrage</div>
+              <div className="text-[11px] text-slate-400">Lancer KaïroOS automatiquement en plein écran</div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.fullscreen)}
+              onChange={(e) => updateSetting('fullscreen', e.target.checked)}
+              className="w-4 h-4 rounded text-rose-500 focus:ring-rose-400"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-3.5 rounded-2xl border border-purple-100 hover:bg-purple-50/20 cursor-pointer transition-colors">
+            <div>
+              <div className="text-xs font-black text-slate-800">Toujours au premier plan (Always on Top)</div>
+              <div className="text-[11px] text-slate-400">Empêche les autres fenêtres de masquer KaïroOS</div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.always_on_top)}
+              onChange={(e) => updateSetting('always_on_top', e.target.checked)}
+              className="w-4 h-4 rounded text-rose-500 focus:ring-rose-400"
+            />
+          </label>
+
+          <label className="flex items-center justify-between p-3.5 rounded-2xl border border-purple-100 hover:bg-purple-50/20 cursor-pointer transition-colors">
+            <div>
+              <div className="text-xs font-black text-slate-800">Masquer le curseur de souris</div>
+              <div className="text-[11px] text-slate-400">Recommandé pour les bornes d'arcade pures</div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(settings.hide_mouse_cursor)}
+              onChange={(e) => updateSetting('hide_mouse_cursor', e.target.checked)}
+              className="w-4 h-4 rounded text-rose-500 focus:ring-rose-400"
+            />
+          </label>
+
+          <div className="p-3.5 rounded-2xl border border-purple-100 bg-purple-50/20 flex flex-col justify-center">
+            <label className="block text-xs font-bold text-slate-700 mb-1">Résolution de l'interface</label>
+            <select
+              value={settings.ui_resolution || 'auto'}
+              onChange={(e) => updateSetting('ui_resolution', e.target.value)}
+              className="w-full text-xs font-bold p-2 rounded-xl border border-purple-100 bg-white"
+            >
+              <option value="auto">Automatique (Résolution native écran)</option>
+              <option value="720p">720p HD (1280x720)</option>
+              <option value="1080p">1080p Full HD (1920x1080)</option>
+              <option value="4k">4K Ultra HD (3840x2160)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Langues */}
+      <div className="p-5 rounded-3xl bg-white border border-purple-100 shadow-xs space-y-4">
+        <div className="flex items-center gap-2">
+          <Globe className="w-4 h-4 text-purple-600" />
+          <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">
+            Langues & Localisation
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Langue de l'Interface</label>
+            <select
+              value={settings.ui_language || 'fr'}
+              onChange={(e) => updateSetting('ui_language', e.target.value)}
+              className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-100 bg-purple-50/20"
+            >
+              <option value="fr">Français (FR)</option>
+              <option value="en">English (EN)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Langue des Métadonnées Scraping</label>
+            <select
+              value={settings.metadata_language || 'fr'}
+              onChange={(e) => updateSetting('metadata_language', e.target.value)}
+              className="w-full text-xs font-bold p-2.5 rounded-xl border border-purple-100 bg-purple-50/20"
+            >
+              <option value="fr">Français prioritaire</option>
+              <option value="en">Anglais prioritaire</option>
+              <option value="both">Français et Anglais combinés</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

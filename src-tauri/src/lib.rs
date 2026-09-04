@@ -125,6 +125,16 @@ pub fn run() {
             commands::add_manual_game,
             commands::delete_game,
             commands::purge_missing_games,
+            commands::get_themes,
+            commands::get_theme,
+            commands::set_theme,
+            commands::open_themes_folder,
+            commands::open_logs_folder,
+            commands::test_emulator_exe,
+            commands::export_config,
+            commands::import_config,
+            commands::reset_settings,
+            commands::download_community_theme,
         ])
         .run(tauri::generate_context!())
 

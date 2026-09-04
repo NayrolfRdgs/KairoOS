@@ -397,3 +397,216 @@ pub fn purge_missing_games(state: State<'_, AppState>) -> Result<usize, String> 
 
     Ok(removed)
 }
+
+fn resolve_themes_dir() -> std::path::PathBuf {
+    let cur = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    let p1 = cur.join("themes");
+    if p1.exists() {
+        return p1;
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let p2 = parent.join("themes");
+            if p2.exists() {
+                return p2;
+            }
+        }
+    }
+    p1
+}
+
+/// Liste tous les thèmes installés dans le dossier `themes/`
+#[tauri::command]
+pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, String> {
+    let themes_dir = resolve_themes_dir();
+    let mut themes = Vec::new();
+    let active_theme_id = state.db.get_app_settings()
+        .map(|s| s.theme)
+        .unwrap_or_else(|_| "arcade-light".into());
+
+    if let Ok(entries) = std::fs::read_dir(&themes_dir) {
+        for entry in entries.flatten() {
+            if entry.path().is_dir() {
+                let theme_json_path = entry.path().join("theme.json");
+                if theme_json_path.exists() {
+                    if let Ok(content) = std::fs::read_to_string(&theme_json_path) {
+                        if let Ok(mut theme) = serde_json::from_str::<kairo_core::Theme>(&content) {
+                            let preview_file = entry.path().join("preview.png");
+                            if preview_file.exists() {
+                                theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+                            }
+                            theme.is_active = theme.id == active_theme_id;
+                            themes.push(theme);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if themes.is_empty() {
+        let mut def = kairo_core::Theme::default();
+        def.id = "arcade-light".into();
+        def.name = "Arcade Light 80s".into();
+        def.is_active = true;
+        themes.push(def);
+    }
+
+    Ok(themes)
+}
+
+/// Récupère les métadonnées et le style d'un thème par son ID
+#[tauri::command]
+pub fn get_theme(id: String) -> Result<kairo_core::Theme, String> {
+    let themes_dir = resolve_themes_dir();
+    let theme_dir = themes_dir.join(&id);
+    let theme_json = theme_dir.join("theme.json");
+    if !theme_json.exists() {
+        return Err(format!("Thème '{}' introuvable", id));
+    }
+    let content = std::fs::read_to_string(&theme_json).map_err(|e| e.to_string())?;
+    let mut theme: kairo_core::Theme = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    let preview_file = theme_dir.join("preview.png");
+    if preview_file.exists() {
+        theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+    }
+    Ok(theme)
+}
+
+/// Définit le thème actif et met à jour settings.json
+#[tauri::command]
+pub fn set_theme(id: String, state: State<'_, AppState>) -> Result<kairo_core::Theme, String> {
+    let theme = get_theme(id.clone())?;
+    let mut settings = state.db.get_app_settings().map_err(|e| e.to_string())?;
+    settings.theme = id;
+    state.db.save_app_settings(&settings).map_err(|e| e.to_string())?;
+
+    let config_path = std::path::PathBuf::from("config/settings.json");
+    if let Ok(json_str) = serde_json::to_string_pretty(&settings) {
+        let _ = std::fs::write(config_path, json_str);
+    }
+    Ok(theme)
+}
+
+/// Ouvre le dossier `themes/` dans l'explorateur Windows
+#[tauri::command]
+pub fn open_themes_folder() -> Result<(), String> {
+    let dir = resolve_themes_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("explorer").arg(&dir).spawn();
+    }
+    Ok(())
+}
+
+/// Ouvre le dossier des journaux d'erreurs (logs) dans l'explorateur Windows
+#[tauri::command]
+pub fn open_logs_folder() -> Result<(), String> {
+    let logs_dir = std::path::PathBuf::from("logs");
+    let _ = std::fs::create_dir_all(&logs_dir);
+    #[cfg(windows)]
+    {
+        let _ = std::process::Command::new("explorer").arg(&logs_dir).spawn();
+    }
+    Ok(())
+}
+
+/// Teste si un binaire / exécutable d'émulateur existe
+#[tauri::command]
+pub fn test_emulator_exe(path: String) -> Result<bool, String> {
+    if path.trim().is_empty() {
+        return Ok(false);
+    }
+    let p = std::path::Path::new(&path);
+    if p.exists() {
+        return Ok(true);
+    }
+    if let Ok(cur) = std::env::current_dir() {
+        if cur.join(p).exists() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+/// Exporte les fichiers de configuration vers un fichier zip
+#[tauri::command]
+pub fn export_config(dest_zip_path: String) -> Result<(), String> {
+    let config_dir = std::path::PathBuf::from("config");
+    if !config_dir.exists() {
+        return Err("Le dossier config n'existe pas".into());
+    }
+    #[cfg(windows)]
+    {
+        let cmd = format!("Compress-Archive -Path 'config\\*' -DestinationPath '{}' -Force", dest_zip_path);
+        let status = std::process::Command::new("powershell")
+            .args(["-Command", &cmd])
+            .status()
+            .map_err(|e| e.to_string())?;
+        if !status.success() {
+            return Err("Échec de la compression de la configuration".into());
+        }
+    }
+    Ok(())
+}
+
+/// Restaure les fichiers de configuration depuis un fichier zip
+#[tauri::command]
+pub fn import_config(src_zip_path: String) -> Result<(), String> {
+    if !std::path::Path::new(&src_zip_path).exists() {
+        return Err("Fichier zip introuvable".into());
+    }
+    let config_dir = std::path::PathBuf::from("config");
+    let _ = std::fs::create_dir_all(&config_dir);
+    #[cfg(windows)]
+    {
+        let cmd = format!("Expand-Archive -Path '{}' -DestinationPath 'config' -Force", src_zip_path);
+        let status = std::process::Command::new("powershell")
+            .args(["-Command", &cmd])
+            .status()
+            .map_err(|e| e.to_string())?;
+        if !status.success() {
+            return Err("Échec de l'extraction de la configuration".into());
+        }
+    }
+    Ok(())
+}
+
+/// Réinitialise tous les paramètres de KaïroOS à leurs valeurs par défaut
+#[tauri::command]
+pub fn reset_settings(state: State<'_, AppState>) -> Result<kairo_core::AppSettings, String> {
+    let defaults = kairo_core::AppSettings::default();
+    state.db.save_app_settings(&defaults).map_err(|e| e.to_string())?;
+    let config_path = std::path::PathBuf::from("config/settings.json");
+    if let Ok(json_str) = serde_json::to_string_pretty(&defaults) {
+        let _ = std::fs::write(config_path, json_str);
+    }
+    Ok(defaults)
+}
+
+/// Télécharge un thème depuis le store GitHub et l'installe dans `themes/{theme_id}`
+#[tauri::command]
+pub fn download_community_theme(theme_id: String, zip_url: String) -> Result<kairo_core::Theme, String> {
+    let themes_dir = resolve_themes_dir();
+    let target_dir = themes_dir.join(&theme_id);
+    let _ = std::fs::create_dir_all(&target_dir);
+
+    #[cfg(windows)]
+    {
+        let temp_zip = themes_dir.join(format!("{}.zip", theme_id));
+        let cmd = format!(
+            "Invoke-WebRequest -Uri '{}' -OutFile '{}'; Expand-Archive -Path '{}' -DestinationPath '{}' -Force; Remove-Item -Path '{}' -Force",
+            zip_url, temp_zip.display(), temp_zip.display(), target_dir.display(), temp_zip.display()
+        );
+        let status = std::process::Command::new("powershell")
+            .args(["-Command", &cmd])
+            .status()
+            .map_err(|e| e.to_string())?;
+        if !status.success() {
+            return Err("Échec du téléchargement ou de l'extraction du thème".into());
+        }
+    }
+
+    get_theme(theme_id)
+}

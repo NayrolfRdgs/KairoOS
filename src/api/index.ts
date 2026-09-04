@@ -6,3 +6,4 @@ export * from './settings';
 export * from './launcher';
 export * from './scanner';
 export * from './gamepad';
+export * from './themes';

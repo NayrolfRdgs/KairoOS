@@ -7,6 +7,21 @@ export default {
   theme: {
     extend: {
       colors: {
+        theme: {
+          bg: "var(--bg-primary)",
+          bgSecondary: "var(--bg-secondary)",
+          card: "var(--bg-card)",
+          sidebar: "var(--sidebar-bg)",
+          primary: "var(--accent-primary)",
+          secondary: "var(--accent-secondary)",
+          text: "var(--text-primary)",
+          textSecondary: "var(--text-secondary)",
+          muted: "var(--text-muted)",
+          border: "var(--border-color)",
+          success: "var(--color-success)",
+          warning: "var(--color-warning)",
+          danger: "var(--color-danger)",
+        },
         kairo: {
           bg: "#f8f7ff",
           bgLilac: "#f3e8ff",

@@ -1,0 +1,37 @@
+{
+  "id": "arcade-light",
+  "name": "Arcade Light 80s",
+  "author": "KaïroOS Team",
+  "version": "1.0.0",
+  "description": "Thème clair rétro années 80",
+  "colors": {
+    "bg_primary": "#f5f0e8",
+    "bg_secondary": "#ede8dc",
+    "bg_card": "#ffffff",
+    "sidebar_bg": "#e8e0d0",
+    "accent_primary": "#e63950",
+    "accent_secondary": "#f5a623",
+    "text_primary": "#1a1a2e",
+    "text_secondary": "#666666",
+    "text_muted": "#999999",
+    "border": "#d0c8b8",
+    "success": "#28a745",
+    "warning": "#ffc107",
+    "danger": "#dc3545"
+  },
+  "fonts": {
+    "primary": "Inter",
+    "arcade": "Press Start 2P",
+    "size_base": "14px"
+  },
+  "layout": {
+    "card_radius": "12px",
+    "sidebar_width": "260px",
+    "card_gap": "16px"
+  },
+  "assets": {
+    "background_image": null,
+    "logo_override": null,
+    "startup_sound": null
+  }
+}

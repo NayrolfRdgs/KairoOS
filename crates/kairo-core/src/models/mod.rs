@@ -209,6 +209,41 @@ pub struct AppSettings {
     pub screenscraper_ssid: Option<String>,
     #[serde(default)]
     pub screenscraper_sspassword: Option<String>,
+    // Jalon 5 - Paramètres enrichis
+    #[serde(default)]
+    pub hide_mouse_cursor: Option<bool>,
+    #[serde(default)]
+    pub ui_resolution: Option<String>,
+    #[serde(default)]
+    pub ui_language: Option<String>,
+    #[serde(default)]
+    pub cores_dir: Option<String>,
+    #[serde(default)]
+    pub startup_sound_enabled: Option<bool>,
+    #[serde(default)]
+    pub ui_navigation_player: Option<usize>,
+    #[serde(default)]
+    pub stick_sensitivity: Option<u8>,
+    #[serde(default)]
+    pub navigation_repeat_rate_ms: Option<u32>,
+    #[serde(default)]
+    pub auto_scan_on_startup: Option<bool>,
+    #[serde(default)]
+    pub default_view: Option<String>,
+    #[serde(default)]
+    pub show_games_without_cover: Option<bool>,
+    #[serde(default)]
+    pub recent_games_limit: Option<u32>,
+    #[serde(default)]
+    pub media_download_types: Option<Vec<String>>,
+    #[serde(default)]
+    pub auto_scrape_after_scan: Option<bool>,
+    #[serde(default)]
+    pub remote_autostart: Option<bool>,
+    #[serde(default)]
+    pub extra_cli_args: Option<String>,
+    #[serde(default)]
+    pub debug_logs: Option<bool>,
 }
 
 impl Default for AppSettings {
@@ -227,7 +262,7 @@ impl Default for AppSettings {
             ],
             custom_franchises: Vec::new(),
             roms_path: Some("./roms".into()),
-            theme: "retro-80s-light".into(),
+            theme: "arcade-light".into(),
             enabled_systems: None,
             enabled_modes: None,
             default_sort: Some("title_asc".into()),
@@ -249,8 +284,81 @@ impl Default for AppSettings {
             scraping_delay_seconds: Some(1),
             screenscraper_ssid: None,
             screenscraper_sspassword: None,
+            hide_mouse_cursor: Some(false),
+            ui_resolution: Some("auto".into()),
+            ui_language: Some("fr".into()),
+            cores_dir: None,
+            startup_sound_enabled: Some(true),
+            ui_navigation_player: Some(0),
+            stick_sensitivity: Some(50),
+            navigation_repeat_rate_ms: Some(180),
+            auto_scan_on_startup: Some(false),
+            default_view: Some("grid".into()),
+            show_games_without_cover: Some(true),
+            recent_games_limit: Some(10),
+            media_download_types: Some(vec!["cover".into(), "backdrop".into()]),
+            auto_scrape_after_scan: Some(false),
+            remote_autostart: Some(true),
+            extra_cli_args: None,
+            debug_logs: Some(false),
         }
     }
+}
+
+/// Modèles pour le système de Thèmes (Jalon 5)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct ThemeColors {
+    pub bg_primary: String,
+    pub bg_secondary: String,
+    pub bg_card: String,
+    pub sidebar_bg: String,
+    pub accent_primary: String,
+    pub accent_secondary: String,
+    pub text_primary: String,
+    pub text_secondary: String,
+    pub text_muted: String,
+    pub border: String,
+    pub success: String,
+    pub warning: String,
+    pub danger: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct ThemeFonts {
+    pub primary: String,
+    pub arcade: String,
+    pub size_base: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct ThemeLayout {
+    pub card_radius: String,
+    pub sidebar_width: String,
+    pub card_gap: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct ThemeAssets {
+    pub background_image: Option<String>,
+    pub logo_override: Option<String>,
+    pub startup_sound: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+pub struct Theme {
+    pub id: String,
+    pub name: String,
+    pub author: String,
+    pub version: String,
+    pub description: String,
+    pub colors: ThemeColors,
+    pub fonts: ThemeFonts,
+    pub layout: ThemeLayout,
+    pub assets: ThemeAssets,
+    #[serde(default)]
+    pub preview_url: Option<String>,
+    #[serde(default)]
+    pub is_active: bool,
 }
 
 /// Configuration pour le serveur d'accès distant (PWA / Mobile / WebSocket)

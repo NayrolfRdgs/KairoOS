@@ -1,0 +1,37 @@
+{
+  "id": "neon-dark",
+  "name": "Neon Dark Cyberpunk",
+  "author": "KaïroOS Team",
+  "version": "1.0.0",
+  "description": "Thème sombre avec accents néon cyan et magenta",
+  "colors": {
+    "bg_primary": "#0f0e17",
+    "bg_secondary": "#1a1829",
+    "bg_card": "#232136",
+    "sidebar_bg": "#141321",
+    "accent_primary": "#ff2a85",
+    "accent_secondary": "#00f0ff",
+    "text_primary": "#fffffe",
+    "text_secondary": "#94a1b2",
+    "text_muted": "#5e6678",
+    "border": "#2e2b45",
+    "success": "#00e676",
+    "warning": "#ffd600",
+    "danger": "#ff1744"
+  },
+  "fonts": {
+    "primary": "Inter",
+    "arcade": "Press Start 2P",
+    "size_base": "14px"
+  },
+  "layout": {
+    "card_radius": "12px",
+    "sidebar_width": "260px",
+    "card_gap": "16px"
+  },
+  "assets": {
+    "background_image": null,
+    "logo_override": null,
+    "startup_sound": null
+  }
+}
