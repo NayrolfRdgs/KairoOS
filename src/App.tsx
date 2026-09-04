@@ -211,15 +211,26 @@ export const App: React.FC = () => {
 
   // Liste des catégories pour cycler avec LB / RB à la manette
   const categoryList = useMemo(() => {
-    const list = ['all', 'favorites', 'recent', '2-players', 'genre:fight', 'genre:platform'];
+    const list = ['all', 'favorites', 'recent'];
+    const activeModes = ['2-players', 'genre:fight', 'genre:platform'].filter((m) => {
+      if (!settings.enabled_modes || settings.enabled_modes.length === 0) return true;
+      return settings.enabled_modes.includes(m);
+    });
+    activeModes.forEach((m) => list.push(m));
+
     const visibleSystems = systems.filter((s) => {
       if (!settings.enabled_systems || settings.enabled_systems.length === 0) return true;
       return settings.enabled_systems.includes(s.id);
     });
     visibleSystems.forEach((s) => list.push(s.id));
-    allFranchises.forEach((f) => list.push(`franchise:${f.id}`));
+
+    const visibleFranchises = allFranchises.filter((f) => {
+      if (!settings.enabled_franchises || settings.enabled_franchises.length === 0) return true;
+      return settings.enabled_franchises.includes(f.id);
+    });
+    visibleFranchises.forEach((f) => list.push(`franchise:${f.id}`));
     return list;
-  }, [systems, allFranchises, settings.enabled_systems]);
+  }, [systems, allFranchises, settings.enabled_systems, settings.enabled_modes, settings.enabled_franchises]);
 
   const currentCategoryTitle = useMemo(() => {
     if (selectedCategory === 'all') return 'TOUS LES JEUX';
@@ -414,6 +425,42 @@ export const App: React.FC = () => {
   const favoriteGames = useMemo(() => allGames.filter((g) => g.favorite), [allGames]);
   const twoPlayerGames = useMemo(() => allGames.filter((g) => (g.players || 1) >= 2), [allGames]);
   const recentGames = useMemo(() => allGames.filter((g) => (g.play_count || 0) > 0 || g.last_played), [allGames]);
+  const fightGames = useMemo(() => {
+    return allGames.filter((g) => {
+      const t = g.title.toLowerCase();
+      const desc = (g.synopsis || '').toLowerCase();
+      const genre = (g.genre || '').toLowerCase();
+      return (
+        t.includes('street fighter') ||
+        t.includes('mortal kombat') ||
+        t.includes('tekken') ||
+        t.includes('kof') ||
+        t.includes('fight') ||
+        genre.includes('combat') ||
+        genre.includes('fight') ||
+        desc.includes('combat') ||
+        desc.includes('fighting')
+      );
+    });
+  }, [allGames]);
+  const platformGames = useMemo(() => {
+    return allGames.filter((g) => {
+      const t = g.title.toLowerCase();
+      const desc = (g.synopsis || '').toLowerCase();
+      const genre = (g.genre || '').toLowerCase();
+      return (
+        t.includes('mario') ||
+        t.includes('sonic') ||
+        t.includes('donkey kong') ||
+        t.includes('megaman') ||
+        t.includes('rayman') ||
+        genre.includes('platform') ||
+        genre.includes('plateforme') ||
+        desc.includes('platform') ||
+        desc.includes('plateforme')
+      );
+    });
+  }, [allGames]);
 
   const isSinglePageMode =
     themeManager.activeTheme.layout_type === 'single_page_categories' ||
@@ -444,9 +491,15 @@ export const App: React.FC = () => {
             systems={systems}
             allGames={allGames}
             allFranchises={allFranchises}
+            customFranchises={settings.custom_franchises}
+            enabledSystems={settings.enabled_systems}
+            enabledModes={settings.enabled_modes}
+            enabledFranchises={settings.enabled_franchises}
             favoriteGames={favoriteGames}
             twoPlayerGames={twoPlayerGames}
             recentGames={recentGames}
+            fightGames={fightGames}
+            platformGames={platformGames}
             focusedGameId={focusedGame?.id || null}
             onSelectGame={handleGameCardSelect}
             onLaunchGame={launch}

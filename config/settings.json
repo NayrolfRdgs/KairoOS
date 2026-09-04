@@ -9,7 +9,7 @@
   "roms_path": "./roms",
   "theme": "kairo-default",
   "enabled_systems": [
-    "n64"
+    "windows"
   ],
   "enabled_modes": [
     "2-players"

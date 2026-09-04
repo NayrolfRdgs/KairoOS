@@ -182,7 +182,7 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
     removeTheme,
   } = themeManager;
 
-  const currentColors = activeTheme?.colors || colorPresets[0].colors;
+  const currentColors = activeTheme?.colors || colorPresets[0]?.colors;
   const currentLayout = activeTheme?.layout || {
     card_radius: '16px',
     sidebar_width: '280px',

@@ -2,6 +2,7 @@ import React from 'react';
 import { CustomFranchise, System, FranchiseCollection, AppMode } from '../../../types';
 import { SidebarNav } from './SidebarNav';
 import { SidebarSystems } from './SidebarSystems';
+import { SidebarFranchises } from './SidebarFranchises';
 import { SidebarFooter } from './SidebarFooter';
 
 interface SidebarProps {
@@ -33,9 +34,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({
   systems,
+  popularFranchises = [],
+  customFranchises = [],
+  enabledFranchises = [],
   selectedCategory,
   onSelectCategory,
   gamesCountBySystem,
+  gamesCountByFranchise = {},
   totalAllGames,
   totalFavorites,
   totalRecent,
@@ -62,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       }}
       className="backdrop-blur-md border-r flex flex-col h-full select-none shrink-0 shadow-sm z-20"
     >
-      {/* 1. Corps Déroulant : Bibliothèque + Consoles (Directement en haut) */}
+      {/* 1. Corps Déroulant : Bibliothèque + Consoles + Franchises */}
       <div className="flex-1 overflow-y-auto p-3 space-y-6 scrollbar-thin">
         <SidebarNav
           selectedCategory={selectedCategory}
@@ -82,6 +87,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onSelectCategory={onSelectCategory}
           gamesCountBySystem={gamesCountBySystem}
           enabledSystems={enabledSystems}
+        />
+
+        <SidebarFranchises
+          popularFranchises={popularFranchises}
+          customFranchises={customFranchises}
+          enabledFranchises={enabledFranchises}
+          selectedCategory={selectedCategory}
+          onSelectCategory={onSelectCategory}
+          gamesCountByFranchise={gamesCountByFranchise}
         />
       </div>
 

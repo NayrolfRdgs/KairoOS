@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Filter,
 } from 'lucide-react';
-import { Game, System, AppMode, Theme, FranchiseCollection } from '../../types';
+import { Game, System, AppMode, Theme, FranchiseCollection, CustomFranchise } from '../../types';
 import { GameCard } from '../games/GameCard';
 import { ConsoleLogo } from '../common/ConsoleLogo';
 
@@ -23,9 +23,15 @@ interface SinglePageCategoriesViewProps {
   systems: System[];
   allGames: Game[];
   allFranchises: (FranchiseCollection | string)[];
+  customFranchises?: CustomFranchise[];
+  enabledSystems?: string[];
+  enabledModes?: string[];
+  enabledFranchises?: string[];
   favoriteGames: Game[];
   twoPlayerGames: Game[];
   recentGames: Game[];
+  fightGames?: Game[];
+  platformGames?: Game[];
   focusedGameId: string | null;
   onSelectGame: (game: Game) => void;
   onLaunchGame: (game: Game) => void;
@@ -45,9 +51,15 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
   systems,
   allGames,
   allFranchises,
+  customFranchises = [],
+  enabledSystems,
+  enabledModes = ['2-players', 'genre:fight', 'genre:platform'],
+  enabledFranchises = ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg'],
   favoriteGames,
   twoPlayerGames,
   recentGames,
+  fightGames: propFightGames,
+  platformGames: propPlatformGames,
   focusedGameId,
   onSelectGame,
   onLaunchGame,
@@ -64,6 +76,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSystemFilter, setSelectedSystemFilter] = useState<string | null>(null);
   const [selectedGenreFilter, setSelectedGenreFilter] = useState<string | null>(null);
+  const [selectedModeFilter, setSelectedModeFilter] = useState<'2-players' | 'genre:fight' | 'genre:platform' | 'recent' | null>(null);
 
   const isKiosk = appMode === 'kiosk';
   const layout = theme.layout || {
@@ -74,9 +87,109 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
     show_all_games_row: true,
   };
 
-  // Filtrage si recherche
+  // Systèmes filtrés par les paramètres de l'utilisateur (enabledSystems)
+  const systemsWithCounts = useMemo(() => {
+    const visibleSystems = systems.filter((s) => {
+      if (!enabledSystems || enabledSystems.length === 0) return true;
+      return enabledSystems.includes(s.id);
+    });
+    return visibleSystems.map((sys) => {
+      const count = allGames.filter((g) => g.system_id === sys.id).length;
+      return { ...sys, count };
+    });
+  }, [systems, allGames, enabledSystems]);
+
+  // Franchises / Sagas filtrées par les paramètres de l'utilisateur (enabledFranchises)
+  const visibleFranchises = useMemo(() => {
+    const list: { id: string; name: string }[] = [];
+    allFranchises.forEach((f) => {
+      const id = typeof f === 'string' ? f : f.id;
+      const name = typeof f === 'string' ? f : f.name;
+      list.push({ id, name });
+    });
+
+    if (customFranchises && customFranchises.length > 0) {
+      customFranchises.forEach((cf) => {
+        if (!list.some((item) => item.id === cf.id)) {
+          list.push({ id: cf.id, name: cf.name });
+        }
+      });
+    }
+
+    if (!enabledFranchises || enabledFranchises.length === 0) {
+      return list;
+    }
+
+    return list.filter((f) => {
+      return (
+        enabledFranchises.includes(f.id) ||
+        enabledFranchises.includes(f.name.toLowerCase())
+      );
+    });
+  }, [allFranchises, customFranchises, enabledFranchises]);
+
+  // Jeux de combat
+  const fightGames = useMemo(() => {
+    if (propFightGames) return propFightGames;
+    return allGames.filter((g) => {
+      const t = g.title.toLowerCase();
+      const desc = (g.synopsis || '').toLowerCase();
+      const genre = (g.genre || '').toLowerCase();
+      return (
+        t.includes('street fighter') ||
+        t.includes('mortal kombat') ||
+        t.includes('tekken') ||
+        t.includes('kof') ||
+        t.includes('fight') ||
+        genre.includes('combat') ||
+        genre.includes('fight') ||
+        desc.includes('combat') ||
+        desc.includes('fighting')
+      );
+    });
+  }, [allGames, propFightGames]);
+
+  // Jeux de plateforme
+  const platformGames = useMemo(() => {
+    if (propPlatformGames) return propPlatformGames;
+    return allGames.filter((g) => {
+      const t = g.title.toLowerCase();
+      const desc = (g.synopsis || '').toLowerCase();
+      const genre = (g.genre || '').toLowerCase();
+      return (
+        t.includes('mario') ||
+        t.includes('sonic') ||
+        t.includes('donkey kong') ||
+        t.includes('megaman') ||
+        t.includes('rayman') ||
+        genre.includes('platform') ||
+        genre.includes('plateforme') ||
+        desc.includes('platform') ||
+        desc.includes('plateforme')
+      );
+    });
+  }, [allGames, propPlatformGames]);
+
+  // Filtrage principal (Recherche, Console, Saga ou Mode activé)
+  const isFilterActive = Boolean(
+    searchQuery.trim() || selectedSystemFilter || selectedGenreFilter || selectedModeFilter
+  );
+
   const searchedGames = useMemo(() => {
     let list = allGames;
+
+    // 1. Filtrage par mode si sélectionné
+    if (selectedModeFilter === '2-players') {
+      list = twoPlayerGames;
+    } else if (selectedModeFilter === 'genre:fight') {
+      list = fightGames;
+    } else if (selectedModeFilter === 'genre:platform') {
+      list = platformGames;
+    } else if (selectedModeFilter === 'recent') {
+      list = recentGames;
+    }
+
+    // 2. Recherche textuelle
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -86,41 +199,44 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
           (g.franchise && g.franchise.toLowerCase().includes(q))
       );
     }
+
+    // 3. Filtre par système/console
     if (selectedSystemFilter) {
       list = list.filter((g) => g.system_id === selectedSystemFilter);
     }
+
+    // 4. Filtre par univers/saga
     if (selectedGenreFilter) {
       list = list.filter(
         (g) => g.franchise?.toLowerCase() === selectedGenreFilter.toLowerCase()
       );
     }
+
     return list;
-  }, [allGames, searchQuery, selectedSystemFilter, selectedGenreFilter]);
+  }, [
+    allGames,
+    searchQuery,
+    selectedSystemFilter,
+    selectedGenreFilter,
+    selectedModeFilter,
+    twoPlayerGames,
+    fightGames,
+    platformGames,
+    recentGames,
+  ]);
 
-  // Systèmes avec jeux
-  const systemsWithCounts = useMemo(() => {
-    return systems.map((sys) => {
-      const count = allGames.filter((g) => g.system_id === sys.id).length;
-      return { ...sys, count };
-    });
-  }, [systems, allGames]);
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setSelectedSystemFilter(null);
+    setSelectedGenreFilter(null);
+    setSelectedModeFilter(null);
+  };
 
-  // Jeux de combat / action / plateformes
-  const fightGames = useMemo(() => {
-    return allGames.filter((g) => {
-      const t = g.title.toLowerCase();
-      const desc = (g.synopsis || '').toLowerCase();
-      return (
-        t.includes('street fighter') ||
-        t.includes('mortal kombat') ||
-        t.includes('tekken') ||
-        t.includes('kof') ||
-        t.includes('fight') ||
-        desc.includes('combat') ||
-        desc.includes('fighting')
-      );
-    });
-  }, [allGames]);
+  // Vérification de visibilité des modes configurés dans les options de la borne
+  const isModeEnabled = (modeId: string) => {
+    if (!enabledModes || enabledModes.length === 0) return true;
+    return enabledModes.includes(modeId);
+  };
 
   return (
     <div
@@ -214,14 +330,18 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
           </div>
         </div>
 
-        {/* Boutons d'Action Rapide */}
+        {/* Badges de Filtres Actifs & Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {selectedSystemFilter && (
             <button
               onClick={() => setSelectedSystemFilter(null)}
-              className="px-2.5 py-1 rounded-xl bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1"
+              style={{
+                backgroundColor: 'var(--accent-primary)',
+                color: '#ffffff',
+              }}
+              className="px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs hover:opacity-90"
             >
-              <span>Filtre: {selectedSystemFilter.toUpperCase()}</span>
+              <span>Console: {selectedSystemFilter.toUpperCase()}</span>
               <span>✕</span>
             </button>
           )}
@@ -229,9 +349,36 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
           {selectedGenreFilter && (
             <button
               onClick={() => setSelectedGenreFilter(null)}
-              className="px-2.5 py-1 rounded-xl bg-purple-100 text-purple-700 text-xs font-bold flex items-center gap-1"
+              style={{
+                backgroundColor: 'var(--accent-primary)',
+                color: '#ffffff',
+              }}
+              className="px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs hover:opacity-90"
             >
               <span>Saga: {selectedGenreFilter}</span>
+              <span>✕</span>
+            </button>
+          )}
+
+          {selectedModeFilter && (
+            <button
+              onClick={() => setSelectedModeFilter(null)}
+              style={{
+                backgroundColor: 'var(--accent-secondary)',
+                color: '#ffffff',
+              }}
+              className="px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs hover:opacity-90"
+            >
+              <span>
+                Mode:{' '}
+                {selectedModeFilter === '2-players'
+                  ? '2 Joueurs'
+                  : selectedModeFilter === 'genre:fight'
+                  ? 'Combat'
+                  : selectedModeFilter === 'genre:platform'
+                  ? 'Plateforme'
+                  : 'Récents'}
+              </span>
               <span>✕</span>
             </button>
           )}
@@ -300,7 +447,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
       {/* 2. Contenu Défilable Plein Écran par Catégories */}
       <main className="flex-1 overflow-y-auto px-6 py-6 space-y-8 scrollbar-thin">
         {/* Si une recherche ou un filtre est actif, on affiche les résultats directs */}
-        {searchQuery.trim() || selectedSystemFilter || selectedGenreFilter ? (
+        {isFilterActive ? (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -313,15 +460,11 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                 </h3>
               </div>
               <button
-                onClick={() => {
-                  setSearchQuery('');
-                  setSelectedSystemFilter(null);
-                  setSelectedGenreFilter(null);
-                }}
+                onClick={clearAllFilters}
                 style={{ color: 'var(--accent-primary)' }}
                 className="text-xs font-bold hover:underline"
               >
-                Effacer les filtres
+                Effacer tous les filtres
               </button>
             </div>
 
@@ -344,14 +487,14 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                   }}
                   className="w-full p-8 rounded-3xl border text-center text-xs text-slate-400 font-bold"
                 >
-                  Aucun jeu ne correspond à votre recherche.
+                  Aucun jeu ne correspond à cette sélection.
                 </div>
               )}
             </div>
           </section>
         ) : (
           <>
-            {/* RAYON 1 : 🕹️ Consoles & Systèmes */}
+            {/* RAYON 1 : 🕹️ Consoles & Systèmes (Filtrés selon paramètres borne) */}
             {layout.show_consoles_row !== false && systemsWithCounts.length > 0 && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -483,7 +626,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
               </section>
             )}
 
-            {/* RAYON 3 : 👥 Modes de Jeux (2 Joueurs & Multijoueur) */}
+            {/* RAYON 3 : 👥 Modes de Jeux (Filtrés selon enabledModes des paramètres) */}
             {layout.show_modes_row !== false && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -496,97 +639,181 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                       style={{ color: 'var(--text-primary)' }}
                       className="text-base font-black tracking-tight"
                     >
-                      Modes & Jeux Multijoueur
+                      Modes de Jeu & Catégories
                     </h3>
                   </div>
                   <span
                     style={{ color: 'var(--text-muted)' }}
                     className="text-xs font-medium"
                   >
-                    Idéal pour borne à deux
+                    Cliquez pour filtrer les jeux
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div
-                    onClick={() => {
-                      if (twoPlayerGames.length > 0) {
-                        onSelectGame(twoPlayerGames[0]);
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  {/* Mode 2 Joueurs */}
+                  {isModeEnabled('2-players') && (
+                    <div
+                      onClick={() =>
+                        setSelectedModeFilter(
+                          selectedModeFilter === '2-players' ? null : '2-players'
+                        )
                       }
-                    }}
-                    style={{
-                      backgroundColor: 'var(--bg-card)',
-                      borderColor: 'var(--border-color)',
-                    }}
-                    className="p-4 rounded-2xl border hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-rose-50 text-rose-500">
-                        <Users className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div
-                          style={{ color: 'var(--text-primary)' }}
-                          className="text-xs font-black"
-                        >
-                          Mode 2 Joueurs
+                      style={{
+                        backgroundColor:
+                          selectedModeFilter === '2-players'
+                            ? 'var(--bg-secondary)'
+                            : 'var(--bg-card)',
+                        borderColor:
+                          selectedModeFilter === '2-players'
+                            ? 'var(--accent-primary)'
+                            : 'var(--border-color)',
+                      }}
+                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
+                        selectedModeFilter === '2-players'
+                          ? 'ring-2 ring-[var(--accent-primary)]/20'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-rose-50 text-rose-500">
+                          <Users className="w-5 h-5" />
                         </div>
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-[10px]"
-                        >
-                          {twoPlayerGames.length} jeux compatibles
+                        <div>
+                          <div
+                            style={{ color: 'var(--text-primary)' }}
+                            className="text-xs font-black"
+                          >
+                            Jeux à 2 Joueurs
+                          </div>
+                          <div
+                            style={{ color: 'var(--text-muted)' }}
+                            className="text-[10px]"
+                          >
+                            {twoPlayerGames.length} compatibles
+                          </div>
                         </div>
                       </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+                  )}
 
-                  <div
-                    onClick={() => {
-                      if (fightGames.length > 0) {
-                        onSelectGame(fightGames[0]);
+                  {/* Mode Combat & Versus */}
+                  {isModeEnabled('genre:fight') && (
+                    <div
+                      onClick={() =>
+                        setSelectedModeFilter(
+                          selectedModeFilter === 'genre:fight' ? null : 'genre:fight'
+                        )
                       }
-                    }}
-                    style={{
-                      backgroundColor: 'var(--bg-card)',
-                      borderColor: 'var(--border-color)',
-                    }}
-                    className="p-4 rounded-2xl border hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-amber-50 text-amber-500">
-                        <Swords className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div
-                          style={{ color: 'var(--text-primary)' }}
-                          className="text-xs font-black"
-                        >
-                          Jeux de Combat & Versus
+                      style={{
+                        backgroundColor:
+                          selectedModeFilter === 'genre:fight'
+                            ? 'var(--bg-secondary)'
+                            : 'var(--bg-card)',
+                        borderColor:
+                          selectedModeFilter === 'genre:fight'
+                            ? 'var(--accent-primary)'
+                            : 'var(--border-color)',
+                      }}
+                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
+                        selectedModeFilter === 'genre:fight'
+                          ? 'ring-2 ring-[var(--accent-primary)]/20'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-amber-50 text-amber-500">
+                          <Swords className="w-5 h-5" />
                         </div>
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-[10px]"
-                        >
-                          {fightGames.length} jeux arcade
+                        <div>
+                          <div
+                            style={{ color: 'var(--text-primary)' }}
+                            className="text-xs font-black"
+                          >
+                            Combat & Versus
+                          </div>
+                          <div
+                            style={{ color: 'var(--text-muted)' }}
+                            className="text-[10px]"
+                          >
+                            {fightGames.length} jeux arcade
+                          </div>
                         </div>
                       </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+                  )}
 
-                  <div
-                    onClick={() => {
-                      if (recentGames.length > 0) {
-                        onSelectGame(recentGames[0]);
+                  {/* Mode Plateforme */}
+                  {isModeEnabled('genre:platform') && (
+                    <div
+                      onClick={() =>
+                        setSelectedModeFilter(
+                          selectedModeFilter === 'genre:platform' ? null : 'genre:platform'
+                        )
                       }
-                    }}
+                      style={{
+                        backgroundColor:
+                          selectedModeFilter === 'genre:platform'
+                            ? 'var(--bg-secondary)'
+                            : 'var(--bg-card)',
+                        borderColor:
+                          selectedModeFilter === 'genre:platform'
+                            ? 'var(--accent-primary)'
+                            : 'var(--border-color)',
+                      }}
+                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
+                        selectedModeFilter === 'genre:platform'
+                          ? 'ring-2 ring-[var(--accent-primary)]/20'
+                          : ''
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2.5 rounded-xl bg-pink-50 text-pink-500">
+                          <Gamepad2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div
+                            style={{ color: 'var(--text-primary)' }}
+                            className="text-xs font-black"
+                          >
+                            Plateformes
+                          </div>
+                          <div
+                            style={{ color: 'var(--text-muted)' }}
+                            className="text-[10px]"
+                          >
+                            {platformGames.length} titres cultes
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  )}
+
+                  {/* Récemment Joués */}
+                  <div
+                    onClick={() =>
+                      setSelectedModeFilter(
+                        selectedModeFilter === 'recent' ? null : 'recent'
+                      )
+                    }
                     style={{
-                      backgroundColor: 'var(--bg-card)',
-                      borderColor: 'var(--border-color)',
+                      backgroundColor:
+                        selectedModeFilter === 'recent'
+                          ? 'var(--bg-secondary)'
+                          : 'var(--bg-card)',
+                      borderColor:
+                        selectedModeFilter === 'recent'
+                          ? 'var(--accent-primary)'
+                          : 'var(--border-color)',
                     }}
-                    className="p-4 rounded-2xl border hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group"
+                    className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
+                      selectedModeFilter === 'recent'
+                        ? 'ring-2 ring-[var(--accent-primary)]/20'
+                        : ''
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-purple-50 text-purple-500">
@@ -613,8 +840,8 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
               </section>
             )}
 
-            {/* RAYON 4 : 🏷️ Sagas & Franchises Célèbres */}
-            {layout.show_genres_row !== false && allFranchises.length > 0 && (
+            {/* RAYON 4 : 🏷️ Sagas & Franchises Célèbres (Filtrées selon enabledFranchises) */}
+            {layout.show_genres_row !== false && visibleFranchises.length > 0 && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -638,9 +865,9 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                 </div>
 
                 <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
-                  {allFranchises.map((item) => {
-                    const franchiseName = typeof item === 'string' ? item : item.name;
-                    const franchiseId = typeof item === 'string' ? item : item.id;
+                  {visibleFranchises.map((item) => {
+                    const franchiseName = item.name;
+                    const franchiseId = item.id;
                     const count = allGames.filter(
                       (g) => g.franchise?.toLowerCase() === franchiseName.toLowerCase()
                     ).length;
@@ -668,17 +895,19 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                         }`}
                       >
                         <span className="capitalize">{franchiseName}</span>
-                        <span
-                          style={{
-                            backgroundColor: isSelected
-                              ? 'rgba(255,255,255,0.25)'
-                              : 'var(--bg-secondary)',
-                            color: isSelected ? '#ffffff' : 'var(--text-secondary)',
-                          }}
-                          className="px-1.5 py-0.2 rounded-md text-[10px] font-mono"
-                        >
-                          {count}
-                        </span>
+                        {count > 0 && (
+                          <span
+                            style={{
+                              backgroundColor: isSelected
+                                ? 'rgba(255,255,255,0.25)'
+                                : 'var(--bg-secondary)',
+                              color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                            }}
+                            className="px-1.5 py-0.2 rounded-md text-[10px] font-mono"
+                          >
+                            {count}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

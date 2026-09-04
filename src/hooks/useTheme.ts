@@ -68,6 +68,179 @@ const FALLBACK_THEME: Theme = {
 // Alias pour compatibilité ascendante (certains composants l'importent encore)
 export const DEFAULT_THEME = FALLBACK_THEME;
 
+export const BUILTIN_COLOR_PALETTES: ColorPreset[] = [
+  {
+    id: 'kairo-oled',
+    name: 'Kaïro OLED (Sombre)',
+    description: "Sombre profond contrasté pour bornes d'arcade et OLED",
+    isDark: true,
+    colors: {
+      bg_primary: '#0b0f19',
+      bg_secondary: '#111827',
+      bg_card: '#1e293b',
+      sidebar_bg: '#0f172a',
+      accent_primary: '#f43f5e',
+      accent_secondary: '#38bdf8',
+      text_primary: '#f8fafc',
+      text_secondary: '#94a1b2',
+      text_muted: '#64748b',
+      border: '#334155',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+    },
+  },
+  {
+    id: 'cyber-purple',
+    name: 'Cyber Synthwave',
+    description: 'Ambiance arcade synthwave violette profonde et néons roses',
+    isDark: true,
+    colors: {
+      bg_primary: '#13091f',
+      bg_secondary: '#1d0e30',
+      bg_card: '#26133f',
+      sidebar_bg: '#180c28',
+      accent_primary: '#ec4899',
+      accent_secondary: '#a855f7',
+      text_primary: '#faf5ff',
+      text_secondary: '#d8b4fe',
+      text_muted: '#9333ea',
+      border: '#3b1d61',
+      success: '#34d399',
+      warning: '#fbbf24',
+      danger: '#f43f5e',
+    },
+  },
+  {
+    id: 'matrix-emerald',
+    name: 'Matrix Émeraude',
+    description: 'Style terminal arcade aux reflets verts néon et cyan',
+    isDark: true,
+    colors: {
+      bg_primary: '#09140f',
+      bg_secondary: '#0f241a',
+      bg_card: '#143324',
+      sidebar_bg: '#0c1b13',
+      accent_primary: '#10b981',
+      accent_secondary: '#06b6d4',
+      text_primary: '#ecfdf5',
+      text_secondary: '#a7f3d0',
+      text_muted: '#059669',
+      border: '#1f4d36',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+    },
+  },
+  {
+    id: 'retro-amber',
+    name: 'Ambre 80s',
+    description: 'Chaleur vintage des bornes 80s aux teintes orangées et ambrées',
+    isDark: true,
+    colors: {
+      bg_primary: '#18110b',
+      bg_secondary: '#251a11',
+      bg_card: '#352518',
+      sidebar_bg: '#1e140d',
+      accent_primary: '#f97316',
+      accent_secondary: '#eab308',
+      text_primary: '#fffbeb',
+      text_secondary: '#fde68a',
+      text_muted: '#d97706',
+      border: '#4a331f',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+    },
+  },
+  {
+    id: 'deep-navy',
+    name: 'Océan Midnight',
+    description: 'Élégance bleu marine profond avec accents cyan électrique',
+    isDark: true,
+    colors: {
+      bg_primary: '#0a1128',
+      bg_secondary: '#101d42',
+      bg_card: '#1c2d5a',
+      sidebar_bg: '#0d1736',
+      accent_primary: '#00b4d8',
+      accent_secondary: '#5bc0be',
+      text_primary: '#f0f8ff',
+      text_secondary: '#90e0ef',
+      text_muted: '#0077b6',
+      border: '#283e75',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+    },
+  },
+  {
+    id: 'neo-red',
+    name: 'Rouge Neo-Geo',
+    description: 'Passion arcade classique aux contrastes rouge vif et noir',
+    isDark: true,
+    colors: {
+      bg_primary: '#140909',
+      bg_secondary: '#201010',
+      bg_card: '#2c1414',
+      sidebar_bg: '#180a0a',
+      accent_primary: '#ef4444',
+      accent_secondary: '#f59e0b',
+      text_primary: '#fef2f2',
+      text_secondary: '#fca5a5',
+      text_muted: '#b91c1c',
+      border: '#451a1a',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#dc2626',
+    },
+  },
+  {
+    id: 'gameboy-retro',
+    name: 'GameBoy Classic',
+    description: 'Nostalgie des premières consoles aux teintes gris clair et olive',
+    isDark: false,
+    colors: {
+      bg_primary: '#e3e8de',
+      bg_secondary: '#d2dacb',
+      bg_card: '#f0f4eb',
+      sidebar_bg: '#dce3d6',
+      accent_primary: '#4d6824',
+      accent_secondary: '#738a39',
+      text_primary: '#1e2810',
+      text_secondary: '#3d4d23',
+      text_muted: '#6a7e4b',
+      border: '#c3cdc0',
+      success: '#4d6824',
+      warning: '#b45309',
+      danger: '#991b1b',
+    },
+  },
+  {
+    id: 'kairo-light',
+    name: 'Kaïro Épuré (Clair)',
+    description: 'Thème clair épuré avec blanc pur et accents framboise & violet',
+    isDark: false,
+    colors: {
+      bg_primary: '#f8f7ff',
+      bg_secondary: '#f3e8ff',
+      bg_card: '#ffffff',
+      sidebar_bg: '#ffffff',
+      accent_primary: '#e11d48',
+      accent_secondary: '#7c3aed',
+      text_primary: '#0f172a',
+      text_secondary: '#475569',
+      text_muted: '#94a3b8',
+      border: '#ede9fe',
+      success: '#10b981',
+      warning: '#f59e0b',
+      danger: '#ef4444',
+    },
+  },
+];
+
+export const COLOR_PRESETS = BUILTIN_COLOR_PALETTES;
+
 const LOCAL_STORAGE_THEME_KEY = 'kairo_active_theme_custom';
 
 export function useTheme() {
@@ -76,7 +249,10 @@ export function useTheme() {
     try {
       const cached = localStorage.getItem(LOCAL_STORAGE_THEME_KEY);
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        if (parsed && (parsed.id === 'kairo-default' || parsed.id === 'kairo-hub')) {
+          return parsed;
+        }
       }
     } catch {
       // ignore
@@ -87,20 +263,8 @@ export function useTheme() {
   const [loading, setLoading] = useState(false);
   const appliedThemeRef = useRef<Theme>(activeTheme);
 
-  /**
-   * Dérive des présets de couleurs à partir des thèmes chargés depuis le disque.
-   * Chaque thème installé devient automatiquement un preset de couleur 1-clic.
-   * Aucune palette n'est codée en dur ici — tout vient de themes/<id>/theme.json.
-   */
-  const colorPresets: ColorPreset[] = useMemo(() => {
-    return themes.map((t) => ({
-      id: t.id,
-      name: t.name,
-      description: t.description || '',
-      isDark: (t.colors.bg_primary || '#000').toLowerCase() < '#888',
-      colors: t.colors,
-    }));
-  }, [themes]);
+  // Palettes de couleurs prêtes à l'emploi 1-clic pour personnaliser l'un des 2 thèmes
+  const colorPresets: ColorPreset[] = BUILTIN_COLOR_PALETTES;
 
   const injectThemeVariables = useCallback((theme: Theme) => {
     const root = document.documentElement;
@@ -178,19 +342,19 @@ export function useTheme() {
     }
   }, []);
 
-  // Détecter si les couleurs actuelles correspondent à un thème connu
+  // Détecter si les couleurs actuelles correspondent à une palette connue
   const activePresetId = useMemo(() => {
     if (!activeTheme?.colors) return 'custom';
-    for (const t of themes) {
-      if (!t.colors) continue;
-      const keys = Object.keys(t.colors) as (keyof ThemeColors)[];
+    for (const p of colorPresets) {
+      if (!p.colors) continue;
+      const keys = Object.keys(p.colors) as (keyof ThemeColors)[];
       const match = keys.every(
-        (k) => activeTheme.colors[k]?.toLowerCase() === t.colors[k]?.toLowerCase()
+        (k) => activeTheme.colors[k]?.toLowerCase() === p.colors[k]?.toLowerCase()
       );
-      if (match) return t.id;
+      if (match) return p.id;
     }
     return 'custom';
-  }, [activeTheme?.colors, themes]);
+  }, [activeTheme?.colors, colorPresets]);
 
   // Chargement initial des thèmes depuis le dossier themes/ via le backend Tauri
   const reloadThemes = useCallback(async () => {
