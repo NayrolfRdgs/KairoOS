@@ -12,6 +12,7 @@ dist-portable/
 
 # Tauri
 src-tauri/target/
+src-tauri/themes/
 
 # SQLite & Data
 *.db

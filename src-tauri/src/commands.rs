@@ -400,15 +400,38 @@ pub fn purge_missing_games(state: State<'_, AppState>) -> Result<usize, String> 
 
 fn resolve_themes_dir() -> std::path::PathBuf {
     let cur = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+    
+    // Si exécuté depuis src-tauri (dev mode), chercher dans le dossier parent (racine du projet)
+    if cur.ends_with("src-tauri") {
+        if let Some(parent) = cur.parent() {
+            let p = parent.join("themes");
+            if p.exists() {
+                return p;
+            }
+        }
+    }
+
+    let p_parent = cur.join("..").join("themes");
+    if p_parent.exists() {
+        return p_parent;
+    }
+
     let p1 = cur.join("themes");
     if p1.exists() {
         return p1;
     }
+
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let p2 = parent.join("themes");
             if p2.exists() {
                 return p2;
+            }
+            if let Some(grand) = parent.parent() {
+                let p3 = grand.join("themes");
+                if p3.exists() {
+                    return p3;
+                }
             }
         }
     }

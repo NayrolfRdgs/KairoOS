@@ -12,7 +12,7 @@ import {
   AddGameModal,
 } from './components/modals';
 import { LaunchOverlay } from './components/overlay';
-import { useLibrary, useLauncher, useAppSettings, useGamepad } from './hooks';
+import { useLibrary, useLauncher, useAppSettings, useGamepad, useTheme } from './hooks';
 import { Game, GameConfig, LocalGameMetadata } from './types';
 import {
   getGameDetails,
@@ -25,6 +25,9 @@ import {
 } from './api';
 
 export const App: React.FC = () => {
+  // 0. Thème global de l'application (chargé dès le boot)
+  const themeManager = useTheme();
+
   // 1. Hooks Métier
   const {
     settings,
@@ -540,6 +543,7 @@ export const App: React.FC = () => {
           settings={settings}
           systems={systems}
           emulators={emulators}
+          themeManager={themeManager}
           onClose={() => setSettingsOpen(false)}
           onSave={saveSettings}
           onToggleFullscreen={toggleFullscreen}

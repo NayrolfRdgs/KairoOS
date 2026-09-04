@@ -51,6 +51,7 @@ interface SettingsModalProps {
   onSaveRemoteConfig?: (cfg: RemoteConfig) => Promise<void>;
   onLockKioskNow?: () => void;
   onScanComplete?: () => void;
+  themeManager?: ReturnType<typeof useTheme>;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -65,6 +66,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onSaveRemoteConfig,
   onLockKioskNow,
   onScanComplete,
+  themeManager: propsThemeManager,
 }) => {
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('themes');
   const [localSettings, setLocalSettings] = useState<AppSettings>(initialSettings);
@@ -73,8 +75,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const pendingSettingsRef = useRef<AppSettings>(initialSettings);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Hook du gestionnaire de thèmes
-  const themeManager = useTheme();
+  const internalThemeManager = useTheme();
+  const themeManager = propsThemeManager || internalThemeManager;
 
   // Sauvegarde temps réel avec debounce 300ms pour éviter tout redémarrage
   const updateSetting = useCallback(
@@ -273,7 +275,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }}
             className="flex-1 overflow-y-auto p-6 scrollbar-thin"
           >
-            {activeSection === 'themes' && <ThemesSection themeManager={themeManager} />}
+            {activeSection === 'themes' && (
+              <ThemesSection
+                themeManager={themeManager}
+                onThemeChange={(newThemeId) => updateSetting('theme', newThemeId)}
+              />
+            )}
 
             {activeSection === 'display' && (
               <DisplaySection
