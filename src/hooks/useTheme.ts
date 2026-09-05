@@ -379,6 +379,11 @@ export function useTheme() {
           // ignore
         }
 
+        if (active.id === 'kairo-default' || active.id === 'kairo-hub') {
+          delete (merged as any).entry_path;
+          merged.theme_type = 'built-in';
+        }
+
         setActiveTheme(merged);
         appliedThemeRef.current = merged;
         injectThemeVariables(merged);
