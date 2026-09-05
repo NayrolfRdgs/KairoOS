@@ -482,9 +482,8 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
 
     let has_active = themes.iter().any(|t| t.is_active);
     if !has_active && !themes.is_empty() {
-        if let Some(target) = themes.iter_mut().find(|t| t.id == "kairo-hub").or_else(|| themes.first_mut()) {
-            target.is_active = true;
-        }
+        let idx = themes.iter().position(|t| t.id == "kairo-hub").unwrap_or(0);
+        themes[idx].is_active = true;
     }
 
     if themes.is_empty() {
