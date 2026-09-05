@@ -171,7 +171,6 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
     applyTheme,
     updateThemeColor,
     updateThemeLayout,
-    updateThemeLayoutType,
     updateThemeCustomCss,
     updateThemeFont,
     updateThemeAsset,
@@ -1486,7 +1485,7 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
             </div>
           </div>
 
-          {/* Section : Disposition & Structure de la Page (Layout Engine) */}
+          {/* Section : Affichage des Rayons & Sections Visibles */}
           <div
             style={{
               backgroundColor: 'var(--bg-card)',
@@ -1501,97 +1500,12 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                   style={{ color: 'var(--text-primary)' }}
                   className="text-xs font-black uppercase tracking-wider"
                 >
-                  Disposition & Architecture de la Page
+                  Affichage des Rayons & Sections Visibles
                 </h3>
               </div>
               <span style={{ color: 'var(--text-muted)' }} className="text-[11px]">
-                Modèle d'affichage global
+                Activer ou masquer les rayons de l'interface
               </span>
-            </div>
-
-            {/* Choix du mode d'agencement principal */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option 1: Classic Sidebar + Grid */}
-              <div
-                onClick={() => {
-                  updateThemeLayoutType('sidebar_grid');
-                  updateThemeLayout('show_sidebar', true);
-                }}
-                style={{
-                  backgroundColor:
-                    (activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
-                    currentLayout.show_sidebar !== false
-                      ? 'var(--bg-secondary)'
-                      : 'var(--bg-card)',
-                  borderColor:
-                    (activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
-                    currentLayout.show_sidebar !== false
-                      ? 'var(--accent-primary)'
-                      : 'var(--border-color)',
-                }}
-                className="p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-[1.01] shadow-2xs space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-black text-xs" style={{ color: 'var(--text-primary)' }}>
-                    <Layers className="w-4 h-4 text-rose-500" />
-                    <span>Classique (Menu Latéral + Grille)</span>
-                  </div>
-                  {(activeTheme.layout_type || 'sidebar_grid') === 'sidebar_grid' &&
-                    currentLayout.show_sidebar !== false && (
-                      <div
-                        style={{ backgroundColor: 'var(--accent-primary)' }}
-                        className="px-1.5 py-0.5 rounded text-[9px] font-black text-white flex items-center gap-0.5"
-                      >
-                        <Check className="w-2.5 h-2.5" />
-                        <span>Actif</span>
-                      </div>
-                    )}
-                </div>
-                <p style={{ color: 'var(--text-muted)' }} className="text-[10px] leading-relaxed">
-                  Barre latérale gauche pour naviguer entre consoles, sagas et favoris, avec grille de jeux centrale.
-                </p>
-              </div>
-
-              {/* Option 2: Single Page Categories */}
-              <div
-                onClick={() => {
-                  updateThemeLayoutType('single_page_categories');
-                  updateThemeLayout('show_sidebar', false);
-                }}
-                style={{
-                  backgroundColor:
-                    activeTheme.layout_type === 'single_page_categories' ||
-                    currentLayout.show_sidebar === false
-                      ? 'var(--bg-secondary)'
-                      : 'var(--bg-card)',
-                  borderColor:
-                    activeTheme.layout_type === 'single_page_categories' ||
-                    currentLayout.show_sidebar === false
-                      ? 'var(--accent-primary)'
-                      : 'var(--border-color)',
-                }}
-                className="p-4 rounded-2xl border-2 cursor-pointer transition-all hover:scale-[1.01] shadow-2xs space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 font-black text-xs" style={{ color: 'var(--accent-primary)' }}>
-                    <Tv className="w-4 h-4" />
-                    <span>Hub Plein Écran (Rayonnages par Catégories)</span>
-                  </div>
-                  {(activeTheme.layout_type === 'single_page_categories' ||
-                    currentLayout.show_sidebar === false) && (
-                    <div
-                      style={{ backgroundColor: 'var(--accent-primary)' }}
-                      className="px-1.5 py-0.5 rounded text-[9px] font-black text-white flex items-center gap-0.5"
-                    >
-                      <Check className="w-2.5 h-2.5" />
-                      <span>Actif</span>
-                    </div>
-                  )}
-                </div>
-                <p style={{ color: 'var(--text-muted)' }} className="text-[10px] leading-relaxed">
-                  Page unique plein écran sans barre latérale. Présente des rayonnages horizontaux : Consoles, Modes 2 Joueurs, Sagas, Favoris.
-                </p>
-              </div>
             </div>
 
             {/* Toggles des Rayonnages & de la Sidebar */}

@@ -3,11 +3,12 @@
   "always_on_top": false,
   "kiosk_mode": false,
   "enabled_franchises": [
-    "zelda"
+    "zelda",
+    "mario"
   ],
   "custom_franchises": [],
   "roms_path": "./roms",
-  "theme": "kairo-default",
+  "theme": "kairo-hub",
   "enabled_systems": [
     "windows"
   ],

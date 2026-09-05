@@ -15,39 +15,27 @@ import {
   ChevronRight,
   Filter,
 } from 'lucide-react';
-import { Game, System, AppMode, Theme, FranchiseCollection, CustomFranchise } from '../../types';
-import { GameCard } from '../games/GameCard';
-import { ConsoleLogo } from '../common/ConsoleLogo';
+import { ThemeUIProps } from '../types';
+import { GameCard } from '../../components/games/GameCard';
+import { ConsoleLogo } from '../../components/common/ConsoleLogo';
+import { GamepadFooterBar } from '../../components/layout/GamepadFooterBar';
 
-interface SinglePageCategoriesViewProps {
-  systems: System[];
-  allGames: Game[];
-  allFranchises: (FranchiseCollection | string)[];
-  customFranchises?: CustomFranchise[];
-  enabledSystems?: string[];
-  enabledModes?: string[];
-  enabledFranchises?: string[];
-  favoriteGames: Game[];
-  twoPlayerGames: Game[];
-  recentGames: Game[];
-  fightGames?: Game[];
-  platformGames?: Game[];
-  focusedGameId: string | null;
-  onSelectGame: (game: Game) => void;
-  onLaunchGame: (game: Game) => void;
-  onToggleFavorite: (game: Game) => void;
-  onOpenSettings: () => void;
-  onOpenGamepadSettings: () => void;
-  onOpenScanner?: () => void;
-  onOpenAddGame?: () => void;
-  onOpenKioskUnlock?: () => void;
-  gamepadConnected: boolean;
-  gamepadName: string | null;
-  appMode?: AppMode;
-  theme: Theme;
-}
-
-export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> = ({
+/**
+ * =========================================================================
+ * UI Thème 2 : Kaïro Hub (Rayonnages par Catégories Plein Écran)
+ * =========================================================================
+ * Architecture moderne plein écran sans barre latérale :
+ * - En-tête supérieur avec recherche textuelle intégrée et statut
+ * - Rayon Consoles & Systèmes avec tuiles interactives et compteurs
+ * - Rayon Favoris (Carrousel horizontal)
+ * - Rayon Modes de Jeux (2 Joueurs, Combat, Plateforme, Récents) avec filtrage 1-clic
+ * - Rayon Sagas Phares (Mario, Zelda, etc.) avec badges filtrables
+ * - Rayon Bibliothèque Complète
+ * - Zone de résultats instantanée lorsque des filtres sont actifs
+ *
+ * Tout le code de cette UI est complètement indépendant et isolé ici.
+ */
+export const HubShelfTheme: React.FC<ThemeUIProps> = ({
   systems,
   allGames,
   allFranchises,
@@ -60,7 +48,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
   recentGames,
   fightGames: propFightGames,
   platformGames: propPlatformGames,
-  focusedGameId,
+  focusedGame,
   onSelectGame,
   onLaunchGame,
   onToggleFavorite,
@@ -70,7 +58,9 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
   onOpenKioskUnlock,
   gamepadConnected,
   gamepadName,
-  appMode = 'admin',
+  isGameRunning,
+  appMode,
+  settings,
   theme,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,7 +77,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
     show_all_games_row: true,
   };
 
-  // Systèmes filtrés par les paramètres de l'utilisateur (enabledSystems)
+  // Systèmes visibles (filtrés selon enabled_systems)
   const systemsWithCounts = useMemo(() => {
     const visibleSystems = systems.filter((s) => {
       if (!enabledSystems || enabledSystems.length === 0) return true;
@@ -99,7 +89,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
     });
   }, [systems, allGames, enabledSystems]);
 
-  // Franchises / Sagas filtrées par les paramètres de l'utilisateur (enabledFranchises)
+  // Franchises / Sagas visibles (filtrées selon enabled_franchises)
   const visibleFranchises = useMemo(() => {
     const list: { id: string; name: string }[] = [];
     allFranchises.forEach((f) => {
@@ -130,7 +120,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
 
   // Jeux de combat
   const fightGames = useMemo(() => {
-    if (propFightGames) return propFightGames;
+    if (propFightGames && propFightGames.length > 0) return propFightGames;
     return allGames.filter((g) => {
       const t = g.title.toLowerCase();
       const desc = (g.synopsis || '').toLowerCase();
@@ -151,7 +141,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
 
   // Jeux de plateforme
   const platformGames = useMemo(() => {
-    if (propPlatformGames) return propPlatformGames;
+    if (propPlatformGames && propPlatformGames.length > 0) return propPlatformGames;
     return allGames.filter((g) => {
       const t = g.title.toLowerCase();
       const desc = (g.synopsis || '').toLowerCase();
@@ -170,7 +160,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
     });
   }, [allGames, propPlatformGames]);
 
-  // Filtrage principal (Recherche, Console, Saga ou Mode activé)
+  // Filtrage principal
   const isFilterActive = Boolean(
     searchQuery.trim() || selectedSystemFilter || selectedGenreFilter || selectedModeFilter
   );
@@ -178,7 +168,6 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
   const searchedGames = useMemo(() => {
     let list = allGames;
 
-    // 1. Filtrage par mode si sélectionné
     if (selectedModeFilter === '2-players') {
       list = twoPlayerGames;
     } else if (selectedModeFilter === 'genre:fight') {
@@ -189,7 +178,6 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
       list = recentGames;
     }
 
-    // 2. Recherche textuelle
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -200,12 +188,10 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
       );
     }
 
-    // 3. Filtre par système/console
     if (selectedSystemFilter) {
       list = list.filter((g) => g.system_id === selectedSystemFilter);
     }
 
-    // 4. Filtre par univers/saga
     if (selectedGenreFilter) {
       list = list.filter(
         (g) => g.franchise?.toLowerCase() === selectedGenreFilter.toLowerCase()
@@ -232,7 +218,6 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
     setSelectedModeFilter(null);
   };
 
-  // Vérification de visibilité des modes configurés dans les options de la borne
   const isModeEnabled = (modeId: string) => {
     if (!enabledModes || enabledModes.length === 0) return true;
     return enabledModes.includes(modeId);
@@ -473,7 +458,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                 <GameCard
                   key={game.id}
                   game={game}
-                  isFocused={focusedGameId === game.id}
+                  isFocused={focusedGame?.id === game.id}
                   onSelect={onSelectGame}
                   onLaunch={onLaunchGame}
                   onToggleFavorite={onToggleFavorite}
@@ -616,7 +601,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                     <GameCard
                       key={game.id}
                       game={game}
-                      isFocused={focusedGameId === game.id}
+                      isFocused={focusedGame?.id === game.id}
                       onSelect={onSelectGame}
                       onLaunch={onLaunchGame}
                       onToggleFavorite={onToggleFavorite}
@@ -626,7 +611,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
               </section>
             )}
 
-            {/* RAYON 3 : 👥 Modes de Jeux (Filtrés selon enabledModes des paramètres) */}
+            {/* RAYON 3 : 👥 Modes de Jeux (Filtrés selon enabledModes) */}
             {layout.show_modes_row !== false && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -944,7 +929,7 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
                     <GameCard
                       key={game.id}
                       game={game}
-                      isFocused={focusedGameId === game.id}
+                      isFocused={focusedGame?.id === game.id}
                       onSelect={onSelectGame}
                       onLaunch={onLaunchGame}
                       onToggleFavorite={onToggleFavorite}
@@ -956,6 +941,17 @@ export const SinglePageCategoriesView: React.FC<SinglePageCategoriesViewProps> =
           </>
         )}
       </main>
+
+      {/* Barre d'Aide Manette en bas */}
+      <GamepadFooterBar
+        buttonStyle={settings.button_prompt_style || 'xbox'}
+        isGameRunning={isGameRunning}
+        isDetailsModalOpen={false}
+        isOtherModalOpen={false}
+        gameSelectAction={settings.game_select_action || 'details'}
+        isConnected={gamepadConnected}
+        gamepadName={gamepadName}
+      />
     </div>
   );
 };
