@@ -23,10 +23,13 @@ impl AppPaths {
                 }
 
                 // Critères mode portable :
-                // - Dossier nommé dist-portable
+                // - Dossier nommé portable ou builds/portable ou dist-portable
                 // - Présence d'un marqueur portable.txt ou kairo_data/ ou LISEZ-MOI
                 // - Présence conjointe de themes/ et config/ directement à côté de l'exécutable
-                if parent_str.ends_with("dist-portable")
+                if parent_str.ends_with("builds\\portable")
+                    || parent_str.ends_with("builds/portable")
+                    || parent_str.ends_with("portable")
+                    || parent_str.ends_with("dist-portable")
                     || parent.join("portable.txt").exists()
                     || parent.join("kairo_data").exists()
                     || parent.join("LISEZ-MOI - DEMARRAGE RAPIDE.txt").exists()

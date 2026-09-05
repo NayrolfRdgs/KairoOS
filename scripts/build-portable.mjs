@@ -6,7 +6,7 @@ console.log('====================================================');
 console.log('🚀 CRÉATION DU PACKAGE PORTABLE AUTONOME — KAÏROOS');
 console.log('====================================================\n');
 
-const portableDir = path.resolve('dist-portable');
+const portableDir = path.resolve('builds', 'portable');
 
 // 1. Création de l'arborescence complète des dossiers
 const dirsToCreate = [
@@ -64,17 +64,17 @@ if (existsSync(releaseExe)) {
 
 // 4. Synchronisation automatique de tous les émulateurs pré-installés
 if (existsSync('emulators')) {
-  console.log('🎮 Synchronisation des émulateurs dans dist-portable/emulators/ ...');
+  console.log('🎮 Synchronisation des émulateurs dans builds/portable/emulators/ ...');
   try {
-    execSync('powershell -Command "Copy-Item -Path \'emulators/*\' -Destination \'dist-portable/emulators\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+    execSync('powershell -Command "Copy-Item -Path \'emulators/*\' -Destination \'builds/portable/emulators\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
   } catch (_) {}
 }
 
 // 5. Synchronisation automatique de tous les thèmes
 if (existsSync('themes')) {
-  console.log('🎨 Synchronisation des thèmes dans dist-portable/themes/ ...');
+  console.log('🎨 Synchronisation des thèmes dans builds/portable/themes/ ...');
   try {
-    execSync('powershell -Command "Copy-Item -Path \'themes/*\' -Destination \'dist-portable/themes\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+    execSync('powershell -Command "Copy-Item -Path \'themes/*\' -Destination \'builds/portable/themes\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
   } catch (_) {}
 }
 
@@ -396,15 +396,15 @@ PORTABILITÉ TOTALE :
 --------------------------------------------------------------------------------
 Pour transférer votre collection et toutes vos statistiques sur un autre PC ou
 une borne d'arcade physique, il vous suffit de copier l'intégralité du dossier
-"dist-portable" (ou votre clé USB). Vous retrouverez immédiatement toute votre
+"builds/portable" (ou votre clé USB). Vous retrouverez immédiatement toute votre
 configuration sans rien réinstaller !
 `;
 writeFileSync(path.join(portableDir, 'kairo_data', 'LISEZ-MOI - DONNEES ET SAUVEGARDES.txt'), dataReadme, 'utf-8');
 
 console.log('\n====================================================');
 console.log('🎉 PACKAGE KAÏROOS PORTABLE GÉNÉRÉ AVEC SUCCÈS !');
-console.log('📁 Emplacement : dist-portable/');
-console.log('🎮 Exécutable  : dist-portable/KaïroOS.exe');
-console.log('⚙️ Fichiers JSON configurables : dist-portable/config/');
+console.log('📁 Emplacement : builds/portable/');
+console.log('🎮 Exécutable  : builds/portable/KaïroOS.exe');
+console.log('⚙️ Fichiers JSON configurables : builds/portable/config/');
 console.log('📝 Guides inclus dans chaque sous-dossier.');
 console.log('====================================================\n');
