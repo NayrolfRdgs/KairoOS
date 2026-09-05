@@ -104,7 +104,56 @@ Le fichier `theme.json` est le cœur de votre thème. Voici un exemple complet a
 
 ---
 
-## 🌐 5. Soumettre Votre Thème au Store Communautaire
+## 📺 5. Mode Console Launcher TV (`layout_type: "console_launcher"`)
+
+KaïroOS supporte nativement une disposition de type **Console Launcher / Steam Big Picture / Batocera** sans avoir besoin d'écrire du code TypeScript ni de recompiler l'application.
+
+Pour activer cette interface, ajoutez simplement `"layout_type": "console_launcher"` (ou `"hero_carousel"`) dans votre `theme.json` :
+
+```json
+{
+  "id": "mon-theme-console",
+  "name": "Mon Launcher Console",
+  "author": "VotrePseudo",
+  "version": "1.0.0",
+  "description": "Thème console plein écran avec grand Hero et carrousel horizontal.",
+  "layout_type": "console_launcher",
+  "layout": {
+    "hero_height": "56vh",
+    "carousel_position": "bottom",
+    "cards_visible": 5,
+    "show_controller_guide": true,
+    "hero_backdrop_blur": "0px",
+    "hero_gradient_opacity": 0.75,
+    "card_glow": "neon",
+    "card_aspect": "poster"
+  },
+  "custom_css": "/* Personnalisation CSS du launcher */\n.kairo-carousel-card-focused {\n  border-color: #f43f5e !important;\n  box-shadow: 0 0 25px rgba(244, 63, 94, 0.5) !important;\n}"
+}
+```
+
+### Classes CSS & Points d'ancrage disponibles dans `custom_css` :
+
+| Sélecteur CSS | Rôle & Description |
+| :--- | :--- |
+| `.kairo-console-launcher` | Conteneur racine plein écran du launcher console. |
+| `.kairo-launcher-topbar` | En-tête supérieur (marque Kaïro, horloge temps réel, statut manette). |
+| `.kairo-hero` | Zone Hero supérieure affichant les détails du jeu focalisé. |
+| `.kairo-hero-backdrop` | Image géante d'arrière-plan avec transitions en fondu. |
+| `.kairo-hero-content` | Bloc textuel d'informations (titre, étoiles, badges, boutons). |
+| `.kairo-hero-title` | Titre percutant du jeu focalisé. |
+| `.kairo-hero-meta` | Métadonnées du jeu (note en étoiles, plateforme, genre, nb joueurs). |
+| `.kairo-hero-actions` | Conteneur des boutons d'actions rapides. |
+| `.kairo-hero-btn-play` | Bouton principal `[A JOUER]`. |
+| `.kairo-hero-btn-action` | Boutons secondaires `[X Favori]` et `[Y Options]`. |
+| `.kairo-carousel` | Rangée défilante horizontale de pochettes de jeux. |
+| `.kairo-carousel-card` | Carte de jeu dans le carrousel. |
+| `.kairo-carousel-card-focused` | Carte ayant le focus manette/clavier actif (`[data-active="true"]`). |
+| `.kairo-controller-bar` | Barre d'aide manette en bas avec glyphes réels. |
+
+---
+
+## 🌐 6. Soumettre Votre Thème au Store Communautaire
 
 Le store officiel est hébergé sur GitHub à l'adresse :
 👉 **[https://github.com/NayrolfRdgs/KairoOS-themes](https://github.com/NayrolfRdgs/KairoOS-themes)**
@@ -113,6 +162,6 @@ Pour partager votre création avec l'ensemble des utilisateurs de KaïroOS :
 
 1. **Forkez** le dépôt `NayrolfRdgs/KairoOS-themes`.
 2. Ajoutez votre dossier de thème à la racine du dépôt (ex: `mon-super-theme/`).
-3. Vérifiez que votre `theme.json` est un JSON valide et que `preview.png` est présent.
+3. Vérifiez que votre `theme.json` est un JSON valide et que `preview.png` (ou `preview.svg`) est présent.
 4. Créez une **Pull Request** avec une capture d'écran et une brève description.
 5. Une fois validé et fusionné, votre thème sera instantanément téléchargeable directement depuis l'onglet **Communauté** de l'interface KaïroOS par tous les joueurs !

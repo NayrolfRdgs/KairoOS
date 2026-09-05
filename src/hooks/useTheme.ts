@@ -320,6 +320,18 @@ export function useTheme() {
       if (layout.scanlines === 'light') root.classList.add('crt-scanlines-light');
       else if (layout.scanlines === 'retro') root.classList.add('crt-scanlines-retro');
       else if (layout.scanlines === 'intense') root.classList.add('crt-scanlines-intense');
+
+      // Console Launcher specific variables
+      root.style.setProperty('--hero-height', layout.hero_height || '56vh');
+      root.style.setProperty('--hero-backdrop-blur', layout.hero_backdrop_blur || '10px');
+      root.style.setProperty(
+        '--hero-gradient-opacity',
+        layout.hero_gradient_opacity !== undefined ? String(layout.hero_gradient_opacity) : '0.75'
+      );
+      root.style.setProperty(
+        '--carousel-cards-visible',
+        layout.cards_visible ? String(layout.cards_visible) : '5'
+      );
     }
 
     if (assets?.background_image) {

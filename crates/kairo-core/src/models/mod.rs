@@ -363,6 +363,18 @@ pub struct ThemeLayout {
     pub show_favorites_row: Option<bool>,
     #[serde(default)]
     pub show_all_games_row: Option<bool>,
+    #[serde(default)]
+    pub hero_height: Option<String>,
+    #[serde(default)]
+    pub carousel_position: Option<String>,
+    #[serde(default)]
+    pub cards_visible: Option<u32>,
+    #[serde(default)]
+    pub show_controller_guide: Option<bool>,
+    #[serde(default)]
+    pub hero_backdrop_blur: Option<String>,
+    #[serde(default)]
+    pub hero_gradient_opacity: Option<f32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]

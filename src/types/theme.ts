@@ -20,7 +20,7 @@ export interface ThemeFonts {
   size_base: string;
 }
 
-export type ThemeLayoutType = 'sidebar_grid' | 'single_page_categories';
+export type ThemeLayoutType = 'sidebar_grid' | 'single_page_categories' | 'console_launcher' | 'hero_carousel';
 
 export interface ThemeLayout {
   card_radius: string;
@@ -37,6 +37,13 @@ export interface ThemeLayout {
   show_genres_row?: boolean;
   show_favorites_row?: boolean;
   show_all_games_row?: boolean;
+  // Options spécifiques au Console Launcher (Hero + Carrousel)
+  hero_height?: string;
+  carousel_position?: 'bottom' | 'middle';
+  cards_visible?: number;
+  show_controller_guide?: boolean;
+  hero_backdrop_blur?: string;
+  hero_gradient_opacity?: number;
 }
 
 export interface ThemeAssets {
