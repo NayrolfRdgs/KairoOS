@@ -210,19 +210,19 @@ export const App: React.FC = () => {
   const categoryList = useMemo(() => {
     const list = ['all', 'favorites', 'recent'];
     const activeModes = ['2-players', 'genre:fight', 'genre:platform'].filter((m) => {
-      if (!settings.enabled_modes || settings.enabled_modes.length === 0) return true;
+      if (settings.enabled_modes === undefined) return true;
       return settings.enabled_modes.includes(m);
     });
     activeModes.forEach((m) => list.push(m));
 
     const visibleSystems = systems.filter((s) => {
-      if (!settings.enabled_systems || settings.enabled_systems.length === 0) return true;
+      if (settings.enabled_systems === undefined) return true;
       return settings.enabled_systems.includes(s.id);
     });
     visibleSystems.forEach((s) => list.push(s.id));
 
     const visibleFranchises = allFranchises.filter((f) => {
-      if (!settings.enabled_franchises || settings.enabled_franchises.length === 0) return true;
+      if (settings.enabled_franchises === undefined) return true;
       return settings.enabled_franchises.includes(f.id);
     });
     visibleFranchises.forEach((f) => list.push(`franchise:${f.id}`));
@@ -408,11 +408,11 @@ export const App: React.FC = () => {
     ]
   );
 
-  // La manette reste active dans les modales et en jeu (pour Quitter / Valider / Fermer)
-  // Elle n'est désactivée QUE dans le configurateur de manette pour ne pas parasiter le remapping
+  // La manette reste active dans le catalogue et en jeu
+  // Elle est désactivée dans les paramètres et le configurateur manette pour leur laisser le contrôle exclusif
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(
     gamepadActions,
-    !gamepadSettingsOpen,
+    !gamepadSettingsOpen && !settingsOpen,
     primaryPlayerIndex,
     gamepadMappings[primaryPlayerIndex]
   );
@@ -587,6 +587,8 @@ export const App: React.FC = () => {
             lockKiosk();
           }}
           onScanComplete={loadData}
+          primaryPlayerIndex={primaryPlayerIndex}
+          gamepadMapping={gamepadMappings[primaryPlayerIndex]}
         />
       )}
 

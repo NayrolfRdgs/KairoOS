@@ -57,16 +57,12 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
 }) => {
   // 1. Gestion des Modes & Genres
   const isModeEnabled = (modeId: string) => {
-    if (!enabledModes || enabledModes.length === 0) return true;
     return enabledModes.includes(modeId);
   };
 
   const toggleMode = (modeId: string) => {
     if (!setEnabledModes) return;
-    if (enabledModes.length === 0) {
-      const newModes = AVAILABLE_MODES.map((m) => m.id).filter((id) => id !== modeId);
-      setEnabledModes(newModes);
-    } else if (enabledModes.includes(modeId)) {
+    if (enabledModes.includes(modeId)) {
       setEnabledModes(enabledModes.filter((id) => id !== modeId));
     } else {
       setEnabledModes([...enabledModes, modeId]);
@@ -75,15 +71,11 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
 
   // 2. Gestion des Consoles
   const isSystemEnabled = (sysId: string) => {
-    if (enabledSystems.length === 0) return true;
     return enabledSystems.includes(sysId);
   };
 
   const toggleSystem = (sysId: string) => {
-    if (enabledSystems.length === 0) {
-      const newEnabled = systems.map((s) => s.id).filter((id) => id !== sysId);
-      setEnabledSystems(newEnabled);
-    } else if (enabledSystems.includes(sysId)) {
+    if (enabledSystems.includes(sysId)) {
       setEnabledSystems(enabledSystems.filter((id) => id !== sysId));
     } else {
       setEnabledSystems([...enabledSystems, sysId]);
@@ -92,7 +84,6 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
 
   // 3. Gestion des Franchises
   const isFranchiseEnabled = (fId: string) => {
-    if (!enabledFranchises || enabledFranchises.length === 0) return true;
     return enabledFranchises.includes(fId);
   };
 
@@ -116,9 +107,25 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
               MODES & GENRES ARCADE (SIDEBAR)
             </h3>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono">
-            {enabledModes.length}/{AVAILABLE_MODES.length} ACTIVÉS
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEnabledModes?.(AVAILABLE_MODES.map((m) => m.id))}
+              className="px-2.5 py-1 rounded-lg bg-white border border-purple-200 text-purple-700 text-[11px] font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            >
+              Tout Activer
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnabledModes?.([])}
+              className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-50 shadow-2xs transition-all active:scale-95 cursor-pointer"
+            >
+              Tout Masquer
+            </button>
+            <span className="text-[11px] text-slate-400 font-mono ml-1">
+              {enabledModes.length}/{AVAILABLE_MODES.length} ACTIVÉS
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -129,6 +136,8 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
             return (
               <div
                 key={mode.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleMode(mode.id)}
                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between shadow-xs ${
                   active
@@ -196,6 +205,8 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
             return (
               <div
                 key={system.id}
+                role="button"
+                tabIndex={0}
                 onClick={() => toggleSystem(system.id)}
                 className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between shadow-2xs ${
                   active
@@ -265,6 +276,8 @@ export const ConsolesTab: React.FC<ConsolesTabProps> = ({
               return (
                 <div
                   key={franchise.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleFranchise(franchise.id)}
                   className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
                     active

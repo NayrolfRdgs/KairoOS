@@ -20,12 +20,12 @@ export const SidebarFranchises: React.FC<SidebarFranchisesProps> = ({
   gamesCountByFranchise,
 }) => {
   const visiblePopular = popularFranchises.filter((f) => {
-    if (!enabledFranchises || enabledFranchises.length === 0) return true;
+    if (enabledFranchises === undefined) return true;
     return enabledFranchises.includes(f.id);
   });
 
   const visibleCustom = (customFranchises || []).filter((f) => {
-    if (!enabledFranchises || enabledFranchises.length === 0) return true;
+    if (enabledFranchises === undefined) return true;
     return enabledFranchises.includes(f.id);
   });
 

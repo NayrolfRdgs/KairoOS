@@ -80,7 +80,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
   // Systèmes visibles (filtrés selon enabled_systems)
   const systemsWithCounts = useMemo(() => {
     const visibleSystems = systems.filter((s) => {
-      if (!enabledSystems || enabledSystems.length === 0) return true;
+      if (enabledSystems === undefined) return true;
       return enabledSystems.includes(s.id);
     });
     return visibleSystems.map((sys) => {
@@ -106,7 +106,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
       });
     }
 
-    if (!enabledFranchises || enabledFranchises.length === 0) {
+    if (enabledFranchises === undefined) {
       return list;
     }
 
@@ -219,7 +219,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
   };
 
   const isModeEnabled = (modeId: string) => {
-    if (!enabledModes || enabledModes.length === 0) return true;
+    if (enabledModes === undefined) return true;
     return enabledModes.includes(modeId);
   };
 

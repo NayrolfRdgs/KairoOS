@@ -18,9 +18,13 @@ export const SidebarSystems: React.FC<SidebarSystemsProps> = ({
   enabledSystems,
 }) => {
   const visibleSystems = systems.filter((s) => {
-    if (!enabledSystems || enabledSystems.length === 0) return true;
+    if (enabledSystems === undefined) return true;
     return enabledSystems.includes(s.id);
   });
+
+  if (visibleSystems.length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-1">

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   Palette,
@@ -14,8 +14,8 @@ import {
   Check,
   ChevronRight,
 } from 'lucide-react';
-import { AppSettings, Emulator, RemoteConfig, System } from '../../../types';
-import { useTheme } from '../../../hooks';
+import { AppSettings, Emulator, RemoteConfig, System, GamepadMapping } from '../../../types';
+import { useTheme, useGamepad } from '../../../hooks';
 import { ThemesSection } from './ThemesSection';
 import { DisplaySection } from './DisplaySection';
 import { EmulatorsSection } from './EmulatorsSection';
@@ -39,6 +39,19 @@ export type SettingsSectionId =
   | 'consoles'
   | 'advanced';
 
+const SECTIONS_LIST: { id: SettingsSectionId; label: string; icon: React.ReactNode }[] = [
+  { id: 'themes', label: 'Thèmes & Style', icon: <Palette className="w-4 h-4" /> },
+  { id: 'display', label: 'Affichage & Écran', icon: <Monitor className="w-4 h-4" /> },
+  { id: 'emulators', label: 'Émulateurs & CLI', icon: <Cpu className="w-4 h-4" /> },
+  { id: 'media', label: 'Image & Son', icon: <Tv className="w-4 h-4" /> },
+  { id: 'gamepads', label: 'Manettes', icon: <Gamepad2 className="w-4 h-4" /> },
+  { id: 'library', label: 'Bibliothèque', icon: <Library className="w-4 h-4" /> },
+  { id: 'scraping', label: 'Scraping', icon: <Globe className="w-4 h-4" /> },
+  { id: 'network', label: 'Réseau & Remote', icon: <Wifi className="w-4 h-4" /> },
+  { id: 'consoles', label: 'Consoles & Modes', icon: <Layers className="w-4 h-4" /> },
+  { id: 'advanced', label: 'Avancé & Système', icon: <SettingsIcon className="w-4 h-4" /> },
+];
+
 interface SettingsModalProps {
   settings: AppSettings;
   systems?: System[];
@@ -52,6 +65,8 @@ interface SettingsModalProps {
   onLockKioskNow?: () => void;
   onScanComplete?: () => void;
   themeManager?: ReturnType<typeof useTheme>;
+  primaryPlayerIndex?: number;
+  gamepadMapping?: GamepadMapping;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -67,6 +82,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onLockKioskNow,
   onScanComplete,
   themeManager: propsThemeManager,
+  primaryPlayerIndex = 0,
+  gamepadMapping,
 }) => {
   const [activeSection, setActiveSection] = useState<SettingsSectionId>('themes');
   const [localSettings, setLocalSettings] = useState<AppSettings>(initialSettings);
@@ -74,6 +91,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingSettingsRef = useRef<AppSettings>(initialSettings);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // État de navigation manette
+  const [focusZone, setFocusZone] = useState<'sidebar' | 'content'>('sidebar');
+  const [contentFocusIndex, setContentFocusIndex] = useState<number>(0);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const internalThemeManager = useTheme();
   const themeManager = propsThemeManager || internalThemeManager;
@@ -102,65 +124,149 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     [onSave]
   );
 
-  // Navigation manette (D-Pad / Sticks)
-  const sectionsList: { id: SettingsSectionId; label: string; icon: React.ReactNode }[] = [
-    { id: 'themes', label: 'Thèmes & Style', icon: <Palette className="w-4 h-4" /> },
-    { id: 'display', label: 'Affichage & Écran', icon: <Monitor className="w-4 h-4" /> },
-    { id: 'emulators', label: 'Émulateurs & CLI', icon: <Cpu className="w-4 h-4" /> },
-    { id: 'media', label: 'Image & Son', icon: <Tv className="w-4 h-4" /> },
-    { id: 'gamepads', label: 'Manettes', icon: <Gamepad2 className="w-4 h-4" /> },
-    { id: 'library', label: 'Bibliothèque', icon: <Library className="w-4 h-4" /> },
-    { id: 'scraping', label: 'Scraping', icon: <Globe className="w-4 h-4" /> },
-    { id: 'network', label: 'Réseau & Remote', icon: <Wifi className="w-4 h-4" /> },
-    { id: 'consoles', label: 'Consoles & Modes', icon: <Layers className="w-4 h-4" /> },
-    { id: 'advanced', label: 'Avancé & Système', icon: <SettingsIcon className="w-4 h-4" /> },
-  ];
+  // Éléments interactifs navigables dans le contenu de l'onglet actif
+  const getFocusableElements = useCallback((): HTMLElement[] => {
+    if (!contentRef.current) return [];
+    const elements = contentRef.current.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [role="button"]:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]:not([disabled]), label:not([disabled]), .cursor-pointer'
+    );
+    return Array.from(elements).filter(
+      (el) => el.offsetParent !== null && !el.hasAttribute('disabled')
+    );
+  }, []);
 
-  // Gestion du D-Pad pour naviguer entre les sections
-  useEffect(() => {
-    let animId: number;
-    let lastNavTime = 0;
+  const handlePrevTab = useCallback(() => {
+    setActiveSection((curr) => {
+      const idx = SECTIONS_LIST.findIndex((s) => s.id === curr);
+      const prevIdx = idx > 0 ? idx - 1 : SECTIONS_LIST.length - 1;
+      return SECTIONS_LIST[prevIdx].id;
+    });
+    setContentFocusIndex(0);
+  }, []);
 
-    const pollGamepads = () => {
-      const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-      const pad = pads[0] || pads[1] || pads[2] || pads[3];
+  const handleNextTab = useCallback(() => {
+    setActiveSection((curr) => {
+      const idx = SECTIONS_LIST.findIndex((s) => s.id === curr);
+      const nextIdx = idx < SECTIONS_LIST.length - 1 ? idx + 1 : 0;
+      return SECTIONS_LIST[nextIdx].id;
+    });
+    setContentFocusIndex(0);
+  }, []);
 
-      if (pad) {
-        const now = performance.now();
-        const delay = localSettings.navigation_repeat_rate_ms || 180;
-
-        if (now - lastNavTime > delay) {
-          const upPressed = pad.buttons[12]?.pressed || (pad.axes[1] && pad.axes[1] < -0.5);
-          const downPressed = pad.buttons[13]?.pressed || (pad.axes[1] && pad.axes[1] > 0.5);
-          const bPressed = pad.buttons[1]?.pressed;
-
-          if (upPressed) {
-            setActiveSection((curr) => {
-              const idx = sectionsList.findIndex((s) => s.id === curr);
-              const nextIdx = idx > 0 ? idx - 1 : sectionsList.length - 1;
-              return sectionsList[nextIdx].id;
-            });
-            lastNavTime = now;
-          } else if (downPressed) {
-            setActiveSection((curr) => {
-              const idx = sectionsList.findIndex((s) => s.id === curr);
-              const nextIdx = idx < sectionsList.length - 1 ? idx + 1 : 0;
-              return sectionsList[nextIdx].id;
-            });
-            lastNavTime = now;
-          } else if (bPressed) {
-            onClose();
-            lastNavTime = now;
+  const handleGamepadNavigate = useCallback(
+    (dir: 'up' | 'down' | 'left' | 'right') => {
+      if (focusZone === 'sidebar') {
+        if (dir === 'up') {
+          handlePrevTab();
+        } else if (dir === 'down') {
+          handleNextTab();
+        } else if (dir === 'right') {
+          const focusables = getFocusableElements();
+          if (focusables.length > 0) {
+            setFocusZone('content');
+            setContentFocusIndex(0);
           }
         }
+      } else {
+        const focusables = getFocusableElements();
+        if (focusables.length === 0) {
+          if (dir === 'left') setFocusZone('sidebar');
+          return;
+        }
+
+        if (dir === 'left') {
+          if (contentFocusIndex === 0) {
+            setFocusZone('sidebar');
+          } else {
+            setContentFocusIndex((prev) => Math.max(0, prev - 1));
+          }
+        } else if (dir === 'right') {
+          setContentFocusIndex((prev) => Math.min(focusables.length - 1, prev + 1));
+        } else if (dir === 'up') {
+          setContentFocusIndex((prev) => {
+            if (prev <= 0) {
+              setFocusZone('sidebar');
+              return 0;
+            }
+            return prev - 1;
+          });
+        } else if (dir === 'down') {
+          setContentFocusIndex((prev) => Math.min(focusables.length - 1, prev + 1));
+        }
       }
+    },
+    [focusZone, getFocusableElements, handlePrevTab, handleNextTab, contentFocusIndex]
+  );
 
-      animId = requestAnimationFrame(pollGamepads);
-    };
+  const handleGamepadConfirm = useCallback(() => {
+    if (focusZone === 'sidebar') {
+      const focusables = getFocusableElements();
+      if (focusables.length > 0) {
+        setFocusZone('content');
+        setContentFocusIndex(0);
+      }
+    } else {
+      const focusables = getFocusableElements();
+      const current = focusables[contentFocusIndex];
+      if (current) {
+        current.click();
+        if (current.tagName === 'INPUT' || current.tagName === 'TEXTAREA') {
+          current.focus();
+        }
+      }
+    }
+  }, [focusZone, getFocusableElements, contentFocusIndex]);
 
-    animId = requestAnimationFrame(pollGamepads);
-    return () => cancelAnimationFrame(animId);
-  }, [sectionsList, localSettings.navigation_repeat_rate_ms, onClose]);
+  const handleGamepadBack = useCallback(() => {
+    if (focusZone === 'content') {
+      setFocusZone('sidebar');
+    } else {
+      onClose();
+    }
+  }, [focusZone, onClose]);
+
+  // Hook manette avec priorité USB et remapping actif
+  const gamepadActions = useMemo(
+    () => ({
+      onNavigate: handleGamepadNavigate,
+      onConfirm: handleGamepadConfirm,
+      onBack: handleGamepadBack,
+      onPrevSystem: handlePrevTab,
+      onNextSystem: handleNextTab,
+      onMenu: onClose,
+    }),
+    [handleGamepadNavigate, handleGamepadConfirm, handleGamepadBack, handlePrevTab, handleNextTab, onClose]
+  );
+
+  useGamepad(gamepadActions, true, primaryPlayerIndex, gamepadMapping);
+
+  // Réinitialiser l'index de focus au changement d'onglet
+  useEffect(() => {
+    setContentFocusIndex(0);
+  }, [activeSection]);
+
+  // Mise en surbrillance arcade et défilement automatique de l'élément sélectionné
+  useEffect(() => {
+    if (focusZone === 'content') {
+      const focusables = getFocusableElements();
+      focusables.forEach((el, idx) => {
+        if (idx === contentFocusIndex) {
+          el.setAttribute('data-focused-gamepad', 'true');
+          el.classList.add('ring-2', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'shadow-lg');
+          el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          el.removeAttribute('data-focused-gamepad');
+          el.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'shadow-lg');
+        }
+      });
+    } else {
+      const focusables = getFocusableElements();
+      focusables.forEach((el) => {
+        el.removeAttribute('data-focused-gamepad');
+        el.classList.remove('ring-2', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'shadow-lg');
+      });
+    }
+  }, [focusZone, contentFocusIndex, activeSection, getFocusableElements]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/60 backdrop-blur-md animate-fadeIn select-none">
@@ -234,19 +340,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             }}
             className="w-64 border-r p-3 flex flex-col gap-1 overflow-y-auto shrink-0"
           >
-            {sectionsList.map((item) => {
+            {SECTIONS_LIST.map((item) => {
               const isActive = activeSection === item.id;
+              const isSelectedInSidebar = focusZone === 'sidebar' && isActive;
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    setFocusZone('sidebar');
+                    setContentFocusIndex(0);
+                  }}
                   style={{
                     backgroundColor: isActive ? 'var(--accent-primary)' : 'transparent',
                     color: isActive ? '#ffffff' : 'var(--text-primary)',
                   }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs font-bold transition-all text-left ${
                     isActive ? 'shadow-sm' : 'hover:bg-black/5'
-                  }`}
+                  } ${isSelectedInSidebar ? 'ring-2 ring-purple-400 ring-offset-1 ring-offset-slate-900 scale-[1.02]' : ''}`}
                 >
                   <div className="flex items-center gap-2.5">
                     {item.icon}
@@ -262,14 +373,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 color: 'var(--text-muted)',
                 borderColor: 'var(--border-color)',
               }}
-              className="mt-auto pt-3 border-t text-[10px] text-center font-mono"
+              className="mt-auto pt-3 border-t text-[10px] text-center font-mono space-y-1"
             >
-              D-Pad ↕ naviguer • (B) fermer
+              <div>{focusZone === 'sidebar' ? '🎮 Focus : Menu latéral' : '🎮 Focus : Contenu'}</div>
+              <div className="text-[9px] opacity-70">D-Pad ↕ naviguer • ➡ entrer • (B) fermer</div>
             </div>
           </div>
 
           {/* Section Main View */}
           <div
+            ref={contentRef}
             style={{
               backgroundColor: 'var(--bg-primary)',
             }}
@@ -336,11 +449,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             {activeSection === 'consoles' && (
               <ConsolesTab
                 systems={systems}
-                enabledSystems={localSettings.enabled_systems || []}
+                enabledSystems={localSettings.enabled_systems !== undefined ? localSettings.enabled_systems : systems.map((s) => s.id)}
                 setEnabledSystems={(systemsList) => updateSetting('enabled_systems', systemsList)}
-                enabledModes={localSettings.enabled_modes || ['2-players', 'genre:fight', 'genre:platform']}
+                enabledModes={localSettings.enabled_modes !== undefined ? localSettings.enabled_modes : ['2-players', 'genre:fight', 'genre:platform']}
                 setEnabledModes={(modesList) => updateSetting('enabled_modes', modesList)}
-                enabledFranchises={localSettings.enabled_franchises || []}
+                enabledFranchises={localSettings.enabled_franchises !== undefined ? localSettings.enabled_franchises : ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg']}
                 setEnabledFranchises={(frList) => updateSetting('enabled_franchises', frList)}
               />
             )}
@@ -362,13 +475,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             backgroundColor: 'var(--bg-secondary)',
             borderColor: 'var(--border-color)',
           }}
-          className="p-4 border-t flex items-center justify-between gap-3 shrink-0"
+          className="p-4 border-t flex flex-wrap items-center justify-between gap-3 shrink-0"
         >
-          <div
-            style={{ color: 'var(--text-muted)' }}
-            className="text-[11px] font-mono"
-          >
-            KaïroOS v2.0 • Paramètres & Thèmes • Sauvegarde temps réel
+          <div className="flex items-center gap-2 text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-black/5 border border-black/10 text-slate-500 font-semibold">
+              LB / RB Onglets
+            </span>
+            <span className="px-2 py-0.5 rounded bg-black/5 border border-black/10 text-slate-500 font-semibold">
+              D-Pad ↕/↔ Naviguer
+            </span>
+            <span className="px-2 py-0.5 rounded bg-black/5 border border-black/10 text-slate-500 font-semibold">
+              (A) Valider
+            </span>
+            <span className="px-2 py-0.5 rounded bg-black/5 border border-black/10 text-slate-500 font-semibold">
+              (B) {focusZone === 'content' ? 'Retour Onglets' : 'Fermer'}
+            </span>
           </div>
 
           <button
@@ -376,7 +497,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             style={{
               backgroundColor: 'var(--accent-primary)',
             }}
-            className="px-6 py-2 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-md active:scale-95 transition-all"
+            className="px-6 py-2 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-md active:scale-95 transition-all cursor-pointer"
           >
             Fermer
           </button>

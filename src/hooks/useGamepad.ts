@@ -1,6 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { GamepadActions, GamepadMapping } from '../types';
 
+function isPriorityGamepad(id: string): boolean {
+  if (!id) return false;
+  const s = id.toLowerCase();
+  return (
+    s.includes('xbox') ||
+    s.includes('x-box') ||
+    s.includes('xinput') ||
+    s.includes('playstation') ||
+    s.includes('dualshock') ||
+    s.includes('dualsense') ||
+    s.includes('sony') ||
+    s.includes('ps5') ||
+    s.includes('ps4') ||
+    s.includes('pro controller') ||
+    s.includes('usb') ||
+    s.includes('controller') ||
+    s.includes('gamepad')
+  );
+}
+
 export function useGamepad(
   actions: GamepadActions,
   enabled: boolean = true,
@@ -14,8 +34,11 @@ export function useGamepad(
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
-  const primaryIndexRef = useRef(primaryPadIndex);
-  primaryIndexRef.current = primaryPadIndex;
+  const activePadIndexRef = useRef<number>(primaryPadIndex);
+
+  useEffect(() => {
+    activePadIndexRef.current = primaryPadIndex;
+  }, [primaryPadIndex]);
 
   const prevButtonsRef = useRef<boolean[]>([]);
   const lastNavTimeRef = useRef<number>(0);
@@ -27,11 +50,27 @@ export function useGamepad(
 
   useEffect(() => {
     const handleGamepadConnected = (e: GamepadEvent) => {
+      // Priorité automatique si manette USB reconnue (Xbox, PS4, PS5, etc.) ou si aucune manette active
+      if (isPriorityGamepad(e.gamepad.id) || connectedGamepadName === null) {
+        activePadIndexRef.current = e.gamepad.index;
+      }
       setConnectedGamepadName(e.gamepad.id);
     };
 
-    const handleGamepadDisconnected = () => {
-      setConnectedGamepadName(null);
+    const handleGamepadDisconnected = (_e: GamepadEvent) => {
+      const remainingGamepads = navigator.getGamepads
+        ? (Array.from(navigator.getGamepads()).filter(Boolean) as Gamepad[])
+        : [];
+
+      if (remainingGamepads.length > 0) {
+        // Sélectionner la meilleure manette restante (priorité aux manettes Xbox / PS / USB)
+        const bestRemaining =
+          remainingGamepads.find((p) => isPriorityGamepad(p.id)) || remainingGamepads[0];
+        activePadIndexRef.current = bestRemaining.index;
+        setConnectedGamepadName(bestRemaining.id);
+      } else {
+        setConnectedGamepadName(null);
+      }
     };
 
     window.addEventListener('gamepadconnected', handleGamepadConnected);
@@ -45,10 +84,35 @@ export function useGamepad(
         : [];
 
       if (gamepads.length > 0) {
-        const primary = gamepads[primaryIndexRef.current] || gamepads[0];
-        setConnectedGamepadName(primary.id);
+        // Priorité d'entrée active : si n'importe quelle manette branchée reçoit une action utilisateur (bouton ou stick),
+        // elle prend instantanément le contrôle principal.
+        let padWithInput: Gamepad | null = null;
+        for (const pad of gamepads) {
+          const hasButtonPressed = pad.buttons.some((b) => b.pressed || b.value > 0.4);
+          const hasAxisMoved = pad.axes.some((a) => Math.abs(a) > 0.5);
+          if (hasButtonPressed || hasAxisMoved) {
+            padWithInput = pad;
+            break;
+          }
+        }
+
+        if (padWithInput && padWithInput.index !== activePadIndexRef.current) {
+          activePadIndexRef.current = padWithInput.index;
+          setConnectedGamepadName(padWithInput.id);
+        }
+
+        // Récupération de la manette active en cours
+        let primary = gamepads.find((p) => p.index === activePadIndexRef.current);
+        if (!primary) {
+          primary = gamepads.find((p) => isPriorityGamepad(p.id)) || gamepads[0];
+          if (primary) {
+            activePadIndexRef.current = primary.index;
+          }
+        }
 
         if (primary) {
+          setConnectedGamepadName(primary.id);
+
           const now = performance.now();
           const prev = prevButtonsRef.current;
           const currentButtons = primary.buttons.map((b) => b.pressed || b.value > 0.4);

@@ -72,7 +72,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   ];
 
   const visibleModes = smartCollections.filter((m) => {
-    if (!enabledModes || enabledModes.length === 0) return true;
+    if (enabledModes === undefined) return true;
     return enabledModes.includes(m.id);
   });
 
