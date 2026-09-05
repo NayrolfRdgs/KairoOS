@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kaïro OS — Hub Plein Écran</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app" class="hub-layout">
+    <!-- ============================================================ -->
+    <!-- EN-TÊTE SUPÉRIEUR MODERNE PLEIN ÉCRAN                        -->
+    <!-- ============================================================ -->
+    <header class="hub-header">
+      <div class="header-left">
+        <div class="logo-box">🎮</div>
+        <div class="logo-text">
+          <div class="brand-row">
+            <span class="brand-name">KAÏRO</span>
+            <span class="hub-pill">HUB</span>
+            <span id="header-games-count" class="badge-count">0 jeux</span>
+          </div>
+          <div class="status-row">
+            <span class="status-indicator"></span>
+            <span id="hub-status-text">Borne prête</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barre de recherche intégrée -->
+      <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="hub-search-input" placeholder="Rechercher un jeu, une console, une saga..." />
+        <button id="hub-clear-search" class="clear-icon-btn" style="display:none;">✕</button>
+      </div>
+
+      <!-- Actions Rapides & Filtres Actifs -->
+      <div class="header-right">
+        <div id="active-filter-badge" class="filter-chip" style="display:none;">
+          <span id="active-filter-text">Filtre</span>
+          <span id="active-filter-close">✕</span>
+        </div>
+        <button id="hub-gamepad-btn" class="hub-btn icon-only" title="Configuration Manette">🎮</button>
+        <button id="hub-settings-btn" class="hub-btn primary" title="Paramètres">⚙️ Paramètres</button>
+      </div>
+    </header>
+
+    <!-- ============================================================ -->
+    <!-- ZONE DÉFILABLE PLEIN ÉCRAN                                   -->
+    <!-- ============================================================ -->
+    <main class="hub-main" id="hub-scroll-container">
+      <!-- Vue Catégorie Spécifique (quand filtre ou recherche est actif) -->
+      <section id="category-results-section" class="category-section" style="display:none;">
+        <div class="category-banner">
+          <div class="category-banner-left">
+            <button id="btn-back-to-hub" class="back-hub-btn">
+              <span>◀</span> RETOUR AU HUB (B)
+            </button>
+            <div>
+              <div class="category-title-row">
+                <h2 id="category-title">CATÉGORIE</h2>
+                <span id="category-games-pill" class="category-pill">0 JEUX</span>
+              </div>
+              <p class="category-sub">Sélectionnez un jeu à la manette (A) ou revenez aux rayons (B)</p>
+            </div>
+          </div>
+          <button id="btn-close-category" class="close-category-btn">Fermer la sélection ✕</button>
+        </div>
+
+        <div class="category-grid" id="category-games-grid">
+          <!-- Injecté par app.js -->
+        </div>
+      </section>
+
+      <!-- Rayonnages Principaux du Hub -->
+      <div id="hub-shelves-container" class="shelves-wrapper">
+        <!-- RAYON 1 : Consoles & Systèmes Rétro -->
+        <section class="shelf" id="shelf-consoles">
+          <div class="shelf-header">
+            <div class="shelf-title-box">
+              <span class="shelf-icon">🕹️</span>
+              <h3>Consoles & Systèmes Rétro</h3>
+            </div>
+            <span class="shelf-hint">Sélectionnez une plateforme pour voir ses jeux</span>
+          </div>
+          <div class="shelf-scroll" id="consoles-row">
+            <!-- Injecté par app.js -->
+          </div>
+        </section>
+
+        <!-- RAYON 2 : Vos Jeux Favoris -->
+        <section class="shelf" id="shelf-favorites">
+          <div class="shelf-header">
+            <div class="shelf-title-box">
+              <span class="shelf-icon">⭐</span>
+              <h3 id="favs-shelf-title">Vos Jeux Favoris</h3>
+            </div>
+            <span class="shelf-hint">Accès ultra rapide</span>
+          </div>
+          <div class="shelf-scroll" id="favorites-row">
+            <!-- Injecté par app.js -->
+          </div>
+        </section>
+
+        <!-- RAYON 3 : Modes de Jeux -->
+        <section class="shelf" id="shelf-modes">
+          <div class="shelf-header">
+            <div class="shelf-title-box">
+              <span class="shelf-icon">👥</span>
+              <h3>Modes de Jeu & Catégories</h3>
+            </div>
+            <span class="shelf-hint">Filtrer par type de gameplay</span>
+          </div>
+          <div class="modes-grid" id="modes-grid">
+            <!-- 4 tuiles de modes créées par app.js -->
+          </div>
+        </section>
+
+        <!-- RAYON 4 : Sagas & Franchises Phares -->
+        <section class="shelf" id="shelf-franchises">
+          <div class="shelf-header">
+            <div class="shelf-title-box">
+              <span class="shelf-icon">🔥</span>
+              <h3>Sagas & Franchises Phares</h3>
+            </div>
+            <span class="shelf-hint">Explorer par univers culte</span>
+          </div>
+          <div class="franchises-scroll" id="franchises-row">
+            <!-- Badges franchises injectés par app.js -->
+          </div>
+        </section>
+
+        <!-- RAYON 5 : Tous les Jeux -->
+        <section class="shelf" id="shelf-all-games">
+          <div class="shelf-header">
+            <div class="shelf-title-box">
+              <span class="shelf-icon">✨</span>
+              <h3 id="all-shelf-title">Bibliothèque Complète</h3>
+            </div>
+            <span class="shelf-hint">Défilement horizontal</span>
+          </div>
+          <div class="shelf-scroll" id="all-games-row">
+            <!-- Injecté par app.js -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer Manette -->
+    <footer class="hub-footer">
+      <div class="footer-tip"><span class="btn-badge a">A</span> Sélectionner / Lancer</div>
+      <div class="footer-tip"><span class="btn-badge b">B</span> Retour au Hub</div>
+      <div class="footer-tip"><span class="btn-badge x">X</span> Favori</div>
+      <div class="footer-tip"><span class="btn-badge y">Y</span> Fiche Détails</div>
+      <div class="footer-tip"><span class="btn-badge dpad">D-PAD</span> Parcourir les Rayons</div>
+      <div class="footer-tip"><span class="btn-badge menu">START</span> Paramètres</div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
