@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Gestionnaire centralisé de résolution des chemins pour KaïroOS.
 /// Assure une séparation hermétique entre le Mode Portable (tout vit à côté de l'exécutable)
@@ -164,8 +164,31 @@ impl AppPaths {
         } else {
             let p = Self::get_appdata_dir().join("roms");
             let _ = std::fs::create_dir_all(&p);
+            // Si le dossier %APPDATA%/kairo-os/roms est vide, copier les roms de test depuis builds/portable/roms si disponible
+            let is_empty = std::fs::read_dir(&p).map(|mut it| it.next().is_none()).unwrap_or(true);
+            if is_empty {
+                let portable_roms = Self::get_dev_project_dir().join("builds").join("portable").join("roms");
+                if portable_roms.exists() {
+                    let _ = Self::copy_dir_recursive(&portable_roms, &p);
+                }
+            }
             p
         }
+    }
+
+    /// Copie récursivement un dossier vers une destination
+    pub fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+        std::fs::create_dir_all(dst)?;
+        for entry in std::fs::read_dir(src)? {
+            let entry = entry?;
+            let file_type = entry.file_type()?;
+            if file_type.is_dir() {
+                Self::copy_dir_recursive(&entry.path(), &dst.join(entry.file_name()))?;
+            } else {
+                std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
+            }
+        }
+        Ok(())
     }
 
     /// Dossier des émulateurs

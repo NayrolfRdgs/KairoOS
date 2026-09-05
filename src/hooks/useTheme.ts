@@ -70,6 +70,27 @@ export const DEFAULT_THEME = FALLBACK_THEME;
 
 export const BUILTIN_COLOR_PALETTES: ColorPreset[] = [
   {
+    id: 'neon-dark',
+    name: 'Néon Cyberpunk',
+    description: 'Sombre profond contrasté avec néons fuchsia et cyan électrique',
+    isDark: true,
+    colors: {
+      bg_primary: '#080914',
+      bg_secondary: '#0f1026',
+      bg_card: '#151733',
+      sidebar_bg: '#0b0c1e',
+      accent_primary: '#ff007f',
+      accent_secondary: '#00f5ff',
+      text_primary: '#ffffff',
+      text_secondary: '#a5b4fc',
+      text_muted: '#6366f1',
+      border: '#22254d',
+      success: '#00ff88',
+      warning: '#ffd000',
+      danger: '#ff3366',
+    },
+  },
+  {
     id: 'kairo-oled',
     name: 'Kaïro OLED (Sombre)',
     description: "Sombre profond contrasté pour bornes d'arcade et OLED",

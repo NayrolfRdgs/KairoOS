@@ -50,6 +50,17 @@ Kaïro/
 
 ---
 
+## 📚 Documentation Détaillée
+
+Pour approfondir le fonctionnement, l'architecture et les guides pratiques, consultez les documents du dossier [`docs/`](docs/) :
+
+- 🗺️ **[Feuille de Route & Roadmap](docs/ROADMAP.md)** : État d'avancement des fonctionnalités, ce qui est accompli et les jalons futurs (v0.2.0, v0.3.0, v1.0.0).
+- 🛠️ **[Guide de Compilation & Commandes Console](docs/BUILDING.md)** : Comment compiler le package portable (`npm run build:portable`), l'installateur Windows, les tests Rust (`cargo test`) et les commandes de développement.
+- 🎨 **[Architecture & Guide des Thèmes](docs/THEMES.md)** : Layouts structurels officiels (`kairo-default`, `kairo-hub`, `kairo-console`), création de thèmes, variables CSS, Community Store et raccourci d'urgence.
+- 🐛 **[Guide de Débogage & Dépannage](docs/DEBUGGING.md)** : Emplacement des logs, diagnostic du lancement des émulateurs, inspection de la base SQLite et raccourcis clavier de secours.
+
+---
+
 ## 🎮 Matrice des Émulateurs CLI Intégrés
 
 KaïroOS utilise l'exécution en ligne de commande pure pour piloter les meilleurs émulateurs sans interface intermédiaire :
