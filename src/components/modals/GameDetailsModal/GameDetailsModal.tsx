@@ -13,12 +13,13 @@ import {
   FileText,
   Camera,
 } from 'lucide-react';
-import { Emulator, Game, GameConfig, LocalGameMetadata, System } from '../../../types';
+import { Emulator, Game, GameConfig, LocalGameMetadata, System, GamepadMapping } from '../../../types';
 import { GameInfoTab } from './GameInfoTab';
 import { GameMetadataTab } from './GameMetadataTab';
 import { GameConfigTab } from './GameConfigTab';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { ConsoleLogo } from '../../common/ConsoleLogo';
+import { useGamepad } from '../../../hooks';
 
 interface GameDetailsModalProps {
   game: Game;
@@ -33,6 +34,11 @@ interface GameDetailsModalProps {
   onSaveConfig: (config: GameConfig) => void;
   onSaveMetadata: (gameId: string, metadata: LocalGameMetadata) => Promise<void>;
   onOpenFranchiseOrganizer: (game: Game) => void;
+  isFullScreen?: boolean;
+  onPrevGame?: () => void;
+  onNextGame?: () => void;
+  primaryPlayerIndex?: number;
+  gamepadMapping?: GamepadMapping;
 }
 
 const TABS = [
@@ -56,6 +62,11 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   onSaveConfig,
   onSaveMetadata,
   onOpenFranchiseOrganizer,
+  isFullScreen = false,
+  onPrevGame,
+  onNextGame,
+  primaryPlayerIndex = 0,
+  gamepadMapping,
 }) => {
   const [internalActiveTab, setInternalActiveTab] = useState<'overview' | 'screenshots' | 'media' | 'history' | 'emulator'>('overview');
   const activeTab = controlledActiveTab || internalActiveTab;
@@ -77,6 +88,12 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
         const idx = TABS.findIndex((t) => t.id === activeTab);
         const nextIdx = (idx + 1) % TABS.length;
         setActiveTab(TABS[nextIdx].id as any);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        onPrevGame?.();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        onNextGame?.();
       } else if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'Enter') {
@@ -87,7 +104,46 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, game, onClose, onLaunch, onToggleFavorite]);
+  }, [activeTab, game, onClose, onLaunch, onToggleFavorite, onPrevGame, onNextGame]);
+
+  // Contrôleur manette dédié dans la fiche de jeu
+  const gamepadActions = React.useMemo(
+    () => ({
+      onNavigate: (dir: 'up' | 'down' | 'left' | 'right') => {
+        if (dir === 'left') {
+          const idx = TABS.findIndex((t) => t.id === activeTab);
+          const prevIdx = (idx - 1 + TABS.length) % TABS.length;
+          setActiveTab(TABS[prevIdx].id as any);
+        } else if (dir === 'right') {
+          const idx = TABS.findIndex((t) => t.id === activeTab);
+          const nextIdx = (idx + 1) % TABS.length;
+          setActiveTab(TABS[nextIdx].id as any);
+        } else if (dir === 'up') {
+          onPrevGame?.();
+        } else if (dir === 'down') {
+          onNextGame?.();
+        }
+      },
+      onConfirm: () => onLaunch(game),
+      onBack: onClose,
+      onToggleFavorite: () => onToggleFavorite(game),
+      onDetails: () => setActiveTab(activeTab === 'emulator' ? 'overview' : 'emulator'),
+      onPrevSystem: () => {
+        const idx = TABS.findIndex((t) => t.id === activeTab);
+        const prevIdx = (idx - 1 + TABS.length) % TABS.length;
+        setActiveTab(TABS[prevIdx].id as any);
+      },
+      onNextSystem: () => {
+        const idx = TABS.findIndex((t) => t.id === activeTab);
+        const nextIdx = (idx + 1) % TABS.length;
+        setActiveTab(TABS[nextIdx].id as any);
+      },
+      onMenu: onClose,
+    }),
+    [activeTab, game, onClose, onLaunch, onToggleFavorite, onPrevGame, onNextGame]
+  );
+
+  useGamepad(gamepadActions, true, primaryPlayerIndex, gamepadMapping);
 
   const getImageUrl = (url?: string) => {
     if (!url) return undefined;
@@ -105,17 +161,45 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
   const rating = game.rating ? (game.rating > 5 ? game.rating : game.rating * 2) : 8.7;
 
   return (
-    <div className="fixed inset-y-0 right-0 left-72 z-30 flex flex-col bg-[#f8f7ff] border-l border-purple-100/80 select-none animate-fadeInScale overflow-hidden shadow-2xl">
-      {/* 1. TOP ACTION ROW : Retour + Favori + Lancer la partie */}
+    <div
+      className={`${
+        isFullScreen
+          ? 'fixed inset-0 z-40 flex flex-col bg-[#f8f7ff]'
+          : 'fixed inset-y-0 right-0 left-72 z-30 flex flex-col bg-[#f8f7ff] border-l border-purple-100/80'
+      } select-none animate-fadeInScale overflow-hidden shadow-2xl`}
+    >
+      {/* 1. TOP ACTION ROW : Retour + Précédent/Suivant + Favori + Lancer la partie */}
       <div className="px-6 py-2.5 flex items-center justify-between z-20 shrink-0 bg-[#f8f7ff]/90 backdrop-blur-md border-b border-purple-100/50">
-        <button
-          onClick={onClose}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-purple-100/90 text-slate-700 hover:text-slate-900 text-xs font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95 hover:scale-105"
-          title="Retour au catalogue (Touche B / Échap)"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Retour</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-purple-100/90 text-slate-700 hover:text-slate-900 text-xs font-bold hover:bg-purple-50 shadow-2xs transition-all active:scale-95 hover:scale-105 cursor-pointer"
+            title="Retour au catalogue (Touche B / Échap)"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Retour</span>
+          </button>
+
+          {onPrevGame && onNextGame && (
+            <div className="flex items-center gap-1 bg-white border border-purple-100/90 rounded-full p-0.5 shadow-2xs">
+              <button
+                onClick={onPrevGame}
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-all cursor-pointer flex items-center gap-1"
+                title="Jeu précédent (D-Pad Haut)"
+              >
+                <span>▲ Précédent</span>
+              </button>
+              <span className="w-px h-3 bg-purple-100" />
+              <button
+                onClick={onNextGame}
+                className="px-2.5 py-1 text-[11px] font-bold text-slate-600 hover:text-purple-700 hover:bg-purple-50 rounded-full transition-all cursor-pointer flex items-center gap-1"
+                title="Jeu suivant (D-Pad Bas)"
+              >
+                <span>Suivant ▼</span>
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-3">
           {/* Bouton Ajouter aux favoris */}

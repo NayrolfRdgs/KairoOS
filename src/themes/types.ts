@@ -1,4 +1,4 @@
-import { Game, System, FranchiseCollection, CustomFranchise, AppMode, AppSettings, Theme } from '../types';
+import { Game, System, FranchiseCollection, CustomFranchise, AppMode, AppSettings, Theme, GamepadMapping } from '../types';
 
 /**
  * Contrat d'interface pour toutes les UIs / Thèmes de KaïroOS.
@@ -62,4 +62,6 @@ export interface ThemeUIProps {
   appMode: AppMode;
   settings: AppSettings;
   theme: Theme;
+  primaryPlayerIndex?: number;
+  gamepadMapping?: GamepadMapping;
 }

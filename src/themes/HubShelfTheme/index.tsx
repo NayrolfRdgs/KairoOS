@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Gamepad2,
   Search,
@@ -13,12 +13,13 @@ import {
   Flame,
   Swords,
   ChevronRight,
-  Filter,
+  ChevronLeft,
 } from 'lucide-react';
 import { ThemeUIProps } from '../types';
 import { GameCard } from '../../components/games/GameCard';
 import { ConsoleLogo } from '../../components/common/ConsoleLogo';
 import { GamepadFooterBar } from '../../components/layout/GamepadFooterBar';
+import { useGamepad } from '../../hooks';
 
 /**
  * =========================================================================
@@ -62,6 +63,8 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
   appMode,
   settings,
   theme,
+  primaryPlayerIndex = 0,
+  gamepadMapping,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSystemFilter, setSelectedSystemFilter] = useState<string | null>(null);
@@ -222,6 +225,180 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
     if (enabledModes === undefined) return true;
     return enabledModes.includes(modeId);
   };
+
+  const activeCategoryTitle = useMemo(() => {
+    if (selectedSystemFilter) {
+      const s = systems.find((sys) => sys.id === selectedSystemFilter);
+      return s ? s.name.toUpperCase() : selectedSystemFilter.toUpperCase();
+    }
+    if (selectedModeFilter) {
+      if (selectedModeFilter === '2-players') return 'JEUX À 2 JOUEURS (VERSUS & CO-OP)';
+      if (selectedModeFilter === 'genre:fight') return 'JEUX DE COMBAT (VERSUS FIGHTING)';
+      if (selectedModeFilter === 'genre:platform') return 'JEUX DE PLATEFORME';
+      if (selectedModeFilter === 'recent') return 'RÉCEMMENT JOUÉS';
+      return String(selectedModeFilter).toUpperCase();
+    }
+    if (selectedGenreFilter) {
+      const f = visibleFranchises.find((item) => item.id === selectedGenreFilter);
+      return `FRANCHISE : ${(f?.name || selectedGenreFilter).toUpperCase()}`;
+    }
+    if (searchQuery.trim()) {
+      return `RECHERCHE : "${searchQuery.trim().toUpperCase()}"`;
+    }
+    return 'CATÉGORIE';
+  }, [selectedSystemFilter, selectedModeFilter, selectedGenreFilter, searchQuery, systems, visibleFranchises]);
+
+  const activeModesList = useMemo(() => {
+    const list: { id: string; name: string; count: number; icon: any; color: string }[] = [];
+    if (isModeEnabled('2-players')) list.push({ id: '2-players', name: 'Jeux à 2 Joueurs', count: twoPlayerGames.length, icon: Users, color: 'bg-rose-50 text-rose-500' });
+    if (isModeEnabled('genre:fight')) list.push({ id: 'genre:fight', name: 'Combat & Versus', count: fightGames.length, icon: Swords, color: 'bg-amber-50 text-amber-500' });
+    if (isModeEnabled('genre:platform')) list.push({ id: 'genre:platform', name: 'Plateformes', count: platformGames.length, icon: Gamepad2, color: 'bg-pink-50 text-pink-500' });
+    list.push({ id: 'recent', name: 'Récemment Joués', count: recentGames.length, icon: Clock, color: 'bg-purple-50 text-purple-500' });
+    return list;
+  }, [isModeEnabled, twoPlayerGames.length, fightGames.length, platformGames.length, recentGames.length]);
+
+  const shelves = useMemo(() => {
+    const list: {
+      id: string;
+      type: 'consoles' | 'games' | 'modes' | 'franchises';
+      title: string;
+      items: any[];
+    }[] = [];
+
+    if (layout.show_consoles_row !== false && systemsWithCounts.length > 0) {
+      list.push({ id: 'consoles', type: 'consoles', title: 'Consoles & Systèmes Rétro', items: systemsWithCounts });
+    }
+    if (layout.show_favorites_row !== false && favoriteGames.length > 0) {
+      list.push({ id: 'favorites', type: 'games', title: `Vos Jeux Favoris (${favoriteGames.length})`, items: favoriteGames });
+    }
+    if (layout.show_modes_row !== false && activeModesList.length > 0) {
+      list.push({ id: 'modes', type: 'modes', title: 'Modes de Jeu & Catégories', items: activeModesList });
+    }
+    if (layout.show_genres_row !== false && visibleFranchises.length > 0) {
+      list.push({ id: 'franchises', type: 'franchises', title: 'Sagas & Franchises Phares', items: visibleFranchises });
+    }
+    if (layout.show_all_games_row !== false && allGames.length > 0) {
+      list.push({ id: 'all', type: 'games', title: `Tous les Jeux de la Borne (${allGames.length})`, items: allGames });
+    }
+    return list;
+  }, [layout, systemsWithCounts, favoriteGames, activeModesList, visibleFranchises, allGames]);
+
+  // Navigation manette
+  const [shelfIndex, setShelfIndex] = useState(0);
+  const [itemIndex, setItemIndex] = useState(0);
+  const [categoryFocusIndex, setCategoryFocusIndex] = useState(0);
+
+  const activeShelf = shelves[shelfIndex];
+
+  const handleGamepadNavigate = useCallback(
+    (dir: 'up' | 'down' | 'left' | 'right') => {
+      if (isFilterActive) {
+        const total = searchedGames.length;
+        if (total === 0) return;
+        if (dir === 'left') setCategoryFocusIndex((p) => Math.max(0, p - 1));
+        else if (dir === 'right') setCategoryFocusIndex((p) => Math.min(total - 1, p + 1));
+        else if (dir === 'up') setCategoryFocusIndex((p) => Math.max(0, p - 4));
+        else if (dir === 'down') setCategoryFocusIndex((p) => Math.min(total - 1, p + 4));
+      } else {
+        if (dir === 'up') {
+          setShelfIndex((p) => Math.max(0, p - 1));
+          setItemIndex(0);
+        } else if (dir === 'down') {
+          setShelfIndex((p) => Math.min(shelves.length - 1, p + 1));
+          setItemIndex(0);
+        } else if (dir === 'left') {
+          setItemIndex((p) => Math.max(0, p - 1));
+        } else if (dir === 'right') {
+          const count = shelves[shelfIndex]?.items.length || 0;
+          setItemIndex((p) => Math.min(Math.max(0, count - 1), p + 1));
+        }
+      }
+    },
+    [isFilterActive, searchedGames.length, shelves, shelfIndex]
+  );
+
+  const handleGamepadConfirm = useCallback(() => {
+    if (isFilterActive) {
+      const targetGame = searchedGames[categoryFocusIndex];
+      if (targetGame) onSelectGame(targetGame);
+    } else {
+      const current = shelves[shelfIndex];
+      if (!current) return;
+      const targetItem = current.items[itemIndex];
+      if (!targetItem) return;
+
+      if (current.type === 'consoles') {
+        setSelectedSystemFilter(targetItem.id);
+        setCategoryFocusIndex(0);
+      } else if (current.type === 'modes') {
+        setSelectedModeFilter(targetItem.id);
+        setCategoryFocusIndex(0);
+      } else if (current.type === 'franchises') {
+        setSelectedGenreFilter(targetItem.id);
+        setCategoryFocusIndex(0);
+      } else if (current.type === 'games') {
+        onSelectGame(targetItem);
+      }
+    }
+  }, [isFilterActive, searchedGames, categoryFocusIndex, shelves, shelfIndex, itemIndex, onSelectGame]);
+
+  const handleGamepadBack = useCallback(() => {
+    if (isFilterActive) {
+      clearAllFilters();
+    }
+  }, [isFilterActive]);
+
+  const handleGamepadFavorite = useCallback(() => {
+    if (isFilterActive) {
+      const targetGame = searchedGames[categoryFocusIndex];
+      if (targetGame) onToggleFavorite(targetGame);
+    } else {
+      const current = shelves[shelfIndex];
+      if (current && current.type === 'games') {
+        const targetItem = current.items[itemIndex];
+        if (targetItem) onToggleFavorite(targetItem);
+      }
+    }
+  }, [isFilterActive, searchedGames, categoryFocusIndex, shelves, shelfIndex, itemIndex, onToggleFavorite]);
+
+  const gamepadActions = useMemo(
+    () => ({
+      onNavigate: handleGamepadNavigate,
+      onConfirm: handleGamepadConfirm,
+      onBack: handleGamepadBack,
+      onToggleFavorite: handleGamepadFavorite,
+      onPrevSystem: () => {
+        setShelfIndex((p) => Math.max(0, p - 1));
+        setItemIndex(0);
+      },
+      onNextSystem: () => {
+        setShelfIndex((p) => Math.min(shelves.length - 1, p + 1));
+        setItemIndex(0);
+      },
+      onMenu: onOpenSettings,
+    }),
+    [handleGamepadNavigate, handleGamepadConfirm, handleGamepadBack, handleGamepadFavorite, shelves.length, onOpenSettings]
+  );
+
+  useGamepad(gamepadActions, true, primaryPlayerIndex, gamepadMapping);
+
+  // Auto-scroll pour suivre le curseur de la manette
+  useEffect(() => {
+    if (isFilterActive) {
+      const el = document.getElementById(`hub-category-game-${categoryFocusIndex}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      const current = shelves[shelfIndex];
+      if (!current) return;
+      const itemEl = document.getElementById(`hub-item-${current.id}-${itemIndex}`);
+      if (itemEl) {
+        itemEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      } else {
+        const shelfEl = document.getElementById(`hub-shelf-${current.id}`);
+        if (shelfEl) shelfEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [isFilterActive, categoryFocusIndex, shelfIndex, itemIndex, shelves]);
 
   return (
     <div
@@ -433,37 +610,76 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
       <main className="flex-1 overflow-y-auto px-6 py-6 space-y-8 scrollbar-thin">
         {/* Si une recherche ou un filtre est actif, on affiche les résultats directs */}
         {isFilterActive ? (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
-                <h3
-                  style={{ color: 'var(--text-primary)' }}
-                  className="text-base font-black tracking-tight"
+          <section className="space-y-4">
+            {/* Bannière de Catégorie avec Bouton RETOUR AU HUB (B) très visible */}
+            <div
+              style={{
+                backgroundColor: 'var(--bg-card)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-5 rounded-3xl border-2 shadow-lg"
+            >
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={clearAllFilters}
+                  style={{ backgroundColor: 'var(--accent-primary)' }}
+                  className="flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-white text-xs font-black shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                  title="Retour aux Rayons (Touche B / Échap)"
                 >
-                  Résultats ({searchedGames.length} jeux)
-                </h3>
+                  <ChevronLeft className="w-4 h-4 stroke-[3]" />
+                  <span>RETOUR AU HUB (B)</span>
+                </button>
+
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h2
+                      style={{ color: 'var(--text-primary)' }}
+                      className="text-base font-black tracking-tight"
+                    >
+                      {activeCategoryTitle}
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/15 text-purple-600 border border-purple-500/20">
+                      {searchedGames.length} JEU{searchedGames.length > 1 ? 'X' : ''}
+                    </span>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                    Sélectionnez un jeu à la manette (A) ou revenez aux rayons (B)
+                  </p>
+                </div>
               </div>
+
               <button
                 onClick={clearAllFilters}
-                style={{ color: 'var(--accent-primary)' }}
-                className="text-xs font-bold hover:underline"
+                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-bold hover:bg-black/5 transition-all cursor-pointer"
+                style={{ color: 'var(--text-muted)' }}
               >
-                Effacer tous les filtres
+                Fermer la catégorie ✕
               </button>
             </div>
 
             <div className="flex flex-wrap gap-4">
-              {searchedGames.map((game) => (
-                <GameCard
-                  key={game.id}
-                  game={game}
-                  isFocused={focusedGame?.id === game.id}
-                  onSelect={onSelectGame}
-                  onLaunch={onLaunchGame}
-                  onToggleFavorite={onToggleFavorite}
-                />
-              ))}
+              {searchedGames.map((game, idx) => {
+                const isItemFocused = categoryFocusIndex === idx;
+                return (
+                  <div
+                    key={game.id}
+                    id={`hub-category-game-${idx}`}
+                    className={`transition-transform rounded-2xl ${
+                      isItemFocused
+                        ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-2xl z-20'
+                        : ''
+                    }`}
+                  >
+                    <GameCard
+                      game={game}
+                      isFocused={isItemFocused}
+                      onSelect={onSelectGame}
+                      onLaunch={onLaunchGame}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  </div>
+                );
+              })}
               {searchedGames.length === 0 && (
                 <div
                   style={{
@@ -481,7 +697,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
           <>
             {/* RAYON 1 : 🕹️ Consoles & Systèmes (Filtrés selon paramètres borne) */}
             {layout.show_consoles_row !== false && systemsWithCounts.length > 0 && (
-              <section className="space-y-3">
+              <section id="hub-shelf-consoles" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Layers
@@ -504,12 +720,15 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                 </div>
 
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none">
-                  {systemsWithCounts.map((sys) => {
+                  {systemsWithCounts.map((sys, idx) => {
                     const isSelected = selectedSystemFilter === sys.id;
+                    const isShelfActive = !isFilterActive && activeShelf?.id === 'consoles';
+                    const isItemFocused = isShelfActive && itemIndex === idx;
 
                     return (
                       <div
                         key={sys.id}
+                        id={`hub-item-consoles-${idx}`}
                         onClick={() =>
                           setSelectedSystemFilter(
                             selectedSystemFilter === sys.id ? null : sys.id
@@ -526,6 +745,10 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                         }}
                         className={`min-w-[170px] p-3.5 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105 shadow-2xs flex flex-col justify-between shrink-0 group ${
                           isSelected ? 'ring-2 ring-[var(--accent-primary)]/30' : ''
+                        } ${
+                          isItemFocused
+                            ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-xl z-10'
+                            : ''
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -575,7 +798,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
 
             {/* RAYON 2 : ⭐ Favoris */}
             {layout.show_favorites_row !== false && favoriteGames.length > 0 && (
-              <section className="space-y-3">
+              <section id="hub-shelf-favorites" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Star
@@ -597,23 +820,37 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                 </div>
 
                 <div className="flex gap-4 overflow-x-auto pb-3 pt-1 scrollbar-none items-center">
-                  {favoriteGames.map((game) => (
-                    <GameCard
-                      key={game.id}
-                      game={game}
-                      isFocused={focusedGame?.id === game.id}
-                      onSelect={onSelectGame}
-                      onLaunch={onLaunchGame}
-                      onToggleFavorite={onToggleFavorite}
-                    />
-                  ))}
+                  {favoriteGames.map((game, idx) => {
+                    const isShelfActive = !isFilterActive && activeShelf?.id === 'favorites';
+                    const isItemFocused = isShelfActive && itemIndex === idx;
+
+                    return (
+                      <div
+                        key={game.id}
+                        id={`hub-item-favorites-${idx}`}
+                        className={`transition-transform rounded-2xl shrink-0 ${
+                          isItemFocused
+                            ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-2xl z-10'
+                            : ''
+                        }`}
+                      >
+                        <GameCard
+                          game={game}
+                          isFocused={isItemFocused || focusedGame?.id === game.id}
+                          onSelect={onSelectGame}
+                          onLaunch={onLaunchGame}
+                          onToggleFavorite={onToggleFavorite}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
 
             {/* RAYON 3 : 👥 Modes de Jeux (Filtrés selon enabledModes) */}
-            {layout.show_modes_row !== false && (
-              <section className="space-y-3">
+            {layout.show_modes_row !== false && activeModesList.length > 0 && (
+              <section id="hub-shelf-modes" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users
@@ -636,198 +873,70 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                  {/* Mode 2 Joueurs */}
-                  {isModeEnabled('2-players') && (
-                    <div
-                      onClick={() =>
-                        setSelectedModeFilter(
-                          selectedModeFilter === '2-players' ? null : '2-players'
-                        )
-                      }
-                      style={{
-                        backgroundColor:
-                          selectedModeFilter === '2-players'
+                  {activeModesList.map((mode, idx) => {
+                    const isShelfActive = !isFilterActive && activeShelf?.id === 'modes';
+                    const isItemFocused = isShelfActive && itemIndex === idx;
+                    const isSelected = selectedModeFilter === mode.id;
+                    const IconComponent = mode.icon;
+
+                    return (
+                      <div
+                        key={mode.id}
+                        id={`hub-item-modes-${idx}`}
+                        onClick={() =>
+                          setSelectedModeFilter(
+                            selectedModeFilter === mode.id ? null : (mode.id as any)
+                          )
+                        }
+                        style={{
+                          backgroundColor: isSelected
                             ? 'var(--bg-secondary)'
                             : 'var(--bg-card)',
-                        borderColor:
-                          selectedModeFilter === '2-players'
+                          borderColor: isSelected
                             ? 'var(--accent-primary)'
                             : 'var(--border-color)',
-                      }}
-                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
-                        selectedModeFilter === '2-players'
-                          ? 'ring-2 ring-[var(--accent-primary)]/20'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-rose-50 text-rose-500">
-                          <Users className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div
-                            style={{ color: 'var(--text-primary)' }}
-                            className="text-xs font-black"
-                          >
-                            Jeux à 2 Joueurs
+                        }}
+                        className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
+                          isSelected ? 'ring-2 ring-[var(--accent-primary)]/20' : ''
+                        } ${
+                          isItemFocused
+                            ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-xl z-10'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-xl ${mode.color}`}>
+                            <IconComponent className="w-5 h-5" />
                           </div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-[10px]"
-                          >
-                            {twoPlayerGames.length} compatibles
+                          <div>
+                            <div
+                              style={{ color: 'var(--text-primary)' }}
+                              className="text-xs font-black"
+                            >
+                              {mode.name}
+                            </div>
+                            <div
+                              style={{ color: 'var(--text-muted)' }}
+                              className="text-[10px]"
+                            >
+                              {mode.id === '2-players' && `${twoPlayerGames.length} compatibles`}
+                              {mode.id === 'genre:fight' && `${fightGames.length} jeux arcade`}
+                              {mode.id === 'genre:platform' && `${platformGames.length} titres cultes`}
+                              {mode.id === 'recent' && `${recentGames.length} sessions`}
+                            </div>
                           </div>
                         </div>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  )}
-
-                  {/* Mode Combat & Versus */}
-                  {isModeEnabled('genre:fight') && (
-                    <div
-                      onClick={() =>
-                        setSelectedModeFilter(
-                          selectedModeFilter === 'genre:fight' ? null : 'genre:fight'
-                        )
-                      }
-                      style={{
-                        backgroundColor:
-                          selectedModeFilter === 'genre:fight'
-                            ? 'var(--bg-secondary)'
-                            : 'var(--bg-card)',
-                        borderColor:
-                          selectedModeFilter === 'genre:fight'
-                            ? 'var(--accent-primary)'
-                            : 'var(--border-color)',
-                      }}
-                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
-                        selectedModeFilter === 'genre:fight'
-                          ? 'ring-2 ring-[var(--accent-primary)]/20'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-amber-50 text-amber-500">
-                          <Swords className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div
-                            style={{ color: 'var(--text-primary)' }}
-                            className="text-xs font-black"
-                          >
-                            Combat & Versus
-                          </div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-[10px]"
-                          >
-                            {fightGames.length} jeux arcade
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  )}
-
-                  {/* Mode Plateforme */}
-                  {isModeEnabled('genre:platform') && (
-                    <div
-                      onClick={() =>
-                        setSelectedModeFilter(
-                          selectedModeFilter === 'genre:platform' ? null : 'genre:platform'
-                        )
-                      }
-                      style={{
-                        backgroundColor:
-                          selectedModeFilter === 'genre:platform'
-                            ? 'var(--bg-secondary)'
-                            : 'var(--bg-card)',
-                        borderColor:
-                          selectedModeFilter === 'genre:platform'
-                            ? 'var(--accent-primary)'
-                            : 'var(--border-color)',
-                      }}
-                      className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
-                        selectedModeFilter === 'genre:platform'
-                          ? 'ring-2 ring-[var(--accent-primary)]/20'
-                          : ''
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 rounded-xl bg-pink-50 text-pink-500">
-                          <Gamepad2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div
-                            style={{ color: 'var(--text-primary)' }}
-                            className="text-xs font-black"
-                          >
-                            Plateformes
-                          </div>
-                          <div
-                            style={{ color: 'var(--text-muted)' }}
-                            className="text-[10px]"
-                          >
-                            {platformGames.length} titres cultes
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  )}
-
-                  {/* Récemment Joués */}
-                  <div
-                    onClick={() =>
-                      setSelectedModeFilter(
-                        selectedModeFilter === 'recent' ? null : 'recent'
-                      )
-                    }
-                    style={{
-                      backgroundColor:
-                        selectedModeFilter === 'recent'
-                          ? 'var(--bg-secondary)'
-                          : 'var(--bg-card)',
-                      borderColor:
-                        selectedModeFilter === 'recent'
-                          ? 'var(--accent-primary)'
-                          : 'var(--border-color)',
-                    }}
-                    className={`p-4 rounded-2xl border-2 hover:border-[var(--accent-primary)] cursor-pointer transition-all shadow-2xs flex items-center justify-between group ${
-                      selectedModeFilter === 'recent'
-                        ? 'ring-2 ring-[var(--accent-primary)]/20'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-purple-50 text-purple-500">
-                        <Clock className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div
-                          style={{ color: 'var(--text-primary)' }}
-                          className="text-xs font-black"
-                        >
-                          Récemment Joués
-                        </div>
-                        <div
-                          style={{ color: 'var(--text-muted)' }}
-                          className="text-[10px]"
-                        >
-                          {recentGames.length} sessions
-                        </div>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+                    );
+                  })}
                 </div>
               </section>
             )}
 
             {/* RAYON 4 : 🏷️ Sagas & Franchises Célèbres (Filtrées selon enabledFranchises) */}
             {layout.show_genres_row !== false && visibleFranchises.length > 0 && (
-              <section className="space-y-3">
+              <section id="hub-shelf-franchises" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Flame
@@ -850,17 +959,20 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                 </div>
 
                 <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
-                  {visibleFranchises.map((item) => {
+                  {visibleFranchises.map((item, idx) => {
                     const franchiseName = item.name;
                     const franchiseId = item.id;
                     const count = allGames.filter(
                       (g) => g.franchise?.toLowerCase() === franchiseName.toLowerCase()
                     ).length;
                     const isSelected = selectedGenreFilter === franchiseName;
+                    const isShelfActive = !isFilterActive && activeShelf?.id === 'franchises';
+                    const isItemFocused = isShelfActive && itemIndex === idx;
 
                     return (
                       <button
                         key={franchiseId}
+                        id={`hub-item-franchises-${idx}`}
                         onClick={() =>
                           setSelectedGenreFilter(
                             selectedGenreFilter === franchiseName ? null : franchiseName
@@ -877,6 +989,10 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                         }}
                         className={`px-3.5 py-2 rounded-xl border-2 text-xs font-bold whitespace-nowrap transition-all hover:scale-105 shadow-2xs flex items-center gap-2 ${
                           isSelected ? 'ring-2 ring-[var(--accent-primary)]/20' : ''
+                        } ${
+                          isItemFocused
+                            ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-xl z-10'
+                            : ''
                         }`}
                       >
                         <span className="capitalize">{franchiseName}</span>
@@ -902,7 +1018,7 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
 
             {/* RAYON 5 : 🎮 Tous les Jeux (Bibliothèque Complète) */}
             {layout.show_all_games_row !== false && allGames.length > 0 && (
-              <section className="space-y-3">
+              <section id="hub-shelf-all" className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles
@@ -925,16 +1041,30 @@ export const HubShelfTheme: React.FC<ThemeUIProps> = ({
                 </div>
 
                 <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-none items-center">
-                  {allGames.map((game) => (
-                    <GameCard
-                      key={game.id}
-                      game={game}
-                      isFocused={focusedGame?.id === game.id}
-                      onSelect={onSelectGame}
-                      onLaunch={onLaunchGame}
-                      onToggleFavorite={onToggleFavorite}
-                    />
-                  ))}
+                  {allGames.map((game, idx) => {
+                    const isShelfActive = !isFilterActive && activeShelf?.id === 'all';
+                    const isItemFocused = isShelfActive && itemIndex === idx;
+
+                    return (
+                      <div
+                        key={game.id}
+                        id={`hub-item-all-${idx}`}
+                        className={`transition-transform rounded-2xl shrink-0 ${
+                          isItemFocused
+                            ? 'ring-4 ring-purple-500 ring-offset-2 ring-offset-slate-900 scale-105 shadow-2xl z-10'
+                            : ''
+                        }`}
+                      >
+                        <GameCard
+                          game={game}
+                          isFocused={isItemFocused || focusedGame?.id === game.id}
+                          onSelect={onSelectGame}
+                          onLaunch={onLaunchGame}
+                          onToggleFavorite={onToggleFavorite}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             )}

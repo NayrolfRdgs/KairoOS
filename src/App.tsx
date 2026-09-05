@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getThemeUIComponent, ThemeUIProps } from './themes';
 import {
   GameDetailsModal,
@@ -408,11 +408,27 @@ export const App: React.FC = () => {
     ]
   );
 
-  // La manette reste active dans le catalogue et en jeu
-  // Elle est désactivée dans les paramètres et le configurateur manette pour leur laisser le contrôle exclusif
+  const isHubTheme = themeManager.activeTheme.id === 'kairo-hub';
+
+  const handlePrevGame = useCallback(() => {
+    if (filteredAndSortedGames.length === 0) return;
+    const currentIdx = filteredAndSortedGames.findIndex((g) => g.id === selectedGameForDetails?.id);
+    const nextIdx = currentIdx <= 0 ? filteredAndSortedGames.length - 1 : currentIdx - 1;
+    setSelectedGameForDetails(filteredAndSortedGames[nextIdx]);
+  }, [filteredAndSortedGames, selectedGameForDetails]);
+
+  const handleNextGame = useCallback(() => {
+    if (filteredAndSortedGames.length === 0) return;
+    const currentIdx = filteredAndSortedGames.findIndex((g) => g.id === selectedGameForDetails?.id);
+    const nextIdx = currentIdx === -1 || currentIdx >= filteredAndSortedGames.length - 1 ? 0 : currentIdx + 1;
+    setSelectedGameForDetails(filteredAndSortedGames[nextIdx]);
+  }, [filteredAndSortedGames, selectedGameForDetails]);
+
+  // La manette reste active dans le catalogue classique et en jeu
+  // Elle est désactivée dans les paramètres, configurateur manette, fiche de jeu et thème Hub pour leur laisser le contrôle exclusif
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(
     gamepadActions,
-    !gamepadSettingsOpen && !settingsOpen,
+    !gamepadSettingsOpen && !settingsOpen && !selectedGameForDetails && !isHubTheme,
     primaryPlayerIndex,
     gamepadMappings[primaryPlayerIndex]
   );
@@ -511,6 +527,8 @@ export const App: React.FC = () => {
     appMode,
     settings,
     theme: themeManager.activeTheme,
+    primaryPlayerIndex,
+    gamepadMapping: gamepadMappings[primaryPlayerIndex],
   };
 
   const ActiveThemeUI = getThemeUIComponent(themeManager.activeTheme.id);
@@ -546,6 +564,11 @@ export const App: React.FC = () => {
             setSelectedGameForDetails(null);
             setFranchiseOrganizerGame(g);
           }}
+          isFullScreen={isHubTheme}
+          onPrevGame={handlePrevGame}
+          onNextGame={handleNextGame}
+          primaryPlayerIndex={primaryPlayerIndex}
+          gamepadMapping={gamepadMappings[primaryPlayerIndex]}
         />
       )}
 
