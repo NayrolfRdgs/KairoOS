@@ -454,10 +454,22 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
                 if theme_json_path.exists() {
                     if let Ok(content) = std::fs::read_to_string(&theme_json_path) {
                         if let Ok(mut theme) = serde_json::from_str::<kairo_core::Theme>(&content) {
-                            let preview_file = entry.path().join("preview.png");
-                            if preview_file.exists() {
-                                theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+                            let index_html = entry.path().join("index.html");
+                            if index_html.exists() {
+                                theme.entry_path = Some(index_html.to_string_lossy().to_string());
+                                theme.theme_type = Some("custom-code".into());
+                            } else if theme.theme_type.is_none() {
+                                theme.theme_type = Some("built-in".into());
                             }
+
+                            for ext in &["preview.png", "preview.jpg", "preview.jpeg", "preview.webp", "preview.svg"] {
+                                let preview_file = entry.path().join(ext);
+                                if preview_file.exists() {
+                                    theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+                                    break;
+                                }
+                            }
+
                             theme.is_active = theme.id == active_theme_id
                                 || (active_theme_id == "arcade-light" && theme.id == "kairo-default");
                             themes.push(theme);
@@ -472,6 +484,7 @@ pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, 
         let mut def = kairo_core::Theme::default();
         def.id = "kairo-default".into();
         def.name = "Kaïro OS".into();
+        def.theme_type = Some("built-in".into());
         def.is_active = true;
         themes.push(def);
     }
@@ -496,9 +509,21 @@ pub fn get_theme(id: String) -> Result<kairo_core::Theme, String> {
     }
     let content = std::fs::read_to_string(&theme_json).map_err(|e| e.to_string())?;
     let mut theme: kairo_core::Theme = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    let preview_file = theme_dir.join("preview.png");
-    if preview_file.exists() {
-        theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+    
+    let index_html = theme_dir.join("index.html");
+    if index_html.exists() {
+        theme.entry_path = Some(index_html.to_string_lossy().to_string());
+        theme.theme_type = Some("custom-code".into());
+    } else if theme.theme_type.is_none() {
+        theme.theme_type = Some("built-in".into());
+    }
+
+    for ext in &["preview.png", "preview.jpg", "preview.jpeg", "preview.webp", "preview.svg"] {
+        let preview_file = theme_dir.join(ext);
+        if preview_file.exists() {
+            theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+            break;
+        }
     }
     Ok(theme)
 }
@@ -530,9 +555,12 @@ pub fn save_theme(mut theme: kairo_core::Theme, state: State<'_, AppState>) -> R
     let json_content = serde_json::to_string_pretty(&theme).map_err(|e| e.to_string())?;
     std::fs::write(&theme_json, json_content).map_err(|e| e.to_string())?;
 
-    let preview_file = theme_dir.join("preview.png");
-    if preview_file.exists() {
-        theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+    for ext in &["preview.png", "preview.jpg", "preview.jpeg", "preview.webp", "preview.svg"] {
+        let preview_file = theme_dir.join(ext);
+        if preview_file.exists() {
+            theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+            break;
+        }
     }
 
     let mut settings = state.db.get_app_settings().map_err(|e| e.to_string())?;
@@ -547,9 +575,9 @@ pub fn save_theme(mut theme: kairo_core::Theme, state: State<'_, AppState>) -> R
     Ok(theme)
 }
 
-/// Crée un nouveau thème personnalisé dans le dossier themes/
+/// Crée un nouveau thème personnalisé dans le dossier themes/ (avec code complet ou stylistique)
 #[tauri::command]
-pub fn create_theme(id: String, name: String, _state: State<'_, AppState>) -> Result<kairo_core::Theme, String> {
+pub fn create_theme(id: String, name: String, with_code: Option<bool>, _state: State<'_, AppState>) -> Result<kairo_core::Theme, String> {
     let clean_id = id.trim().to_lowercase().replace(' ', "-");
     if clean_id.is_empty() {
         return Err("Identifiant de thème invalide".into());
@@ -561,16 +589,386 @@ pub fn create_theme(id: String, name: String, _state: State<'_, AppState>) -> Re
     }
     let _ = std::fs::create_dir_all(&theme_dir);
 
+    let is_code_theme = with_code.unwrap_or(false);
+
     let mut theme = kairo_core::Theme::default();
-    theme.id = clean_id;
+    theme.id = clean_id.clone();
     theme.name = if name.trim().is_empty() { "Nouveau Thème".into() } else { name };
     theme.author = "Utilisateur".into();
     theme.version = "1.0.0".into();
-    theme.description = "Thème personnalisé créé dans KaïroOS".into();
+    theme.description = if is_code_theme {
+        "Thème avec code complet (HTML, CSS, JavaScript / Vite / React)".into()
+    } else {
+        "Thème personnalisé créé dans KaïroOS".into()
+    };
+    if is_code_theme {
+        theme.theme_type = Some("custom-code".into());
+    }
 
     let theme_json = theme_dir.join("theme.json");
     let json_content = serde_json::to_string_pretty(&theme).map_err(|e| e.to_string())?;
     std::fs::write(&theme_json, json_content).map_err(|e| e.to_string())?;
+
+    if is_code_theme {
+        let index_html_content = r#"<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kaïro Custom Theme</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="theme-header">
+      <div class="logo">🎮 <span>KAÏRO</span> THEME</div>
+      <div class="stats" id="stats">Chargement des jeux...</div>
+      <button class="settings-btn" id="open-settings-btn">⚙️ Paramètres</button>
+    </header>
+
+    <nav class="systems-bar" id="systems-bar">
+      <!-- Les consoles seront injectées ici par app.js -->
+    </nav>
+
+    <main class="games-grid" id="games-grid">
+      <!-- Les cartes de jeux seront injectées ici par app.js -->
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
+"#;
+        let _ = std::fs::write(theme_dir.join("index.html"), index_html_content);
+
+        let style_css_content = r#"/* Styles du thème personnalisé Kaïro */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  background: #0f172a;
+  color: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.theme-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: #1e293b;
+  border-bottom: 2px solid #334155;
+}
+
+.logo {
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
+
+.logo span {
+  color: #8b5cf6;
+}
+
+.stats {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.settings-btn {
+  background: #334155;
+  border: 1px solid #475569;
+  color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  background: #8b5cf6;
+  border-color: #a78bfa;
+}
+
+.systems-bar {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  overflow-x: auto;
+}
+
+.system-chip {
+  padding: 8px 16px;
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.system-chip.active, .system-chip:hover {
+  border-color: #8b5cf6;
+  background: #2e1065;
+  color: #c4b5fd;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 20px;
+  padding: 24px;
+}
+
+.game-card {
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 16px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-card:hover, .game-card.focused {
+  transform: translateY(-4px) scale(1.02);
+  border-color: #8b5cf6;
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+}
+
+.cover-wrapper {
+  aspect-ratio: 3/4;
+  background: #090d16;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-cover {
+  font-size: 2.5rem;
+}
+
+.game-info {
+  padding: 12px;
+}
+
+.game-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-system {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 4px;
+}
+"#;
+        let _ = std::fs::write(theme_dir.join("style.css"), style_css_content);
+
+        let app_js_content = r#"// Script du Thème Personnalisé Kaïro
+(function () {
+  let allGames = [];
+  let allSystems = [];
+  let selectedSystem = null;
+
+  const statsEl = document.getElementById('stats');
+  const systemsBarEl = document.getElementById('systems-bar');
+  const gamesGridEl = document.getElementById('games-grid');
+  const settingsBtn = document.getElementById('open-settings-btn');
+
+  // Connexion à l'API Kaïro
+  function getKairo() {
+    return window.kairo || (window.parent && window.parent.kairo) || null;
+  }
+
+  function init() {
+    const kairo = getKairo();
+    if (!kairo) {
+      statsEl.innerText = 'En attente de connexion à Kaïro...';
+      setTimeout(init, 300);
+      return;
+    }
+
+    allGames = kairo.games || [];
+    allSystems = kairo.systems || [];
+
+    statsEl.innerText = `${allGames.length} jeux installés`;
+
+    renderSystems();
+    renderGames();
+
+    if (settingsBtn) {
+      settingsBtn.onclick = () => kairo.openSettings();
+    }
+
+    // Écoute des mises à jour de la bibliothèque
+    if (kairo.onLibraryUpdate) {
+      kairo.onLibraryUpdate((games) => {
+        allGames = games;
+        statsEl.innerText = `${allGames.length} jeux installés`;
+        renderGames();
+      });
+    }
+
+    // Écoute des manettes
+    if (kairo.onGamepad) {
+      kairo.onGamepad((event) => {
+        console.log('Manette reçue dans le thème :', event);
+      });
+    }
+  }
+
+  function renderSystems() {
+    if (!systemsBarEl) return;
+    systemsBarEl.innerHTML = '';
+
+    const allBtn = document.createElement('button');
+    allBtn.className = `system-chip ${selectedSystem === null ? 'active' : ''}`;
+    allBtn.innerText = 'Tous les Jeux';
+    allBtn.onclick = () => {
+      selectedSystem = null;
+      renderSystems();
+      renderGames();
+    };
+    systemsBarEl.appendChild(allBtn);
+
+    allSystems.forEach((sys) => {
+      const btn = document.createElement('button');
+      btn.className = `system-chip ${selectedSystem === sys.id ? 'active' : ''}`;
+      btn.innerText = sys.name || sys.id;
+      btn.onclick = () => {
+        selectedSystem = sys.id;
+        renderSystems();
+        renderGames();
+      };
+      systemsBarEl.appendChild(btn);
+    });
+  }
+
+  function renderGames() {
+    if (!gamesGridEl) return;
+    gamesGridEl.innerHTML = '';
+
+    const filtered = selectedSystem
+      ? allGames.filter((g) => g.system_id === selectedSystem)
+      : allGames;
+
+    if (filtered.length === 0) {
+      gamesGridEl.innerHTML = '<div style="color: #64748b; grid-column: 1/-1; text-align: center; padding: 40px; font-weight: bold;">Aucun jeu trouvé</div>';
+      return;
+    }
+
+    const kairo = getKairo();
+
+    filtered.forEach((game) => {
+      const card = document.createElement('div');
+      card.className = 'game-card';
+
+      const coverWrapper = document.createElement('div');
+      coverWrapper.className = 'cover-wrapper';
+
+      if (game.cover_url) {
+        const img = document.createElement('img');
+        img.className = 'cover-img';
+        img.src = game.cover_url;
+        img.alt = game.title;
+        coverWrapper.appendChild(img);
+      } else {
+        const noCover = document.createElement('div');
+        noCover.className = 'no-cover';
+        noCover.innerText = '🎮';
+        coverWrapper.appendChild(noCover);
+      }
+
+      const info = document.createElement('div');
+      info.className = 'game-info';
+
+      const title = document.createElement('div');
+      title.className = 'game-title';
+      title.innerText = game.title;
+
+      const system = document.createElement('div');
+      system.className = 'game-system';
+      system.innerText = game.system_id || '';
+
+      info.appendChild(title);
+      info.appendChild(system);
+
+      card.appendChild(coverWrapper);
+      card.appendChild(info);
+
+      // Clic pour lancer le jeu
+      card.onclick = () => {
+        if (kairo && kairo.launchGame) {
+          kairo.launchGame(game.id);
+        }
+      };
+
+      // Clic droit ou double clic pour les détails
+      card.oncontextmenu = (e) => {
+        e.preventDefault();
+        if (kairo && kairo.selectGame) {
+          kairo.selectGame(game.id);
+        }
+      };
+
+      gamesGridEl.appendChild(card);
+    });
+  }
+
+  window.addEventListener('DOMContentLoaded', init);
+  init();
+})();
+"#;
+        let _ = std::fs::write(theme_dir.join("app.js"), app_js_content);
+
+        let readme_content = r#"# 🎮 Kaïro Custom Theme
+
+Bienvenue dans votre nouveau thème pour KaïroOS !
+
+Ce thème est une page web complète que vous pouvez modifier comme vous le souhaitez :
+- En éditant directement `index.html`, `style.css` et `app.js`.
+- Ou en utilisant un projet **Vite + React / Vue / Svelte** dont vous compilez le build dans ce dossier !
+
+## API Kaïro disponible (`window.kairo`) :
+- `kairo.games` : Liste de tous les jeux.
+- `kairo.systems` : Liste de toutes les consoles.
+- `kairo.launchGame(gameId)` : Lance un jeu dans son émulateur.
+- `kairo.selectGame(gameId)` : Ouvre la fiche de détails du jeu.
+- `kairo.toggleFavorite(gameId)` : Ajoute ou retire des favoris.
+- `kairo.openSettings()` : Ouvre le menu des paramètres.
+- `kairo.openGamepadSettings()` : Ouvre la configuration des manettes.
+- `kairo.onGamepad(callback)` : Reçoit les événements manette en direct.
+- `kairo.onLibraryUpdate(callback)` : Déclenché quand la bibliothèque de jeux est modifiée.
+"#;
+        let _ = std::fs::write(theme_dir.join("README.md"), readme_content);
+
+        let index_path = theme_dir.join("index.html");
+        theme.entry_path = Some(index_path.to_string_lossy().to_string());
+    }
 
     Ok(theme)
 }

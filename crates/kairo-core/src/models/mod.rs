@@ -391,6 +391,10 @@ pub struct Theme {
     pub preview_url: Option<String>,
     #[serde(default)]
     pub is_active: bool,
+    #[serde(default)]
+    pub theme_type: Option<String>,
+    #[serde(default)]
+    pub entry_path: Option<String>,
 }
 
 /// Configuration pour le serveur d'accès distant (PWA / Mobile / WebSocket)

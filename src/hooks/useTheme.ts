@@ -645,9 +645,9 @@ export function useTheme() {
     }
   }, [injectThemeVariables]);
 
-  const createNewTheme = useCallback(async (id: string, name: string): Promise<Theme> => {
+  const createNewTheme = useCallback(async (id: string, name: string, withCode?: boolean): Promise<Theme> => {
     try {
-      const created = await apiCreateTheme(id, name);
+      const created = await apiCreateTheme(id, name, withCode);
       await reloadThemes();
       await applyTheme(created.id);
       return created;

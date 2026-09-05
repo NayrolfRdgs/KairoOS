@@ -59,6 +59,8 @@ export interface Theme {
   assets: ThemeAssets;
   preview_url?: string;
   is_active?: boolean;
+  theme_type?: 'built-in' | 'custom-code';
+  entry_path?: string;
 }
 
 export interface CommunityThemeItem {

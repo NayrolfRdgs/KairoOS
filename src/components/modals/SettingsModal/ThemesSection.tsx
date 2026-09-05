@@ -23,7 +23,9 @@ import {
   Layers,
   Layout,
   FileCode,
+  Eye,
 } from 'lucide-react';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import { useTheme } from '../../../hooks';
 import { openThemesFolder, downloadCommunityTheme, saveTheme } from '../../../api';
 import { Theme } from '../../../types';
@@ -144,7 +146,11 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newThemeName, setNewThemeName] = useState('');
   const [newThemeId, setNewThemeId] = useState('');
+  const [createWithCode, setCreateWithCode] = useState(true);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Modal d'aperçu visuel en grand
+  const [themeToPreview, setThemeToPreview] = useState<Theme | null>(null);
 
   // Édition de code JSON brut
   const [jsonModalTheme, setJsonModalTheme] = useState<Theme | null>(null);
@@ -256,7 +262,7 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
     }
 
     try {
-      await createNewTheme(cleanId, newThemeName || cleanId);
+      await createNewTheme(cleanId, newThemeName || cleanId, createWithCode);
       setShowCreateModal(false);
       setNewThemeName('');
       setNewThemeId('');
@@ -478,6 +484,7 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
             {themes.map((t) => {
               const isActive = activeTheme.id === t.id;
               const tColors = t.colors || currentColors;
+              const isCodeTheme = t.theme_type === 'custom-code' || Boolean(t.entry_path);
 
               return (
                 <div
@@ -492,81 +499,116 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                 >
                   {/* Aperçu Visuel Carte du Thème */}
                   <div
+                    onClick={() => setThemeToPreview(t)}
                     style={{
                       backgroundColor: tColors.bg_primary,
-                      borderColor: tColors.border,
+                      borderColor: isActive ? 'var(--accent-primary)' : tColors.border,
                     }}
-                    className="h-28 rounded-2xl border p-2.5 relative flex flex-col justify-between overflow-hidden shadow-inner mb-3"
+                    className="h-32 rounded-2xl border-2 relative overflow-hidden shadow-inner mb-3 cursor-pointer group/preview"
+                    title="Cliquer pour afficher l'aperçu en grand"
                   >
-                    {/* Mini entête */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <div
-                          className="w-3 h-3 rounded-md"
-                          style={{ backgroundColor: tColors.accent_primary }}
-                        />
-                        <span
-                          className="text-[10px] font-black"
-                          style={{ color: tColors.text_primary }}
-                        >
-                          {t.name}
-                        </span>
-                      </div>
-                      <div
-                        className="px-1.5 py-0.5 rounded text-[8px] font-bold"
-                        style={{
-                          backgroundColor: tColors.accent_secondary,
-                          color: '#ffffff',
+                    {t.preview_url ? (
+                      <img
+                        src={t.preview_url.startsWith('http') ? t.preview_url : convertFileSrc(t.preview_url)}
+                        alt={`Aperçu ${t.name}`}
+                        className="w-full h-full object-cover group-hover/preview:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
                         }}
-                      >
-                        v{t.version || '1.0'}
-                      </div>
-                    </div>
+                      />
+                    ) : (
+                      <div className="w-full h-full p-2.5 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <div
+                              className="w-3 h-3 rounded-md"
+                              style={{ backgroundColor: tColors.accent_primary }}
+                            />
+                            <span
+                              className="text-[10px] font-black truncate max-w-[120px]"
+                              style={{ color: tColors.text_primary }}
+                            >
+                              {t.name}
+                            </span>
+                          </div>
+                          <span
+                            className="px-1.5 py-0.5 rounded text-[8px] font-bold"
+                            style={{
+                              backgroundColor: tColors.accent_secondary,
+                              color: '#ffffff',
+                            }}
+                          >
+                            v{t.version || '1.0'}
+                          </span>
+                        </div>
 
-                    {/* Mini Tuiles de jeux */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <div
-                        style={{
-                          backgroundColor: tColors.bg_card,
-                          borderColor: tColors.accent_primary,
-                          borderRadius: t.layout?.card_radius || '8px',
-                        }}
-                        className="h-10 border-2 flex items-center justify-center text-[8px] font-bold text-center"
-                      >
-                        <span style={{ color: tColors.accent_primary }}>Actif</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <div
+                            style={{
+                              backgroundColor: tColors.bg_card,
+                              borderColor: tColors.accent_primary,
+                              borderRadius: t.layout?.card_radius || '8px',
+                            }}
+                            className="h-10 border-2 flex items-center justify-center text-[8px] font-bold text-center"
+                          >
+                            <span style={{ color: tColors.accent_primary }}>Actif</span>
+                          </div>
+                          <div
+                            style={{
+                              backgroundColor: tColors.bg_card,
+                              borderColor: tColors.border,
+                              borderRadius: t.layout?.card_radius || '8px',
+                            }}
+                            className="h-10 border flex items-center justify-center text-[8px] text-center"
+                          >
+                            <span style={{ color: tColors.text_muted }}>Jeu 2</span>
+                          </div>
+                          <div
+                            style={{
+                              backgroundColor: tColors.bg_card,
+                              borderColor: tColors.border,
+                              borderRadius: t.layout?.card_radius || '8px',
+                            }}
+                            className="h-10 border flex items-center justify-center text-[8px] text-center"
+                          >
+                            <span style={{ color: tColors.text_muted }}>Jeu 3</span>
+                          </div>
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          backgroundColor: tColors.bg_card,
-                          borderColor: tColors.border,
-                          borderRadius: t.layout?.card_radius || '8px',
-                        }}
-                        className="h-10 border flex items-center justify-center text-[8px] text-center"
-                      >
-                        <span style={{ color: tColors.text_muted }}>Jeu 2</span>
-                      </div>
-                      <div
-                        style={{
-                          backgroundColor: tColors.bg_card,
-                          borderColor: tColors.border,
-                          borderRadius: t.layout?.card_radius || '8px',
-                        }}
-                        className="h-10 border flex items-center justify-center text-[8px] text-center"
-                      >
-                        <span style={{ color: tColors.text_muted }}>Jeu 3</span>
-                      </div>
+                    )}
+
+                    {/* Badge Mode Code Custom ou Built-in */}
+                    <div className="absolute top-2 left-2 flex items-center gap-1">
+                      {isCodeTheme ? (
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-emerald-500 text-white shadow-md flex items-center gap-1">
+                          <Code className="w-2.5 h-2.5" />
+                          <span>CODE VITE/HTML</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-purple-600/90 text-white shadow-md">
+                          INTÉGRÉ
+                        </span>
+                      )}
                     </div>
 
                     {/* Badge Actif */}
                     {isActive && (
                       <div
                         style={{ backgroundColor: 'var(--accent-primary)' }}
-                        className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[9px] font-black text-white flex items-center gap-1 shadow-xs"
+                        className="absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[9px] font-black text-white flex items-center gap-1 shadow-md"
                       >
                         <Check className="w-2.5 h-2.5" />
                         <span>ACTIF</span>
                       </div>
                     )}
+
+                    {/* Overlay au survol */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-2xs">
+                      <span className="px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-black shadow-lg flex items-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Aperçu</span>
+                      </span>
+                    </div>
                   </div>
 
                   {/* Infos Thème */}
@@ -633,6 +675,20 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                     className="pt-3 mt-3 border-t flex items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-1">
+                      {/* Bouton Aperçu du Thème */}
+                      <button
+                        onClick={() => setThemeToPreview(t)}
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          color: 'var(--text-primary)',
+                          borderColor: 'var(--border-color)',
+                        }}
+                        className="p-1.5 rounded-xl border hover:border-[var(--accent-primary)]/40 transition-all shadow-2xs"
+                        title="Afficher l'aperçu du thème"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-cyan-500" />
+                      </button>
+
                       {/* Petit bouton Paramètres du Thème demandé par l'utilisateur */}
                       <button
                         onClick={async () => {
@@ -1965,6 +2021,25 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                 />
               </div>
 
+              <div className="pt-1">
+                <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={createWithCode}
+                    onChange={(e) => setCreateWithCode(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <div>
+                    <div className="text-xs font-black" style={{ color: 'var(--text-primary)' }}>
+                      Thème avec Code Complet (HTML, CSS, JavaScript / Vite)
+                    </div>
+                    <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      Génère les fichiers index.html, style.css, app.js prêts à coder et connectés à l'API Kaïro.
+                    </p>
+                  </div>
+                </label>
+              </div>
+
               <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -2080,6 +2155,148 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
                   className="px-4 py-2 rounded-xl text-xs font-black hover:opacity-90 transition-all shadow-xs"
                 >
                   Enregistrer le Code
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ========================================================= */}
+      {/* MODAL 3 : APERÇU VISUEL EN GRAND DU THÈME                 */}
+      {/* ========================================================= */}
+      {themeToPreview && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-6 select-none animate-in fade-in duration-200">
+          <div
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="w-full max-w-4xl rounded-3xl border-2 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+          >
+            {/* Header de l'aperçu */}
+            <div
+              style={{
+                backgroundColor: 'var(--sidebar-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="p-4 border-b flex items-center justify-between gap-4"
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  style={{ backgroundColor: 'var(--accent-primary)' }}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-md shrink-0"
+                >
+                  <Eye className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3
+                      style={{ color: 'var(--text-primary)' }}
+                      className="text-base font-black tracking-tight"
+                    >
+                      {themeToPreview.name}
+                    </h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-md font-mono font-bold bg-black/10 dark:bg-white/10" style={{ color: 'var(--text-muted)' }}>
+                      v{themeToPreview.version || '1.0'}
+                    </span>
+                    {themeToPreview.theme_type === 'custom-code' || themeToPreview.entry_path ? (
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-500 text-white">
+                        CODE COMPLET HTML/JS
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-purple-600 text-white">
+                        THÈME INTÉGRÉ
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ color: 'var(--text-muted)' }} className="text-xs truncate max-w-lg">
+                    {themeToPreview.description || 'Aperçu du thème KaïroOS'}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setThemeToPreview(null)}
+                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Corps de l'aperçu (Image HD ou Iframe de rendu) */}
+            <div className="flex-1 bg-black/60 p-4 flex items-center justify-center overflow-hidden">
+              <div className="w-full aspect-video rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative bg-slate-950 flex items-center justify-center">
+                {themeToPreview.preview_url ? (
+                  <img
+                    src={themeToPreview.preview_url.startsWith('http') ? themeToPreview.preview_url : convertFileSrc(themeToPreview.preview_url)}
+                    alt={`Aperçu ${themeToPreview.name}`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : themeToPreview.entry_path ? (
+                  <iframe
+                    src={convertFileSrc(themeToPreview.entry_path)}
+                    title={themeToPreview.name}
+                    className="w-full h-full border-0 pointer-events-none"
+                    sandbox="allow-scripts allow-same-origin"
+                  />
+                ) : (
+                  <div className="text-center p-8 text-slate-400">
+                    <div className="text-4xl mb-2">🎨</div>
+                    <div className="text-sm font-bold text-slate-200">{themeToPreview.name}</div>
+                    <div className="text-xs text-slate-500 mt-1">Aucune capture d'écran preview n'a encore été enregistrée.</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Pied d'action de l'aperçu */}
+            <div
+              style={{
+                backgroundColor: 'var(--sidebar-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="p-4 border-t flex items-center justify-between gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => openThemesFolder()}
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    borderColor: 'var(--border-color)',
+                    color: 'var(--text-secondary)',
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold hover:scale-102 transition-all cursor-pointer"
+                  title="Ouvrir le dossier du thème dans l'explorateur Windows"
+                >
+                  <FolderOpen className="w-4 h-4 text-amber-500" />
+                  <span>Dossier du Thème</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setThemeToPreview(null)}
+                  style={{
+                    backgroundColor: 'var(--bg-secondary)',
+                    color: 'var(--text-secondary)',
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold hover:opacity-80 transition-all cursor-pointer"
+                >
+                  Fermer
+                </button>
+                <button
+                  onClick={async () => {
+                    await handleApplyTheme(themeToPreview.id);
+                    setThemeToPreview(null);
+                  }}
+                  style={{
+                    backgroundColor: 'var(--accent-primary)',
+                    color: '#ffffff',
+                  }}
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-black shadow-md hover:scale-102 active:scale-98 transition-all cursor-pointer"
+                >
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Appliquer ce Thème</span>
                 </button>
               </div>
             </div>

@@ -17,8 +17,8 @@ export async function saveTheme(theme: Theme): Promise<Theme> {
   return invokeCommand<Theme>('save_theme', { theme });
 }
 
-export async function createTheme(id: string, name: string): Promise<Theme> {
-  return invokeCommand<Theme>('create_theme', { id, name });
+export async function createTheme(id: string, name: string, withCode?: boolean): Promise<Theme> {
+  return invokeCommand<Theme>('create_theme', { id, name, with_code: withCode });
 }
 
 export async function deleteTheme(id: string): Promise<void> {

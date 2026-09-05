@@ -409,6 +409,10 @@ export const App: React.FC = () => {
   );
 
   const isHubTheme = themeManager.activeTheme.id === 'kairo-hub';
+  const isCustomCodeTheme =
+    themeManager.activeTheme.theme_type === 'custom-code' ||
+    Boolean(themeManager.activeTheme.entry_path);
+  const isFullScreenTheme = isHubTheme || isCustomCodeTheme;
 
   const handlePrevGame = useCallback(() => {
     if (filteredAndSortedGames.length === 0) return;
@@ -425,10 +429,10 @@ export const App: React.FC = () => {
   }, [filteredAndSortedGames, selectedGameForDetails]);
 
   // La manette reste active dans le catalogue classique et en jeu
-  // Elle est désactivée dans les paramètres, configurateur manette, fiche de jeu et thème Hub pour leur laisser le contrôle exclusif
+  // Elle est désactivée dans les paramètres, configurateur manette, fiche de jeu, thème Hub et thèmes custom avec code
   const { isConnected: gamepadConnected, gamepadName } = useGamepad(
     gamepadActions,
-    !gamepadSettingsOpen && !settingsOpen && !selectedGameForDetails && !isHubTheme,
+    !gamepadSettingsOpen && !settingsOpen && !selectedGameForDetails && !isFullScreenTheme,
     primaryPlayerIndex,
     gamepadMappings[primaryPlayerIndex]
   );
@@ -531,7 +535,7 @@ export const App: React.FC = () => {
     gamepadMapping: gamepadMappings[primaryPlayerIndex],
   };
 
-  const ActiveThemeUI = getThemeUIComponent(themeManager.activeTheme.id);
+  const ActiveThemeUI = getThemeUIComponent(themeManager.activeTheme);
 
   return (
     <div
@@ -564,7 +568,7 @@ export const App: React.FC = () => {
             setSelectedGameForDetails(null);
             setFranchiseOrganizerGame(g);
           }}
-          isFullScreen={isHubTheme}
+          isFullScreen={isFullScreenTheme}
           onPrevGame={handlePrevGame}
           onNextGame={handleNextGame}
           primaryPlayerIndex={primaryPlayerIndex}
