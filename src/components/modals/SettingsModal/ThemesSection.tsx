@@ -304,9 +304,10 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
             );
             if (rawJson.ok) {
               const parsed = await rawJson.json();
+              const previewImageName = parsed.preview_image || 'preview.svg';
               return {
                 ...parsed,
-                preview_url: `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-themes/main/${folder.name}/preview.png`,
+                preview_url: `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-themes/main/${folder.name}/${previewImageName}`,
                 folder_name: folder.name,
               };
             }
@@ -319,7 +320,7 @@ export const ThemesSection: React.FC<ThemesSectionProps> = ({
             author: 'Communauté',
             version: '1.0.0',
             description: 'Thème communautaire KaïroOS',
-            preview_url: `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-themes/main/${folder.name}/preview.png`,
+            preview_url: `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-themes/main/${folder.name}/preview.svg`,
             folder_name: folder.name,
           };
         })

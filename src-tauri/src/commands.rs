@@ -123,9 +123,14 @@ pub fn scan_roms_directory(
     calculate_hashes: Option<bool>,
     state: State<'_, AppState>,
 ) -> Result<ScanStats, String> {
+    let resolved_path = if path.is_empty() || path == "./roms" || path == "roms" {
+        kairo_core::paths::AppPaths::get_default_roms_dir()
+    } else {
+        std::path::PathBuf::from(&path)
+    };
     let scanner = RomScanner::new(state.db.clone())
         .with_hash_calculation(calculate_hashes.unwrap_or(false));
-    scanner.scan_directory(path).map_err(|e| e.to_string())
+    scanner.scan_directory(resolved_path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1010,13 +1015,13 @@ pub fn test_emulator_exe(path: String) -> Result<bool, String> {
 /// Exporte les fichiers de configuration vers un fichier zip
 #[tauri::command]
 pub fn export_config(dest_zip_path: String) -> Result<(), String> {
-    let config_dir = std::path::PathBuf::from("config");
+    let config_dir = kairo_core::paths::AppPaths::get_config_dir();
     if !config_dir.exists() {
         return Err("Le dossier config n'existe pas".into());
     }
     #[cfg(windows)]
     {
-        let cmd = format!("Compress-Archive -Path 'config\\*' -DestinationPath '{}' -Force", dest_zip_path);
+        let cmd = format!("Compress-Archive -Path '{}' -DestinationPath '{}' -Force", config_dir.join("*").display(), dest_zip_path);
         let status = std::process::Command::new("powershell")
             .args(["-Command", &cmd])
             .status()
@@ -1034,11 +1039,11 @@ pub fn import_config(src_zip_path: String) -> Result<(), String> {
     if !std::path::Path::new(&src_zip_path).exists() {
         return Err("Fichier zip introuvable".into());
     }
-    let config_dir = std::path::PathBuf::from("config");
+    let config_dir = kairo_core::paths::AppPaths::get_config_dir();
     let _ = std::fs::create_dir_all(&config_dir);
     #[cfg(windows)]
     {
-        let cmd = format!("Expand-Archive -Path '{}' -DestinationPath 'config' -Force", src_zip_path);
+        let cmd = format!("Expand-Archive -Path '{}' -DestinationPath '{}' -Force", src_zip_path, config_dir.display());
         let status = std::process::Command::new("powershell")
             .args(["-Command", &cmd])
             .status()
@@ -1055,7 +1060,7 @@ pub fn import_config(src_zip_path: String) -> Result<(), String> {
 pub fn reset_settings(state: State<'_, AppState>) -> Result<kairo_core::AppSettings, String> {
     let defaults = kairo_core::AppSettings::default();
     state.db.save_app_settings(&defaults).map_err(|e| e.to_string())?;
-    let config_path = std::path::PathBuf::from("config/settings.json");
+    let config_path = kairo_core::paths::AppPaths::get_config_dir().join("settings.json");
     if let Ok(json_str) = serde_json::to_string_pretty(&defaults) {
         let _ = std::fs::write(config_path, json_str);
     }
@@ -1072,9 +1077,22 @@ pub fn download_community_theme(theme_id: String, zip_url: String) -> Result<kai
     #[cfg(windows)]
     {
         let temp_zip = themes_dir.join(format!("{}.zip", theme_id));
+        let temp_extract = themes_dir.join(format!("_temp_extract_{}", theme_id));
+        let _ = std::fs::create_dir_all(&temp_extract);
+
         let cmd = format!(
-            "Invoke-WebRequest -Uri '{}' -OutFile '{}'; Expand-Archive -Path '{}' -DestinationPath '{}' -Force; Remove-Item -Path '{}' -Force",
-            zip_url, temp_zip.display(), temp_zip.display(), target_dir.display(), temp_zip.display()
+            "$zip = '{}'; $extract = '{}'; $target = '{}'; $tId = '{}'; \
+            Invoke-WebRequest -Uri '{}' -OutFile $zip; \
+            Expand-Archive -Path $zip -DestinationPath $extract -Force; \
+            $match = Get-ChildItem -Path $extract -Recurse -Filter 'theme.json' | Where-Object {{ $_.Directory.Name -eq $tId }} | Select-Object -First 1; \
+            if ($match) {{ \
+                Copy-Item -Path (Join-Path $match.DirectoryName '*') -Destination $target -Recurse -Force; \
+            }} else {{ \
+                Copy-Item -Path (Join-Path $extract '*') -Destination $target -Recurse -Force; \
+            }} \
+            Remove-Item -Path $zip -Force -ErrorAction SilentlyContinue; \
+            Remove-Item -Path $extract -Recurse -Force -ErrorAction SilentlyContinue;",
+            temp_zip.display(), temp_extract.display(), target_dir.display(), theme_id, zip_url
         );
         let status = std::process::Command::new("powershell")
             .args(["-Command", &cmd])
