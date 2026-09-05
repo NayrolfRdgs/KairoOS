@@ -638,27 +638,43 @@ export function useTheme() {
   // Réinitialiser les réglages au thème kairo-default stocké sur le disque
   const resetThemeToDefault = useCallback(async () => {
     try {
-      // Essayer de recharger depuis le fichier themes/kairo-default/theme.json
-      const list = await getThemes();
-      const defaultTheme = list.find((t) => t.id === 'kairo-default') || FALLBACK_THEME;
+      let defaultTheme: Theme;
+      try {
+        defaultTheme = await apiSetTheme('kairo-default');
+      } catch (ipcErr) {
+        console.warn('[useTheme] apiSetTheme error during reset, fallbacking:', ipcErr);
+        const list = await getThemes();
+        defaultTheme = list.find((t) => t.id === 'kairo-default') || FALLBACK_THEME;
+      }
+
       setActiveTheme(defaultTheme);
       appliedThemeRef.current = defaultTheme;
+      setPreviewThemeItem(null);
       injectThemeVariables(defaultTheme);
       try {
         localStorage.setItem(LOCAL_STORAGE_THEME_KEY, JSON.stringify(defaultTheme));
       } catch {
         // ignore
       }
+      setThemes((prev) =>
+        prev.map((t) => ({
+          ...t,
+          is_active: t.id === 'kairo-default',
+        }))
+      );
+      return defaultTheme;
     } catch {
       // Fallback en-ligne si le backend est inaccessible
       setActiveTheme(FALLBACK_THEME);
       appliedThemeRef.current = FALLBACK_THEME;
+      setPreviewThemeItem(null);
       injectThemeVariables(FALLBACK_THEME);
       try {
         localStorage.setItem(LOCAL_STORAGE_THEME_KEY, JSON.stringify(FALLBACK_THEME));
       } catch {
         // ignore
       }
+      return FALLBACK_THEME;
     }
   }, [injectThemeVariables]);
 

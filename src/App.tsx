@@ -94,6 +94,23 @@ export const App: React.FC = () => {
 
   const isKiosk = appMode === 'kiosk';
 
+  // Notification de réinitialisation d'urgence du thème (Touche Suppr)
+  const [themeResetToast, setThemeResetToast] = useState(false);
+  const themeResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEmergencyResetTheme = useCallback(async () => {
+    try {
+      await themeManager.resetThemeToDefault();
+      setThemeResetToast(true);
+      if (themeResetTimeoutRef.current) clearTimeout(themeResetTimeoutRef.current);
+      themeResetTimeoutRef.current = setTimeout(() => {
+        setThemeResetToast(false);
+      }, 3500);
+    } catch (err) {
+      console.error('[App] Erreur réinitialisation thème d\'urgence:', err);
+    }
+  }, [themeManager]);
+
   // Chargement initial des données & Auto-scan du dossier ROMs (une seule fois au boot)
   const hasInitializedRef = useRef(false);
   useEffect(() => {
@@ -115,7 +132,7 @@ export const App: React.FC = () => {
     initApp();
   }, [loadData, settings.roms_path]);
 
-  // Raccourcis clavier globaux (F11 plein écran, Échap fermeture modales, Ctrl+K focus recherche)
+  // Raccourcis clavier globaux (F11 plein écran, Échap fermeture modales, Suppr réinitialisation thème par défaut)
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.key === 'F11') {
@@ -129,6 +146,17 @@ export const App: React.FC = () => {
         else if (gamepadSettingsOpen) setGamepadSettingsOpen(false);
         else if (kioskUnlockOpen) setKioskUnlockOpen(false);
         else if (franchiseOrganizerGame) setFranchiseOrganizerGame(null);
+      } else if (e.key === 'Delete' || e.key === 'Del') {
+        // Raccourci d'urgence : Touche Suppr pour réinitialiser le thème par défaut si un thème pose problème
+        const activeEl = document.activeElement;
+        const isInput =
+          activeEl?.tagName === 'INPUT' ||
+          activeEl?.tagName === 'TEXTAREA' ||
+          (activeEl as HTMLElement)?.isContentEditable;
+        if (!isInput) {
+          e.preventDefault();
+          handleEmergencyResetTheme();
+        }
       }
     };
 
@@ -143,6 +171,7 @@ export const App: React.FC = () => {
     kioskUnlockOpen,
     franchiseOrganizerGame,
     toggleFullscreen,
+    handleEmergencyResetTheme,
   ]);
 
   // Actions Jeux
@@ -551,6 +580,25 @@ export const App: React.FC = () => {
       className={`flex h-screen w-screen overflow-hidden font-sans antialiased select-none ${arcadeScaleClass}`}
     >
       <ActiveThemeUI {...themeUIProps} />
+
+      {/* Notification Toast de secours lors de l'appui sur Suppr */}
+      {themeResetToast && (
+        <div
+          role="status"
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-5 py-3 rounded-2xl bg-slate-900/95 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-white animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none"
+        >
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base border border-emerald-500/30">
+            ✓
+          </div>
+          <div>
+            <div className="font-semibold text-sm text-white flex items-center gap-2">
+              Thème par défaut rétabli
+              <span className="text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">Suppr</span>
+            </div>
+            <div className="text-xs text-slate-400">Le thème officiel Kaïro OS a été appliqué avec succès.</div>
+          </div>
+        </div>
+      )}
 
       {/* 3. Modales & Overlays */}
       {selectedGameForDetails && (
