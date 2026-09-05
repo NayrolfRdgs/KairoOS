@@ -3,9 +3,8 @@
   "name": "Kaïro OS",
   "author": "KaïroOS Team",
   "version": "1.0.0",
-  "description": "Thème officiel Classic Arcade unifié et hautement personnalisable de KaïroOS avec code complet éditable",
-  "theme_type": "custom-code",
-  "entry": "index.html",
+  "description": "Thème officiel Classic Arcade unifié et hautement personnalisable de KaïroOS",
+  "theme_type": "built-in",
   "colors": {
     "bg_primary": "#0b0f19",
     "bg_secondary": "#111827",

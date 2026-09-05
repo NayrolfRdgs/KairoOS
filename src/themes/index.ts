@@ -21,12 +21,21 @@ export const THEME_UI_REGISTRY: Record<string, React.FC<ThemeUIProps>> = {
 
 /**
  * Récupère le composant UI associé à un identifiant ou objet de thème.
- * - Si le thème possède du code custom (entry_path ou theme_type === 'custom-code'), utilise CustomCodeTheme.
- * - Si le thème est un thème interne connu ('kairo-default', 'kairo-hub'), utilise son composant dédié.
+ * - Les deux thèmes officiels intégrés de KaïroOS possèdent leur propre implémentation React native hautement performante :
+ *     * 'kairo-default' -> ClassicArcadeTheme (Navigation latérale avec liste consoles/systèmes + catalogue + Hero)
+ *     * 'kairo-hub'     -> HubShelfTheme (Expérience plein écran moderne par rayons/catégories horizontales)
+ * - Les thèmes personnalisés tiers ou créés par l'utilisateur (theme_type === 'custom-code' ou entry_path)
+ *   sont exécutés dans le conteneur CustomCodeTheme (iframe HTML5/CSS/JS/Vite avec pont Kaïro API).
  * - Sinon, retombe sur l'UI par défaut.
  */
 export function getThemeUIComponent(themeOrId?: Theme | string): React.FC<ThemeUIProps> {
   if (!themeOrId) return ClassicArcadeTheme;
+
+  const id = typeof themeOrId === 'object' ? themeOrId.id : themeOrId;
+
+  // Thèmes officiels natifs de KaïroOS
+  if (id === 'kairo-default') return ClassicArcadeTheme;
+  if (id === 'kairo-hub') return HubShelfTheme;
 
   if (typeof themeOrId === 'object') {
     if (themeOrId.theme_type === 'custom-code' || themeOrId.entry_path) {
@@ -37,3 +46,4 @@ export function getThemeUIComponent(themeOrId?: Theme | string): React.FC<ThemeU
 
   return THEME_UI_REGISTRY[themeOrId] || ClassicArcadeTheme;
 }
+
