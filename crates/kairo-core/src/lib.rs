@@ -1,12 +1,14 @@
 pub mod db;
 pub mod launcher;
 pub mod models;
+pub mod paths;
 pub mod remote;
 pub mod scanner;
 
 pub use db::{Database, DbError};
 pub use launcher::{Launcher, LauncherError};
 pub use models::*;
+pub use paths::AppPaths;
 pub use remote::{start_remote_server, RemoteConfig};
 pub use scanner::RomScanner;
 

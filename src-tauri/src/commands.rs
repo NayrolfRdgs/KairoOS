@@ -399,80 +399,52 @@ pub fn purge_missing_games(state: State<'_, AppState>) -> Result<usize, String> 
 }
 
 fn resolve_themes_dir() -> std::path::PathBuf {
-    let cur = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-    
-    // Si exécuté depuis src-tauri (dev mode), chercher dans le dossier parent (racine du projet)
-    if cur.ends_with("src-tauri") {
-        if let Some(parent) = cur.parent() {
-            let p = parent.join("themes");
-            if p.exists() {
-                return p;
-            }
-        }
-    }
-
-    let p_parent = cur.join("..").join("themes");
-    if p_parent.exists() {
-        return p_parent;
-    }
-
-    let p1 = cur.join("themes");
-    if p1.exists() {
-        return p1;
-    }
-
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let p2 = parent.join("themes");
-            if p2.exists() {
-                return p2;
-            }
-            if let Some(grand) = parent.parent() {
-                let p3 = grand.join("themes");
-                if p3.exists() {
-                    return p3;
-                }
-            }
-        }
-    }
-    p1
+    kairo_core::AppPaths::get_themes_dir()
 }
 
 /// Liste tous les thèmes installés dans le dossier `themes/`
 #[tauri::command]
 pub fn get_themes(state: State<'_, AppState>) -> Result<Vec<kairo_core::Theme>, String> {
-    let themes_dir = resolve_themes_dir();
+    let search_dirs = kairo_core::AppPaths::get_theme_search_dirs();
     let mut themes = Vec::new();
+    let mut seen_ids = std::collections::HashSet::new();
     let active_theme_id = state.db.get_app_settings()
         .map(|s| s.theme)
         .unwrap_or_else(|_| "kairo-default".into());
 
-    if let Ok(entries) = std::fs::read_dir(&themes_dir) {
-        for entry in entries.flatten() {
-            if entry.path().is_dir() {
-                let theme_json_path = entry.path().join("theme.json");
-                if theme_json_path.exists() {
-                    if let Ok(content) = std::fs::read_to_string(&theme_json_path) {
-                        if let Ok(mut theme) = serde_json::from_str::<kairo_core::Theme>(&content) {
-                            let index_html = entry.path().join("index.html");
-                            if index_html.exists() {
-                                theme.entry_path = Some(index_html.to_string_lossy().to_string());
-                                theme.theme_type = Some("custom-code".into());
-                            } else if theme.theme_type.is_none() {
-                                theme.theme_type = Some("built-in".into());
-                            }
-
-                            for ext in &["preview.png", "preview.jpg", "preview.jpeg", "preview.webp", "preview.svg"] {
-                                let preview_file = entry.path().join(ext);
-                                if preview_file.exists() {
-                                    theme.preview_url = Some(preview_file.to_string_lossy().to_string());
-                                    break;
+    for dir in search_dirs {
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    let theme_json_path = entry.path().join("theme.json");
+                    if theme_json_path.exists() {
+                        if let Ok(content) = std::fs::read_to_string(&theme_json_path) {
+                            if let Ok(mut theme) = serde_json::from_str::<kairo_core::Theme>(&content) {
+                                if seen_ids.contains(&theme.id) {
+                                    continue;
                                 }
-                            }
+                                seen_ids.insert(theme.id.clone());
 
-                            theme.is_active = theme.id == active_theme_id
-                                || (active_theme_id == "arcade-light" && theme.id == "kairo-default");
-                            themes.push(theme);
+                                let index_html = entry.path().join("index.html");
+                                if index_html.exists() {
+                                    theme.entry_path = Some(index_html.to_string_lossy().to_string());
+                                    theme.theme_type = Some("custom-code".into());
+                                } else if theme.theme_type.is_none() {
+                                    theme.theme_type = Some("built-in".into());
+                                }
+
+                                for ext in &["preview.png", "preview.jpg", "preview.jpeg", "preview.webp", "preview.svg"] {
+                                    let preview_file = entry.path().join(ext);
+                                    if preview_file.exists() {
+                                        theme.preview_url = Some(preview_file.to_string_lossy().to_string());
+                                        break;
+                                    }
+                                }
+
+                                theme.is_active = theme.id == active_theme_id
+                                    || (active_theme_id == "arcade-light" && theme.id == "kairo-default");
+                                themes.push(theme);
+                            }
                         }
                     }
                 }
@@ -1008,7 +980,7 @@ pub fn open_themes_folder() -> Result<(), String> {
 /// Ouvre le dossier des journaux d'erreurs (logs) dans l'explorateur Windows
 #[tauri::command]
 pub fn open_logs_folder() -> Result<(), String> {
-    let logs_dir = std::path::PathBuf::from("logs");
+    let logs_dir = kairo_core::AppPaths::get_logs_dir();
     let _ = std::fs::create_dir_all(&logs_dir);
     #[cfg(windows)]
     {

@@ -21,17 +21,10 @@ pub struct Database {
     conn: Arc<Mutex<Connection>>,
 }
 
-fn get_base_project_dir() -> PathBuf {
-    let current_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    if current_dir.ends_with("src-tauri") {
-        current_dir.parent().unwrap_or(&current_dir).to_path_buf()
-    } else {
-        current_dir
-    }
-}
+use crate::paths::AppPaths;
 
 fn get_root_config_dir() -> PathBuf {
-    get_base_project_dir().join("config")
+    AppPaths::get_config_dir()
 }
 
 impl Database {
@@ -455,18 +448,11 @@ impl Database {
     }
 
     pub fn get_app_settings(&self) -> std::result::Result<AppSettings, DbError> {
-        let base = get_base_project_dir();
-        for path in &[
-            get_root_config_dir().join("settings.json"),
-            base.join("dist-portable/config/settings.json"),
-            PathBuf::from("config/settings.json"),
-            PathBuf::from("../config/settings.json"),
-        ] {
-            if path.exists() {
-                if let Ok(content) = std::fs::read_to_string(path) {
-                    if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
-                        return Ok(settings);
-                    }
+        let config_file = get_root_config_dir().join("settings.json");
+        if config_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&config_file) {
+                if let Ok(settings) = serde_json::from_str::<AppSettings>(&content) {
+                    return Ok(settings);
                 }
             }
         }
@@ -496,35 +482,24 @@ impl Database {
         )?;
         drop(conn);
 
-        // 2. Écrire le fichier config/settings.json à la racine (JAMAIS dans src-tauri pour ne pas redémarrer l'app)
+        // 2. Écrire le fichier config/settings.json
         let config_dir = get_root_config_dir();
         if !config_dir.exists() {
             let _ = std::fs::create_dir_all(&config_dir);
         }
         if let Ok(pretty_json) = serde_json::to_string_pretty(settings) {
             let _ = std::fs::write(config_dir.join("settings.json"), &pretty_json);
-            let portable_dir = get_base_project_dir().join("dist-portable/config");
-            if portable_dir.exists() {
-                let _ = std::fs::write(portable_dir.join("settings.json"), &pretty_json);
-            }
         }
 
         Ok(())
     }
 
     pub fn get_gamepad_mappings(&self) -> std::result::Result<Vec<crate::models::GamepadMapping>, DbError> {
-        let base = get_base_project_dir();
-        for path in &[
-            get_root_config_dir().join("gamepads.json"),
-            base.join("dist-portable/config/gamepads.json"),
-            PathBuf::from("config/gamepads.json"),
-            PathBuf::from("../config/gamepads.json"),
-        ] {
-            if path.exists() {
-                if let Ok(content) = std::fs::read_to_string(path) {
-                    if let Ok(mappings) = serde_json::from_str::<Vec<crate::models::GamepadMapping>>(&content) {
-                        return Ok(mappings);
-                    }
+        let config_file = get_root_config_dir().join("gamepads.json");
+        if config_file.exists() {
+            if let Ok(content) = std::fs::read_to_string(&config_file) {
+                if let Ok(mappings) = serde_json::from_str::<Vec<crate::models::GamepadMapping>>(&content) {
+                    return Ok(mappings);
                 }
             }
         }
@@ -555,17 +530,13 @@ impl Database {
         )?;
         drop(conn);
 
-        // 2. Écrire le fichier config/gamepads.json formaté (JAMAIS dans src-tauri)
+        // 2. Écrire le fichier config/gamepads.json formaté
         let config_dir = get_root_config_dir();
         if !config_dir.exists() {
             let _ = std::fs::create_dir_all(&config_dir);
         }
         if let Ok(pretty_json) = serde_json::to_string_pretty(mappings) {
             let _ = std::fs::write(config_dir.join("gamepads.json"), &pretty_json);
-            let portable_dir = get_base_project_dir().join("dist-portable/config");
-            if portable_dir.exists() {
-                let _ = std::fs::write(portable_dir.join("gamepads.json"), &pretty_json);
-            }
         }
 
         // 3. Injecter la configuration directement dans les fichiers retroarch.cfg et kairo_gamepads.cfg
@@ -664,29 +635,18 @@ impl Database {
         }
 
         let full_cfg = retro_lines.join("\n");
-        let base = get_base_project_dir();
+        let emu_dir = AppPaths::get_emulators_dir();
+        let retro_dir = emu_dir.join("RetroArch");
 
-        // 1. Écrire le fichier dédié kairo_gamepads.cfg (chargé prioritairement avec --appendconfig)
-        for append_path in &[
-            base.join("emulators/RetroArch/kairo_gamepads.cfg"),
-            base.join("dist-portable/emulators/RetroArch/kairo_gamepads.cfg"),
-        ] {
-            if let Some(parent) = append_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
-            let _ = std::fs::write(append_path, &full_cfg);
-        }
+        if retro_dir.exists() {
+            // 1. Écrire le fichier dédié kairo_gamepads.cfg (chargé prioritairement avec --appendconfig)
+            let append_path = retro_dir.join("kairo_gamepads.cfg");
+            let _ = std::fs::write(&append_path, &full_cfg);
 
-        // 2. Fusionner proprement dans retroarch.cfg sans écraser les autres options
-        for cfg_path in &[
-            base.join("emulators/RetroArch/retroarch.cfg"),
-            base.join("dist-portable/emulators/RetroArch/retroarch.cfg"),
-        ] {
-            if let Some(parent) = cfg_path.parent() {
-                let _ = std::fs::create_dir_all(parent);
-            }
+            // 2. Fusionner proprement dans retroarch.cfg sans écraser les autres options
+            let cfg_path = retro_dir.join("retroarch.cfg");
             if cfg_path.exists() {
-                if let Ok(existing_content) = std::fs::read_to_string(cfg_path) {
+                if let Ok(existing_content) = std::fs::read_to_string(&cfg_path) {
                     let mut preserved_lines: Vec<String> = existing_content
                         .lines()
                         .filter(|line| {
@@ -706,11 +666,13 @@ impl Database {
                         .collect();
                     preserved_lines.extend(retro_lines.clone());
                     let merged = preserved_lines.join("\n");
-                    let _ = std::fs::write(cfg_path, merged);
-                    continue;
+                    let _ = std::fs::write(&cfg_path, merged);
+                } else {
+                    let _ = std::fs::write(&cfg_path, &full_cfg);
                 }
+            } else {
+                let _ = std::fs::write(&cfg_path, &full_cfg);
             }
-            let _ = std::fs::write(cfg_path, &full_cfg);
         }
     }
 

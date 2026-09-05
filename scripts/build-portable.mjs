@@ -70,7 +70,18 @@ if (existsSync('emulators')) {
   } catch (_) {}
 }
 
-// 4. Génération des fichiers de configuration JSON ouverts et modifiables
+// 5. Synchronisation automatique de tous les thèmes
+if (existsSync('themes')) {
+  console.log('🎨 Synchronisation des thèmes dans dist-portable/themes/ ...');
+  try {
+    execSync('powershell -Command "Copy-Item -Path \'themes/*\' -Destination \'dist-portable/themes\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+  } catch (_) {}
+}
+
+// Marqueur explicite de mode portable
+writeFileSync(path.join(portableDir, 'portable.txt'), 'KAÏROOS_PORTABLE_MODE=1\n', 'utf-8');
+
+// 6. Génération des fichiers de configuration JSON ouverts et modifiables
 
 // A. config/settings.json
 const defaultSettings = {
@@ -78,7 +89,7 @@ const defaultSettings = {
   always_on_top: false,
   kiosk_mode: false,
   roms_path: "./roms",
-  theme: "retro-80s-light",
+  theme: "kairo-default",
   enabled_franchises: [
     "mario",
     "zelda",

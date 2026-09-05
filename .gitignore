@@ -53,3 +53,10 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 
+# Emulator runtime configs & histories
+emulators/RetroArch/content_history.lpl
+emulators/RetroArch/kairo_gamepads.cfg
+emulators/RetroArch/retroarch.cfg
+crates/**/emulators/
+
+

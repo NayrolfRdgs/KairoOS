@@ -1,5 +1,3 @@
-use std::fs;
-use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 use tauri::Manager;
 
@@ -29,29 +27,8 @@ pub fn run() {
                 }
             }
 
-            // Détection du mode Portable : si ./kairo_data ou ./roms existe directement à côté de l'exécutable
-            let exe_dir = std::env::current_exe()
-                .ok()
-                .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-                .unwrap_or_else(|| PathBuf::from("."));
-
-            let is_portable = exe_dir.join("roms").exists()
-                || exe_dir.join("kairo_data").exists();
-
-            let app_data_dir = if is_portable {
-                let p_dir = exe_dir.join("kairo_data");
-                let _ = fs::create_dir_all(&p_dir);
-                p_dir
-            } else {
-                let default_dir = app
-                    .path()
-                    .app_data_dir()
-                    .unwrap_or_else(|_| PathBuf::from("./kairo_data"));
-                let _ = fs::create_dir_all(&default_dir);
-                default_dir
-            };
-
-            let db_path = app_data_dir.join("kairo.db");
+            // Initialisation des données et de la base SQLite via AppPaths (Mode Portable vs %APPDATA%)
+            let db_path = kairo_core::AppPaths::get_database_path();
             let db = Database::open(&db_path).expect("Impossible d'initialiser la base SQLite KaïroOS");
             let launcher = Launcher::new(db.clone());
 
