@@ -13,6 +13,7 @@ import {
   Settings as SettingsIcon,
   Check,
   ChevronRight,
+  Puzzle,
 } from 'lucide-react';
 import { AppSettings, Emulator, RemoteConfig, System, GamepadMapping } from '../../../types';
 import { useTheme, useGamepad } from '../../../hooks';
@@ -24,6 +25,7 @@ import { GamepadsSection } from './GamepadsSection';
 import { LibrarySection } from './LibrarySection';
 import { ScrapingSection } from './ScrapingSection';
 import { NetworkSection } from './NetworkSection';
+import { PluginsSection } from './PluginsSection';
 import { AdvancedSection } from './AdvancedSection';
 import { ConsolesTab } from './ConsolesTab';
 
@@ -36,6 +38,7 @@ export type SettingsSectionId =
   | 'library'
   | 'scraping'
   | 'network'
+  | 'plugins'
   | 'consoles'
   | 'advanced';
 
@@ -48,6 +51,7 @@ const SECTIONS_LIST: { id: SettingsSectionId; label: string; icon: React.ReactNo
   { id: 'library', label: 'Bibliothèque', icon: <Library className="w-4 h-4" /> },
   { id: 'scraping', label: 'Scraping', icon: <Globe className="w-4 h-4" /> },
   { id: 'network', label: 'Réseau & Remote', icon: <Wifi className="w-4 h-4" /> },
+  { id: 'plugins', label: 'Plugins & Extensions', icon: <Puzzle className="w-4 h-4" /> },
   { id: 'consoles', label: 'Consoles & Modes', icon: <Layers className="w-4 h-4" /> },
   { id: 'advanced', label: 'Avancé & Système', icon: <SettingsIcon className="w-4 h-4" /> },
 ];
@@ -456,6 +460,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 enabledFranchises={localSettings.enabled_franchises !== undefined ? localSettings.enabled_franchises : ['mario', 'zelda', 'pokemon', 'sonic', 'versus', 'rpg']}
                 setEnabledFranchises={(frList) => updateSetting('enabled_franchises', frList)}
               />
+            )}
+
+            {activeSection === 'plugins' && (
+              <PluginsSection />
             )}
 
             {activeSection === 'advanced' && (

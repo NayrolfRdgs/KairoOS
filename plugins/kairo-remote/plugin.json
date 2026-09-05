@@ -1,0 +1,43 @@
+{
+  "id": "kairo-remote",
+  "name": "KaïroOS Remote",
+  "version": "1.0.0",
+  "author": "KaïroOS Team",
+  "type": "builtin",
+  "description": "Contrôle à distance, administration et télécommande mobile via navigateur web",
+  "min_kairo_version": "0.1.0",
+  "permissions": [
+    "network",
+    "read_games",
+    "launch_games",
+    "read_settings",
+    "write_settings"
+  ],
+  "entry": "builtin",
+  "ui": "dist/index.html",
+  "commands": [
+    "start",
+    "stop",
+    "restart",
+    "status"
+  ],
+  "settings_schema": {
+    "port": {
+      "type": "number",
+      "default": 8080,
+      "label": "Port d'écoute HTTP / WebSocket"
+    },
+    "pin": {
+      "type": "string",
+      "secret": true,
+      "default": "1234",
+      "label": "Code PIN d'accès"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "label": "Activer au démarrage"
+    }
+  },
+  "sandbox": false
+}

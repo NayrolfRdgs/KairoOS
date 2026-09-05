@@ -7,3 +7,4 @@ export * from './launcher';
 export * from './scanner';
 export * from './gamepad';
 export * from './themes';
+export * from './plugins';

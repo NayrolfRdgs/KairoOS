@@ -1,0 +1,978 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Puzzle,
+  FolderOpen,
+  Check,
+  RefreshCw,
+  Trash2,
+  Sliders,
+  Globe,
+  Upload,
+  ExternalLink,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Wifi,
+  Library,
+  Gamepad2,
+  FileCode,
+  Bell,
+  Eye,
+  EyeOff,
+  AlertTriangle,
+  Sparkles,
+} from 'lucide-react';
+import { PluginInfo, PluginDetail, PluginManifest } from '../../../types';
+import {
+  getPlugins,
+  getPlugin,
+  enablePlugin,
+  disablePlugin,
+  installPlugin,
+  confirmInstallPlugin,
+  uninstallPlugin,
+  updatePluginSettings,
+  runPluginCommand,
+  openPluginsFolder,
+} from '../../../api';
+
+interface PluginsSectionProps {
+  onNotification?: (msg: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
+}
+
+const PERMISSION_DESCRIPTIONS: Record<string, { label: string; desc: string; icon: React.ReactNode }> = {
+  network: {
+    label: 'Accès Réseau & Ports',
+    desc: "Autorise le plugin à ouvrir un port local (serveur HTTP/WS) ou à effectuer des requêtes vers Internet.",
+    icon: <Wifi className="w-4 h-4 text-sky-500" />,
+  },
+  read_games: {
+    label: 'Lecture de la Bibliothèque',
+    desc: "Permet de consulter la liste des jeux installés, leurs temps de jeu, favoris et métadonnées.",
+    icon: <Library className="w-4 h-4 text-emerald-500" />,
+  },
+  launch_games: {
+    label: 'Lancement & Contrôle des Jeux',
+    desc: "Autorise le plugin à lancer et fermer des jeux et émulateurs automatiquement.",
+    icon: <Gamepad2 className="w-4 h-4 text-rose-500" />,
+  },
+  read_settings: {
+    label: 'Lecture des Paramètres',
+    desc: "Permet de lire la configuration de base de KaïroOS (thème, émulateurs, chemins).",
+    icon: <Sliders className="w-4 h-4 text-amber-500" />,
+  },
+  write_settings: {
+    label: 'Modification des Paramètres',
+    desc: "Permet de modifier les fichiers de configuration système de KaïroOS.",
+    icon: <AlertTriangle className="w-4 h-4 text-orange-500" />,
+  },
+  filesystem: {
+    label: 'Accès aux Fichiers Locaux',
+    desc: "Permet de lire et écrire des fichiers uniquement à l'intérieur du dossier propre du plugin.",
+    icon: <FileCode className="w-4 h-4 text-indigo-500" />,
+  },
+  notifications: {
+    label: 'Envoi de Notifications',
+    desc: "Autorise l'affichage de messages et alertes toasts directement dans l'interface de KaïroOS.",
+    icon: <Bell className="w-4 h-4 text-purple-500" />,
+  },
+};
+
+export const PluginsSection: React.FC<PluginsSectionProps> = ({ onNotification }) => {
+  const [activeTab, setActiveTab] = useState<'installed' | 'official' | 'community'>('installed');
+  const [plugins, setPlugins] = useState<PluginInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // Modal de configuration d'un plugin
+  const [configuringPlugin, setConfiguringPlugin] = useState<PluginDetail | null>(null);
+  const [settingsForm, setSettingsForm] = useState<Record<string, any>>({});
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
+
+  // Modale sandbox d'approbation des permissions
+  const [pendingInstallManifest, setPendingInstallManifest] = useState<PluginManifest | null>(null);
+  const [installing, setInstalling] = useState(false);
+
+  // Store Store Officiel & Communauté
+  const [storePlugins, setStorePlugins] = useState<any[]>([]);
+  const [loadingStore, setLoadingStore] = useState(false);
+  const [storeError, setStoreError] = useState<string | null>(null);
+
+  // Toast de commande
+  const [commandFeedback, setCommandFeedback] = useState<{ id: string; msg: string } | null>(null);
+
+  const fetchInstalledPlugins = async () => {
+    try {
+      setLoading(true);
+      const list = await getPlugins();
+      setPlugins(list);
+    } catch (err: any) {
+      console.error('[PluginsSection] Erreur chargement plugins:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInstalledPlugins();
+  }, []);
+
+  const fetchStorePlugins = async (type: 'official' | 'community') => {
+    try {
+      setLoadingStore(true);
+      setStoreError(null);
+      const res = await fetch(`https://api.github.com/repos/NayrolfRdgs/KairoOS-plugins/contents/${type}`);
+      if (!res.ok) {
+        throw new Error('Dépôt inaccessible ou aucun plugin disponible.');
+      }
+      const contents = await res.json();
+      const dirs = contents.filter((item: any) => item.type === 'dir');
+
+      const loaded = await Promise.all(
+        dirs.map(async (folder: any) => {
+          try {
+            const rawJson = await fetch(
+              `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-plugins/main/${type}/${folder.name}/plugin.json`
+            );
+            if (rawJson.ok) {
+              const manifest = await rawJson.json();
+              return {
+                ...manifest,
+                folder_name: folder.name,
+                preview_url: `https://raw.githubusercontent.com/NayrolfRdgs/KairoOS-plugins/main/${type}/${folder.name}/preview.png`,
+              };
+            }
+          } catch {
+            // ignore
+          }
+          return null;
+        })
+      );
+
+      setStorePlugins(loaded.filter(Boolean));
+    } catch (err: any) {
+      setStoreError(err?.message || 'Impossible de joindre le catalogue de plugins.');
+      setStorePlugins([]);
+    } finally {
+      setLoadingStore(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'official' || activeTab === 'community') {
+      fetchStorePlugins(activeTab);
+    }
+  }, [activeTab]);
+
+  const handleTogglePlugin = async (p: PluginInfo) => {
+    setActionLoadingId(p.id);
+    try {
+      if (p.enabled) {
+        await disablePlugin(p.id);
+      } else {
+        await enablePlugin(p.id);
+      }
+      await fetchInstalledPlugins();
+    } catch (err: any) {
+      console.error(err);
+      if (onNotification) onNotification(err.message || 'Erreur bascule plugin', 'error');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleOpenConfig = async (id: string) => {
+    try {
+      const detail = await getPlugin(id);
+      setConfiguringPlugin(detail);
+      setSettingsForm(detail.settings || {});
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!configuringPlugin) return;
+    setSavingSettings(true);
+    try {
+      await updatePluginSettings(configuringPlugin.manifest.id, settingsForm);
+      setConfiguringPlugin(null);
+      await fetchInstalledPlugins();
+      if (onNotification) onNotification('Paramètres du plugin sauvegardés', 'success');
+    } catch (err: any) {
+      if (onNotification) onNotification(err.message || 'Erreur sauvegarde', 'error');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleRunCommand = async (pluginId: string, cmd: string) => {
+    try {
+      const res = await runPluginCommand(pluginId, cmd);
+      setCommandFeedback({ id: pluginId, msg: res || `Commande '${cmd}' exécutée` });
+      setTimeout(() => setCommandFeedback(null), 3500);
+      await fetchInstalledPlugins();
+    } catch (err: any) {
+      setCommandFeedback({ id: pluginId, msg: `Erreur: ${err}` });
+      setTimeout(() => setCommandFeedback(null), 4000);
+    }
+  };
+
+  const handleUninstall = async (p: PluginInfo) => {
+    if (p.plugin_type === 'builtin') {
+      alert('Impossible de désinstaller un plugin système builtin.');
+      return;
+    }
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer définitivement le plugin "${p.name}" ?`)) {
+      try {
+        await uninstallPlugin(p.id);
+        await fetchInstalledPlugins();
+        if (onNotification) onNotification(`Plugin ${p.name} supprimé`, 'info');
+      } catch (err: any) {
+        if (onNotification) onNotification(err.message || 'Erreur suppression', 'error');
+      }
+    }
+  };
+
+  const handleInstallZipDialog = async () => {
+    try {
+      const { open } = await import('@tauri-apps/plugin-dialog');
+      const selected = await open({
+        title: 'Sélectionner une archive de plugin KaïroOS (.zip)',
+        multiple: false,
+        filters: [{ name: 'Plugin ZIP', extensions: ['zip'] }],
+      });
+      if (selected && typeof selected === 'string') {
+        const manifest = await installPlugin(selected);
+        setPendingInstallManifest(manifest);
+      }
+    } catch (err: any) {
+      console.error(err);
+      if (onNotification) onNotification(err.message || 'Échec de lecture du plugin', 'error');
+    }
+  };
+
+  const handleConfirmInstall = async () => {
+    if (!pendingInstallManifest) return;
+    setInstalling(true);
+    try {
+      await confirmInstallPlugin(pendingInstallManifest.id);
+      setPendingInstallManifest(null);
+      await fetchInstalledPlugins();
+      if (onNotification) onNotification(`Plugin "${pendingInstallManifest.name}" installé avec succès !`, 'success');
+    } catch (err: any) {
+      if (onNotification) onNotification(err.message || "Échec de l'installation", 'error');
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Barre de navigation principale des plugins */}
+      <div
+        style={{ borderColor: 'var(--border-color)' }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b pb-3"
+      >
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('installed')}
+            style={{
+              backgroundColor: activeTab === 'installed' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'installed' ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shadow-xs"
+          >
+            <Puzzle className="w-3.5 h-3.5" />
+            <span>Installés ({plugins.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('official')}
+            style={{
+              backgroundColor: activeTab === 'official' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'official' ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shadow-xs"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Store Officiel</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('community')}
+            style={{
+              backgroundColor: activeTab === 'community' ? 'var(--accent-primary)' : 'transparent',
+              color: activeTab === 'community' ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black transition-all shadow-xs"
+          >
+            <Globe className="w-3.5 h-3.5 text-amber-400" />
+            <span>Communauté</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button
+            onClick={handleInstallZipDialog}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)',
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold hover:border-[var(--accent-primary)]/40 transition-all shadow-2xs cursor-pointer"
+            title="Installer un plugin depuis une archive zip"
+          >
+            <Upload className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Installer (.zip)</span>
+          </button>
+
+          <button
+            onClick={() => openPluginsFolder()}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-secondary)',
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border hover:opacity-80 text-xs font-bold transition-all shadow-2xs cursor-pointer"
+            title="Ouvrir le dossier plugins/ dans l'Explorateur Windows"
+          >
+            <FolderOpen className="w-3.5 h-3.5" style={{ color: 'var(--accent-primary)' }} />
+            <span>Dossier Plugins</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* VUE 1 : PLUGINS INSTALLÉS                                 */}
+      {/* ========================================================= */}
+      {activeTab === 'installed' && (
+        <div className="space-y-4">
+          {loading && plugins.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-400">
+              <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2 text-rose-500" />
+              <span>Chargement des plugins...</span>
+            </div>
+          ) : plugins.length === 0 ? (
+            <div
+              style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+              className="p-8 rounded-3xl border text-center space-y-2"
+            >
+              <Puzzle className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
+              <div style={{ color: 'var(--text-primary)' }} className="text-sm font-bold">
+                Aucun plugin installé
+              </div>
+              <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                Explorez le Store Officiel ou le catalogue Communautaire pour enrichir KaïroOS.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {plugins.map((p) => {
+                const isBuiltin = p.plugin_type === 'builtin';
+                const isOfficial = p.plugin_type === 'official';
+
+                return (
+                  <div
+                    key={p.id}
+                    style={{
+                      backgroundColor: 'var(--bg-card)',
+                      borderColor: p.enabled ? 'var(--accent-primary)' : 'var(--border-color)',
+                    }}
+                    className="p-5 rounded-3xl border-2 flex flex-col justify-between gap-4 transition-all shadow-xs"
+                  >
+                    {/* En-tête du plugin */}
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4
+                              style={{ color: 'var(--text-primary)' }}
+                              className="text-sm font-black truncate"
+                            >
+                              {p.name}
+                            </h4>
+
+                            {/* Badge type */}
+                            {isBuiltin ? (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-purple-600 text-white shadow-2xs">
+                                SYSTÈME
+                              </span>
+                            ) : isOfficial ? (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-600 text-white shadow-2xs">
+                                OFFICIEL
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-amber-500 text-white shadow-2xs">
+                                COMMUNAUTÉ
+                              </span>
+                            )}
+
+                            <span
+                              style={{ color: 'var(--text-muted)' }}
+                              className="text-[10px] font-mono font-bold"
+                            >
+                              v{p.version}
+                            </span>
+                          </div>
+
+                          <div style={{ color: 'var(--text-muted)' }} className="text-[11px] mt-0.5">
+                            Par {p.author}
+                          </div>
+                        </div>
+
+                        {/* Toggle switch Actif / Inactif */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                p.running ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                              }`}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-bold">
+                              {p.running ? 'En cours' : 'Arrêté'}
+                            </span>
+                          </div>
+
+                          <button
+                            onClick={() => handleTogglePlugin(p)}
+                            disabled={actionLoadingId === p.id}
+                            style={{
+                              backgroundColor: p.enabled ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                            }}
+                            className="w-11 h-6 rounded-full p-1 transition-colors relative cursor-pointer"
+                            title={p.enabled ? 'Désactiver le plugin' : 'Activer le plugin'}
+                          >
+                            <div
+                              className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                                p.enabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      <p
+                        style={{ color: 'var(--text-secondary)' }}
+                        className="text-xs leading-relaxed line-clamp-2"
+                      >
+                        {p.description}
+                      </p>
+
+                      {/* Badges de permissions requises */}
+                      {p.permissions.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap pt-1">
+                          {p.permissions.map((perm) => (
+                            <span
+                              key={perm}
+                              style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderColor: 'var(--border-color)',
+                                color: 'var(--text-secondary)',
+                              }}
+                              className="px-2 py-0.5 rounded-lg border text-[9px] font-mono font-bold"
+                            >
+                              {perm}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Feedback commande éventuel */}
+                    {commandFeedback?.id === p.id && (
+                      <div className="p-2 rounded-xl bg-slate-900 text-white text-[10px] font-mono flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span className="truncate">{commandFeedback.msg}</span>
+                      </div>
+                    )}
+
+                    {/* Actions : Configurer, Commandes rapides, Désinstaller */}
+                    <div
+                      style={{ borderColor: 'var(--border-color)' }}
+                      className="pt-3 border-t flex items-center justify-between gap-2"
+                    >
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {p.has_settings && (
+                          <button
+                            onClick={() => handleOpenConfig(p.id)}
+                            style={{
+                              backgroundColor: 'var(--bg-secondary)',
+                              borderColor: 'var(--border-color)',
+                              color: 'var(--text-primary)',
+                            }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[11px] font-bold hover:border-[var(--accent-primary)]/40 transition-all cursor-pointer"
+                          >
+                            <Sliders className="w-3 h-3 text-amber-500" />
+                            <span>Configurer</span>
+                          </button>
+                        )}
+
+                        {/* Raccourcis commandes (start, restart, etc.) */}
+                        {p.commands.map((cmd) => (
+                          <button
+                            key={cmd}
+                            onClick={() => handleRunCommand(p.id, cmd)}
+                            style={{
+                              backgroundColor: 'var(--bg-secondary)',
+                              borderColor: 'var(--border-color)',
+                              color: 'var(--text-secondary)',
+                            }}
+                            className="px-2 py-1.5 rounded-xl border text-[10px] font-bold uppercase hover:text-[var(--accent-primary)] transition-all cursor-pointer"
+                            title={`Exécuter la commande '${cmd}'`}
+                          >
+                            {cmd}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div>
+                        {!isBuiltin ? (
+                          <button
+                            onClick={() => handleUninstall(p)}
+                            className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="Désinstaller le plugin"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <span
+                            style={{ color: 'var(--text-muted)' }}
+                            className="text-[10px] italic font-bold"
+                            title="Les plugins système sont protégés"
+                          >
+                            Protégé
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* VUE 2 & 3 : STORE OFFICIEL & COMMUNAUTÉ                  */}
+      {/* ========================================================= */}
+      {(activeTab === 'official' || activeTab === 'community') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 style={{ color: 'var(--text-primary)' }} className="text-xs font-black uppercase tracking-wider">
+                {activeTab === 'official' ? 'Plugins Officiels Certifiés' : 'Plugins Communautaires'}
+              </h3>
+              <p style={{ color: 'var(--text-muted)' }} className="text-[11px]">
+                {activeTab === 'official'
+                  ? 'Maintenus et validés par l\'équipe KaïroOS pour une compatibilité garantie.'
+                  : 'Créés par les membres de la communauté. Chaque installation est soumise à approbation sandbox.'}
+              </p>
+            </div>
+
+            {activeTab === 'community' && (
+              <a
+                href="https://github.com/NayrolfRdgs/KairoOS-plugins#soumettre-un-plugin"
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  borderColor: 'var(--border-color)',
+                  color: 'var(--accent-primary)',
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold hover:scale-102 transition-all cursor-pointer"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Soumettre mon plugin</span>
+              </a>
+            )}
+          </div>
+
+          {loadingStore ? (
+            <div className="p-12 text-center text-xs text-slate-400">
+              <RefreshCw className="w-6 h-6 mx-auto animate-spin mb-2 text-rose-500" />
+              <span>Interrogation du catalogue GitHub...</span>
+            </div>
+          ) : storeError ? (
+            <div
+              style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+              className="p-8 rounded-3xl border text-center space-y-2"
+            >
+              <AlertTriangle className="w-8 h-8 mx-auto text-amber-500" />
+              <div style={{ color: 'var(--text-primary)' }} className="text-sm font-bold">
+                {storeError}
+              </div>
+              <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                Vérifiez votre connexion Internet ou réessayez ultérieurement.
+              </p>
+            </div>
+          ) : storePlugins.length === 0 ? (
+            <div
+              style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
+              className="p-8 rounded-3xl border text-center space-y-2"
+            >
+              <Puzzle className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
+              <div style={{ color: 'var(--text-primary)' }} className="text-sm font-bold">
+                Aucun plugin disponible pour le moment
+              </div>
+              <p style={{ color: 'var(--text-muted)' }} className="text-xs">
+                Les plugins validés apparaîtront automatiquement ici dès leur publication sur GitHub.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {storePlugins.map((item) => {
+                const isInstalled = plugins.some((p) => p.id === item.id);
+
+                return (
+                  <div
+                    key={item.id}
+                    style={{
+                      backgroundColor: 'var(--bg-card)',
+                      borderColor: 'var(--border-color)',
+                    }}
+                    className="p-5 rounded-3xl border-2 flex flex-col justify-between gap-4 transition-all shadow-xs hover:border-[var(--accent-primary)]/40"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4
+                              style={{ color: 'var(--text-primary)' }}
+                              className="text-sm font-black truncate"
+                            >
+                              {item.name}
+                            </h4>
+                            <span
+                              style={{ color: 'var(--text-muted)' }}
+                              className="text-[10px] font-mono font-bold"
+                            >
+                              v{item.version}
+                            </span>
+                          </div>
+                          <div style={{ color: 'var(--text-muted)' }} className="text-[11px]">
+                            Par {item.author}
+                          </div>
+                        </div>
+
+                        {isInstalled ? (
+                          <span className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-500/10 text-emerald-600 text-[10px] font-black border border-emerald-500/20">
+                            <Check className="w-3 h-3 stroke-[3]" />
+                            <span>INSTALLÉ</span>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setPendingInstallManifest(item)}
+                            style={{
+                              backgroundColor: 'var(--accent-primary)',
+                              color: '#ffffff',
+                            }}
+                            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-black shadow-xs hover:scale-102 active:scale-98 transition-all cursor-pointer"
+                          >
+                            <span>Installer</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <p
+                        style={{ color: 'var(--text-secondary)' }}
+                        className="text-xs leading-relaxed line-clamp-3"
+                      >
+                        {item.description}
+                      </p>
+
+                      {/* Permissions déclarées */}
+                      {item.permissions && item.permissions.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap pt-1">
+                          {item.permissions.map((perm: string) => (
+                            <span
+                              key={perm}
+                              style={{
+                                backgroundColor: 'var(--bg-secondary)',
+                                borderColor: 'var(--border-color)',
+                                color: 'var(--text-secondary)',
+                              }}
+                              className="px-2 py-0.5 rounded-lg border text-[9px] font-mono font-bold"
+                            >
+                              {perm}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL 1 : CONFIGURATION DYNAMIQUE D'UN PLUGIN             */}
+      {/* ========================================================= */}
+      {configuringPlugin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200"
+          >
+            {/* Header */}
+            <div
+              style={{
+                backgroundColor: 'var(--sidebar-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="p-4 border-b flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-amber-500" />
+                <h3 style={{ color: 'var(--text-primary)' }} className="text-sm font-black">
+                  Configuration — {configuringPlugin.manifest.name}
+                </h3>
+              </div>
+              <button
+                onClick={() => setConfiguringPlugin(null)}
+                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Formulaire généré dynamiquement depuis settings_schema */}
+            <div className="p-5 overflow-y-auto space-y-4 flex-1">
+              {Object.keys(configuringPlugin.manifest.settings_schema || {}).length === 0 ? (
+                <div style={{ color: 'var(--text-muted)' }} className="text-xs italic text-center py-4">
+                  Ce plugin ne requiert aucun paramètre personnalisable.
+                </div>
+              ) : (
+                Object.entries(configuringPlugin.manifest.settings_schema).map(([key, schema]) => {
+                  const currentVal = settingsForm[key] !== undefined ? settingsForm[key] : schema.default;
+                  const isSecret = Boolean(schema.secret);
+                  const isRevealed = showSecrets[key];
+
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderColor: 'var(--border-color)',
+                      }}
+                      className="p-3.5 rounded-2xl border space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <label
+                          style={{ color: 'var(--text-primary)' }}
+                          className="text-xs font-bold"
+                        >
+                          {schema.label || key}
+                        </label>
+                        <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-mono">
+                          {key}
+                        </span>
+                      </div>
+
+                      {schema.type === 'boolean' ? (
+                        <label className="flex items-center justify-between pt-1 cursor-pointer">
+                          <span style={{ color: 'var(--text-muted)' }} className="text-xs">
+                            {currentVal ? 'Activé' : 'Désactivé'}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={Boolean(currentVal)}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.checked })}
+                            className="w-4 h-4 rounded text-rose-500 focus:ring-rose-400"
+                          />
+                        </label>
+                      ) : schema.type === 'number' ? (
+                        <input
+                          type="number"
+                          value={currentVal}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, [key]: Number(e.target.value) })}
+                          style={{
+                            backgroundColor: 'var(--bg-card)',
+                            color: 'var(--text-primary)',
+                            borderColor: 'var(--border-color)',
+                          }}
+                          className="w-full text-xs p-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] font-mono"
+                        />
+                      ) : (
+                        <div className="relative">
+                          <input
+                            type={isSecret && !isRevealed ? 'password' : 'text'}
+                            value={currentVal || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, [key]: e.target.value })}
+                            style={{
+                              backgroundColor: 'var(--bg-card)',
+                              color: 'var(--text-primary)',
+                              borderColor: 'var(--border-color)',
+                            }}
+                            className="w-full text-xs p-2 rounded-xl border focus:outline-none focus:ring-1 focus:ring-[var(--accent-primary)] pr-8 font-mono"
+                          />
+                          {isSecret && (
+                            <button
+                              type="button"
+                              onClick={() => setShowSecrets({ ...showSecrets, [key]: !isRevealed })}
+                              className="absolute right-2 top-2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                            >
+                              {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                backgroundColor: 'var(--sidebar-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="p-4 border-t flex items-center justify-end gap-2"
+            >
+              <button
+                onClick={() => setConfiguringPlugin(null)}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold hover:opacity-80 transition-all cursor-pointer"
+              >
+                Annuler
+              </button>
+
+              <button
+                onClick={handleSaveConfig}
+                disabled={savingSettings}
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: '#ffffff',
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-black shadow-md hover:opacity-90 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {savingSettings ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                <span>Enregistrer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL 2 : SANDBOX DE PERMISSIONS (STYLE ANDROID)          */}
+      {/* ========================================================= */}
+      {pendingInstallManifest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+          <div
+            style={{
+              backgroundColor: 'var(--bg-primary)',
+              borderColor: 'var(--border-color)',
+            }}
+            className="w-full max-w-lg rounded-3xl border-2 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200"
+          >
+            {/* Header sécurité */}
+            <div className="p-5 bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-purple-500/20 border-b border-amber-500/20 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5 text-amber-500" />
+              </div>
+              <div className="flex-1">
+                <div className="text-[11px] font-black uppercase tracking-wider text-amber-500">
+                  Sécurité & Bac à Sable (Sandbox)
+                </div>
+                <h3 style={{ color: 'var(--text-primary)' }} className="text-base font-black leading-tight mt-0.5">
+                  Installer "{pendingInstallManifest.name}" ?
+                </h3>
+                <p style={{ color: 'var(--text-muted)' }} className="text-xs mt-1">
+                  Ce plugin requiert l'accès explicite aux fonctionnalités listées ci-dessous :
+                </p>
+              </div>
+            </div>
+
+            {/* Corps de la liste des permissions */}
+            <div className="p-5 overflow-y-auto space-y-3 flex-1">
+              {(!pendingInstallManifest.permissions || pendingInstallManifest.permissions.length === 0) ? (
+                <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-600 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <span>Ce plugin ne demande aucune permission spéciale sur votre système.</span>
+                </div>
+              ) : (
+                pendingInstallManifest.permissions.map((perm) => {
+                  const info = PERMISSION_DESCRIPTIONS[perm] || {
+                    label: perm,
+                    desc: `Permission système spécifique: ${perm}`,
+                    icon: <Shield className="w-4 h-4 text-slate-400" />,
+                  };
+
+                  return (
+                    <div
+                      key={perm}
+                      style={{
+                        backgroundColor: 'var(--bg-secondary)',
+                        borderColor: 'var(--border-color)',
+                      }}
+                      className="p-3.5 rounded-2xl border flex items-start gap-3"
+                    >
+                      <div className="p-2 rounded-xl bg-black/10 shrink-0 mt-0.5">
+                        {info.icon}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div style={{ color: 'var(--text-primary)' }} className="text-xs font-black">
+                          {info.label}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)' }} className="text-[11px] leading-relaxed mt-0.5">
+                          {info.desc}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Actions Consentement */}
+            <div
+              style={{
+                backgroundColor: 'var(--sidebar-bg)',
+                borderColor: 'var(--border-color)',
+              }}
+              className="p-4 border-t flex items-center justify-between gap-3"
+            >
+              <button
+                onClick={() => setPendingInstallManifest(null)}
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold hover:opacity-80 transition-all cursor-pointer"
+              >
+                Refuser et Annuler
+              </button>
+
+              <button
+                onClick={handleConfirmInstall}
+                disabled={installing}
+                style={{
+                  backgroundColor: 'var(--accent-primary)',
+                  color: '#ffffff',
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-black shadow-md hover:scale-102 active:scale-98 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                {installing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+                <span>Accepter et Installer</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

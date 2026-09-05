@@ -217,4 +217,35 @@ impl AppPaths {
             p
         }
     }
+
+    /// Dossier cible d'installation des plugins
+    pub fn get_plugins_dir() -> PathBuf {
+        if Self::is_portable() {
+            let p = Self::get_exe_dir().join("plugins");
+            let _ = std::fs::create_dir_all(&p);
+            p
+        } else {
+            let p = Self::get_appdata_dir().join("plugins");
+            let _ = std::fs::create_dir_all(&p);
+            p
+        }
+    }
+
+    /// Dossiers de recherche des plugins (plugins racine/builtin + plugins utilisateur)
+    pub fn get_plugins_search_dirs() -> Vec<PathBuf> {
+        let mut dirs = Vec::new();
+        if Self::is_portable() {
+            dirs.push(Self::get_exe_dir().join("plugins"));
+        } else {
+            let dev_plugins = Self::get_dev_project_dir().join("plugins");
+            if dev_plugins.exists() {
+                dirs.push(dev_plugins);
+            }
+            let user_plugins = Self::get_appdata_dir().join("plugins");
+            if user_plugins.exists() && !dirs.contains(&user_plugins) {
+                dirs.push(user_plugins);
+            }
+        }
+        dirs
+    }
 }

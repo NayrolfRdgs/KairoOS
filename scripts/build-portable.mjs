@@ -78,6 +78,16 @@ if (existsSync('themes')) {
   } catch (_) {}
 }
 
+// 5bis. Synchronisation automatique des plugins
+if (existsSync('plugins')) {
+  console.log('🔌 Synchronisation des plugins dans builds/portable/plugins/ ...');
+  try {
+    const pluginsTarget = path.join(portableDir, 'plugins');
+    if (!existsSync(pluginsTarget)) mkdirSync(pluginsTarget, { recursive: true });
+    execSync('powershell -Command "Copy-Item -Path \'plugins/*\' -Destination \'builds/portable/plugins\' -Recurse -Force -ErrorAction SilentlyContinue"', { stdio: 'ignore' });
+  } catch (_) {}
+}
+
 // Marqueur explicite de mode portable
 writeFileSync(path.join(portableDir, 'portable.txt'), 'KAÏROOS_PORTABLE_MODE=1\n', 'utf-8');
 

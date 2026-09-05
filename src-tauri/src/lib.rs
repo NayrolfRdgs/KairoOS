@@ -3,7 +3,7 @@ use tauri::Manager;
 
 pub mod commands;
 use commands::AppState;
-use kairo_core::{start_remote_server, Database, Launcher};
+use kairo_core::{Database, Launcher};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -46,8 +46,8 @@ pub fn run() {
 
             let app_mode = Arc::new(RwLock::new(initial_mode));
 
-            // Démarrer automatiquement le serveur distant Axum en arrière-plan
-            start_remote_server(db.clone(), launcher.clone());
+            let plugin_manager = kairo_core::PluginManager::new(Some(db.clone()), Some(launcher.clone()));
+            plugin_manager.auto_start_enabled_plugins();
 
             // Appliquer le mode plein écran et always on top au démarrage selon les paramètres sauvegardés
             if let Some(main_window) = app.get_webview_window("main") {
@@ -59,6 +59,7 @@ pub fn run() {
                 db,
                 launcher,
                 app_mode,
+                plugin_manager,
             });
 
             Ok(())
@@ -108,6 +109,17 @@ pub fn run() {
             commands::import_config,
             commands::reset_settings,
             commands::download_community_theme,
+            commands::get_plugins,
+            commands::get_plugin,
+            commands::enable_plugin,
+            commands::disable_plugin,
+            commands::install_plugin,
+            commands::confirm_install_plugin,
+            commands::uninstall_plugin,
+            commands::update_plugin_settings,
+            commands::get_plugin_commands,
+            commands::run_plugin_command,
+            commands::open_plugins_folder,
         ])
         .run(tauri::generate_context!())
 

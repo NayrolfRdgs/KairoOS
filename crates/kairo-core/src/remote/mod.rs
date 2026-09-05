@@ -312,13 +312,18 @@ pub fn start_remote_server(db: Database, launcher: Launcher) -> std::thread::Joi
                 config_dir: PathBuf::from("config"),
             };
 
-            // Recherche du dossier statique PWA (kairo-remote/dist ou ./remote_dist)
-            let mut pwa_dir = PathBuf::from("kairo-remote/dist");
+            // Recherche du dossier statique PWA (plugins/kairo-remote/dist ou kairo-remote/dist)
+            let mut pwa_dir = crate::paths::AppPaths::get_plugins_dir().join("kairo-remote").join("dist");
             if !pwa_dir.exists() {
-                if PathBuf::from("../kairo-remote/dist").exists() {
+                let dev_plugin_pwa = crate::paths::AppPaths::get_dev_project_dir().join("plugins").join("kairo-remote").join("dist");
+                if dev_plugin_pwa.exists() {
+                    pwa_dir = dev_plugin_pwa;
+                } else if PathBuf::from("plugins/kairo-remote/dist").exists() {
+                    pwa_dir = PathBuf::from("plugins/kairo-remote/dist");
+                } else if PathBuf::from("kairo-remote/dist").exists() {
+                    pwa_dir = PathBuf::from("kairo-remote/dist");
+                } else if PathBuf::from("../kairo-remote/dist").exists() {
                     pwa_dir = PathBuf::from("../kairo-remote/dist");
-                } else if PathBuf::from("dist-portable/kairo-remote").exists() {
-                    pwa_dir = PathBuf::from("dist-portable/kairo-remote");
                 }
             }
 

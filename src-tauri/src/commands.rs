@@ -11,6 +11,7 @@ pub struct AppState {
     pub db: Database,
     pub launcher: Launcher,
     pub app_mode: Arc<RwLock<String>>,
+    pub plugin_manager: kairo_core::PluginManager,
 }
 
 #[tauri::command]
@@ -1105,3 +1106,72 @@ pub fn download_community_theme(theme_id: String, zip_url: String) -> Result<kai
 
     get_theme(theme_id)
 }
+
+#[tauri::command]
+pub fn get_plugins(state: State<'_, AppState>) -> Result<Vec<kairo_core::PluginInfo>, String> {
+    Ok(state.plugin_manager.list_plugins())
+}
+
+#[tauri::command]
+pub fn get_plugin(id: String, state: State<'_, AppState>) -> Result<kairo_core::PluginDetail, String> {
+    state.plugin_manager.get_plugin(&id).ok_or_else(|| format!("Plugin '{}' introuvable", id))
+}
+
+#[tauri::command]
+pub fn enable_plugin(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.plugin_manager.enable_plugin(&id)
+}
+
+#[tauri::command]
+pub fn disable_plugin(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.plugin_manager.disable_plugin(&id)
+}
+
+#[tauri::command]
+pub fn install_plugin(zip_path: String) -> Result<kairo_core::PluginManifest, String> {
+    kairo_core::PluginManager::stage_plugin_zip(&zip_path)
+}
+
+#[tauri::command]
+pub fn confirm_install_plugin(plugin_id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.plugin_manager.confirm_install(&plugin_id)
+}
+
+#[tauri::command]
+pub fn uninstall_plugin(id: String, state: State<'_, AppState>) -> Result<(), String> {
+    state.plugin_manager.uninstall_plugin(&id)
+}
+
+#[tauri::command]
+pub fn update_plugin_settings(
+    id: String,
+    settings: std::collections::HashMap<String, serde_json::Value>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.plugin_manager.update_plugin_settings(&id, settings)
+}
+
+#[tauri::command]
+pub fn get_plugin_commands(id: String, state: State<'_, AppState>) -> Result<Vec<String>, String> {
+    let detail = state.plugin_manager.get_plugin(&id).ok_or_else(|| format!("Plugin '{}' introuvable", id))?;
+    Ok(detail.manifest.commands)
+}
+
+#[tauri::command]
+pub fn run_plugin_command(id: String, command: String, state: State<'_, AppState>) -> Result<String, String> {
+    state.plugin_manager.run_plugin_command(&id, &command)
+}
+
+#[tauri::command]
+pub fn open_plugins_folder() -> Result<(), String> {
+    let dir = kairo_core::AppPaths::get_plugins_dir();
+    #[cfg(windows)]
+    {
+        std::process::Command::new("explorer")
+            .arg(dir)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
