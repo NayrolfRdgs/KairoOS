@@ -159,8 +159,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // Clic ou sélection sur un jeu (selon préférence configurée)
+  // Clic ou sélection sur un jeu (selon préférence configurée) avec protection anti-rebond
+  const lastSelectTimeRef = useRef<number>(0);
   const handleGameCardSelect = (game: Game) => {
+    const now = Date.now();
+    if (now - lastSelectTimeRef.current < 400) return;
+    lastSelectTimeRef.current = now;
+
     if (settings.game_select_action === 'launch') {
       launch(game);
     } else {

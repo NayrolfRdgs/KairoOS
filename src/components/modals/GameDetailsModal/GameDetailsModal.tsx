@@ -75,37 +75,6 @@ export const GameDetailsModal: React.FC<GameDetailsModalProps> = ({
     else setInternalActiveTab(tab);
   };
 
-  // Clavier & Raccourcis Manette pour la navigation dans la fiche de jeu
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        e.preventDefault();
-        const idx = TABS.findIndex((t) => t.id === activeTab);
-        const prevIdx = (idx - 1 + TABS.length) % TABS.length;
-        setActiveTab(TABS[prevIdx].id as any);
-      } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-        e.preventDefault();
-        const idx = TABS.findIndex((t) => t.id === activeTab);
-        const nextIdx = (idx + 1) % TABS.length;
-        setActiveTab(TABS[nextIdx].id as any);
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        onPrevGame?.();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        onNextGame?.();
-      } else if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'Enter') {
-        onLaunch(game);
-      } else if (e.key === 'f' || e.key === 'F') {
-        onToggleFavorite(game);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, game, onClose, onLaunch, onToggleFavorite, onPrevGame, onNextGame]);
-
   // Contrôleur manette dédié dans la fiche de jeu
   const gamepadActions = React.useMemo(
     () => ({

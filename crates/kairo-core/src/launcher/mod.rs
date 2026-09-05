@@ -388,6 +388,9 @@ impl Launcher {
             let status = self.status.read().unwrap();
             if status.is_running {
                 if let Some(pid) = status.pid {
+                    if status.current_game_id.as_deref() == Some(game_id) {
+                        return Ok(status.clone());
+                    }
                     return Err(LauncherError::AlreadyRunning(pid));
                 }
             }

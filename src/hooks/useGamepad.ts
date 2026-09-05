@@ -41,7 +41,10 @@ export function useGamepad(
   }, [primaryPadIndex]);
 
   const prevButtonsRef = useRef<boolean[]>([]);
+  const buttonMustReleaseRef = useRef<Set<number>>(new Set());
+  const buttonCooldownRef = useRef<Record<number, number>>({});
   const lastNavTimeRef = useRef<number>(0);
+  const keyCooldownRef = useRef<Record<string, number>>({});
   const navRepeatDelay = 180;
 
   // Détection du combo Kiosk Unlock (LB + RB + Start maintenu 3s)
@@ -54,7 +57,15 @@ export function useGamepad(
       if (isPriorityGamepad(e.gamepad.id) || connectedGamepadName === null) {
         activePadIndexRef.current = e.gamepad.index;
       }
-      setConnectedGamepadName(e.gamepad.id);
+      setConnectedGamepadName((prev) => (prev !== e.gamepad.id ? e.gamepad.id : prev));
+      // Pré-enregistrer les boutons déjà enfoncés à la connexion pour exiger leur relâchement
+      if (e.gamepad.buttons) {
+        e.gamepad.buttons.forEach((b, idx) => {
+          if (b.pressed || b.value > 0.4) {
+            buttonMustReleaseRef.current.add(idx);
+          }
+        });
+      }
     };
 
     const handleGamepadDisconnected = (_e: GamepadEvent) => {
@@ -67,10 +78,12 @@ export function useGamepad(
         const bestRemaining =
           remainingGamepads.find((p) => isPriorityGamepad(p.id)) || remainingGamepads[0];
         activePadIndexRef.current = bestRemaining.index;
-        setConnectedGamepadName(bestRemaining.id);
+        setConnectedGamepadName((prev) => (prev !== bestRemaining.id ? bestRemaining.id : prev));
       } else {
         setConnectedGamepadName(null);
       }
+      prevButtonsRef.current = [];
+      buttonMustReleaseRef.current.clear();
     };
 
     window.addEventListener('gamepadconnected', handleGamepadConnected);
@@ -98,7 +111,7 @@ export function useGamepad(
 
         if (padWithInput && padWithInput.index !== activePadIndexRef.current) {
           activePadIndexRef.current = padWithInput.index;
-          setConnectedGamepadName(padWithInput.id);
+          setConnectedGamepadName((prev) => (prev !== padWithInput!.id ? padWithInput!.id : prev));
         }
 
         // Récupération de la manette active en cours
@@ -111,11 +124,27 @@ export function useGamepad(
         }
 
         if (primary) {
-          setConnectedGamepadName(primary.id);
+          setConnectedGamepadName((prev) => (prev !== primary!.id ? primary!.id : prev));
 
           const now = performance.now();
-          const prev = prevButtonsRef.current;
           const currentButtons = primary.buttons.map((b) => b.pressed || b.value > 0.4);
+
+          // Si c'est la première lecture, initialiser l'état précédent sans déclencher d'action
+          if (prevButtonsRef.current.length === 0) {
+            prevButtonsRef.current = currentButtons;
+            currentButtons.forEach((pressed, idx) => {
+              if (pressed) buttonMustReleaseRef.current.add(idx);
+            });
+          }
+
+          const prev = prevButtonsRef.current;
+
+          // Mise à jour de l'état "doit être relâché" : dès qu'un bouton n'est plus pressé physiquement, on l'autorise à nouveau
+          currentButtons.forEach((pressed, idx) => {
+            if (!pressed) {
+              buttonMustReleaseRef.current.delete(idx);
+            }
+          });
 
           const btnA = mapping?.btn_a && !isNaN(Number(mapping.btn_a)) ? Number(mapping.btn_a) : 0;
           const btnB = mapping?.btn_b && !isNaN(Number(mapping.btn_b)) ? Number(mapping.btn_b) : 1;
@@ -152,16 +181,31 @@ export function useGamepad(
 
           // 2. Actions normales si activé
           if (enabledRef.current) {
-            const isJustPressed = (index: number) => currentButtons[index] && !prev[index];
+            // Détection stricte de transition : appuyé MAINTENANT + relâché AVANT + NON VERROUILLÉ + DÉBOUNCE
+            const triggerIfJustPressed = (index: number, callback?: () => void) => {
+              if (!callback) return;
+              const isPhysicallyPressed = currentButtons[index];
+              const wasPhysicallyPressed = prev[index];
+              const mustRelease = buttonMustReleaseRef.current.has(index);
+              const lastTime = buttonCooldownRef.current[index] || 0;
 
-            if (isJustPressed(btnA)) actionsRef.current.onConfirm?.();
-            if (isJustPressed(btnB)) actionsRef.current.onBack?.();
-            if (isJustPressed(btnX)) actionsRef.current.onToggleFavorite?.();
-            if (isJustPressed(btnY)) actionsRef.current.onDetails?.();
-            if (isJustPressed(btnL1) && !rbPressed && !startPressed) actionsRef.current.onPrevSystem?.();
-            if (isJustPressed(btnR1) && !lbPressed && !startPressed) actionsRef.current.onNextSystem?.();
-            if (isJustPressed(btnStart) && !lbPressed && !rbPressed) actionsRef.current.onMenu?.();
+              // Déclenchement UNIQUEMENT lors du front montant (relâché -> appuyé)
+              if (isPhysicallyPressed && !wasPhysicallyPressed && !mustRelease && (now - lastTime > 250)) {
+                buttonMustReleaseRef.current.add(index);
+                buttonCooldownRef.current[index] = now;
+                callback();
+              }
+            };
 
+            triggerIfJustPressed(btnA, () => actionsRef.current.onConfirm?.());
+            triggerIfJustPressed(btnB, () => actionsRef.current.onBack?.());
+            triggerIfJustPressed(btnX, () => actionsRef.current.onToggleFavorite?.());
+            triggerIfJustPressed(btnY, () => actionsRef.current.onDetails?.());
+            if (!rbPressed && !startPressed) triggerIfJustPressed(btnL1, () => actionsRef.current.onPrevSystem?.());
+            if (!lbPressed && !startPressed) triggerIfJustPressed(btnR1, () => actionsRef.current.onNextSystem?.());
+            if (!lbPressed && !rbPressed) triggerIfJustPressed(btnStart, () => actionsRef.current.onMenu?.());
+
+            // Navigation au D-Pad / Stick avec répétition contrôlée
             if (now - lastNavTimeRef.current > navRepeatDelay) {
               const dpadUp = currentButtons[12] || primary.axes[1] < -0.5;
               const dpadDown = currentButtons[13] || primary.axes[1] > 0.5;
@@ -182,15 +226,15 @@ export function useGamepad(
                 lastNavTimeRef.current = now;
               }
             }
-
-            prevButtonsRef.current = currentButtons;
-          } else {
-            prevButtonsRef.current = [];
           }
+
+          // Toujours mémoriser l'état des boutons pour maintenir la continuité physique
+          prevButtonsRef.current = currentButtons;
         }
       } else {
         setConnectedGamepadName(null);
         prevButtonsRef.current = [];
+        buttonMustReleaseRef.current.clear();
       }
 
       animationFrameId = requestAnimationFrame(pollGamepad);
@@ -213,6 +257,23 @@ export function useGamepad(
       ) {
         return;
       }
+
+      // Anti-répétition automatique du navigateur pour les touches d'action
+      if (e.repeat) {
+        if (['Enter', 'Escape', 'Backspace', ' ', 'f', 'F', 'y', 'Y', 'a', 'A', 'e', 'E', 'm', 'M'].includes(e.key)) {
+          e.preventDefault();
+          return;
+        }
+      }
+
+      const now = performance.now();
+      const triggerKeyAction = (key: string, callback?: () => void) => {
+        if (!callback) return;
+        const last = keyCooldownRef.current[key] || 0;
+        if (now - last < 250) return;
+        keyCooldownRef.current[key] = now;
+        callback();
+      };
 
       switch (e.key) {
         case 'ArrowUp':
@@ -241,41 +302,41 @@ export function useGamepad(
           break;
         case 'Enter':
           e.preventDefault();
-          actionsRef.current.onConfirm?.();
+          triggerKeyAction('Enter', () => actionsRef.current.onConfirm?.());
           break;
         case 'Escape':
         case 'Backspace':
           e.preventDefault();
-          actionsRef.current.onBack?.();
+          triggerKeyAction('Escape', () => actionsRef.current.onBack?.());
           break;
         case 'f':
         case 'F':
           e.preventDefault();
-          actionsRef.current.onToggleFavorite?.();
+          triggerKeyAction('f', () => actionsRef.current.onToggleFavorite?.());
           break;
         case ' ':
         case 'y':
         case 'Y':
           e.preventDefault();
-          actionsRef.current.onDetails?.();
+          triggerKeyAction('y', () => actionsRef.current.onDetails?.());
           break;
         case 'a':
         case 'A':
         case 'PageUp':
           e.preventDefault();
-          actionsRef.current.onPrevSystem?.();
+          triggerKeyAction('a', () => actionsRef.current.onPrevSystem?.());
           break;
         case 'e':
         case 'E':
         case 'PageDown':
           e.preventDefault();
-          actionsRef.current.onNextSystem?.();
+          triggerKeyAction('e', () => actionsRef.current.onNextSystem?.());
           break;
         case 'm':
         case 'M':
         case 'F1':
           e.preventDefault();
-          actionsRef.current.onMenu?.();
+          triggerKeyAction('m', () => actionsRef.current.onMenu?.());
           break;
       }
     };
